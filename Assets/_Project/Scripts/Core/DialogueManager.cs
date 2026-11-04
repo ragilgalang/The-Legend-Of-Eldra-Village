@@ -26,19 +26,20 @@ public class DialogueManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
-        panel.SetActive(false);
+        if (panel) panel.SetActive(false);
         HideChoices();
     }
 
     public void Play(DialogueData data, Action finished = null)
     {
         if (active || data == null) return;
+        if (!player) player = FindFirstObjectByType<PlayerController>();
         onFinish = finished;
         active = true;
-        player.inputLocked = true;
+        if (player) player.inputLocked = true;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        panel.SetActive(true);
+        if (panel) panel.SetActive(true);
         Begin(data);
     }
 
@@ -118,14 +119,15 @@ public class DialogueManager : MonoBehaviour
     void HideChoices()
     {
         choicesShown = false;
-        foreach (var b in choiceButtons) b.gameObject.SetActive(false);
+        if (choiceButtons == null) return;
+        foreach (var b in choiceButtons) if (b) b.gameObject.SetActive(false);
     }
 
     void End()
     {
         active = false;
-        panel.SetActive(false);
-        player.inputLocked = false;
+        if (panel) panel.SetActive(false);
+        if (player) player.inputLocked = false;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 

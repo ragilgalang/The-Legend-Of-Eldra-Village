@@ -272,7 +272,10 @@ public static class SceneSetupTool
         }
 
         // Tandai scene telah diedit
-        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        if (!Application.isPlaying)
+        {
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        }
         Selection.activeGameObject = player;
 
         EditorUtility.DisplayDialog(
@@ -291,3 +294,4 @@ public static class SceneSetupTool
     }
 }
 #endif
+
