@@ -7,6 +7,7 @@ public class ResourcePickup : Interactable
 
     public override void Interact(PlayerController player)
     {
+        Inventory.Instance.Add(itemId, amount);   // baris baru
         QuestManager.Instance.Report(QuestObjective.Type.Collect, itemId, amount);
         Destroy(gameObject);
     }

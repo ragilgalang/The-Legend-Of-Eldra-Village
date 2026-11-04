@@ -57,5 +57,13 @@ public class DayNightCycle : MonoBehaviour
         if (h >= 19f || h < 5f) return TimePhase.Night;
         return TimePhase.Dawn;
     }
+
+    public void SetTime(float hour, int day)
+    {
+        Hour = hour;
+        DayCount = day;
+        Phase = GetPhase(Hour);
+        OnPhaseChanged?.Invoke(Phase);
+    }
 }
 
