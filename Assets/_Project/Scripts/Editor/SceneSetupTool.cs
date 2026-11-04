@@ -23,6 +23,9 @@ public static class SceneSetupTool
             return;
         }
 
+        // Pastikan tag "NPC" terdaftar di TagManager
+        EnsureTagExists("NPC");
+
         SetupEnvironment();
         SetupPlayer(out GameObject player, out PlayerController playerCtrl,
                     out Health playerHealth, out PlayerInteractor playerInteractor);
@@ -72,8 +75,14 @@ public static class SceneSetupTool
 
         // Directional Light (Sun)
         Light sunLight = null;
-        foreach (var l in Object.FindObjectsByType<Light>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            if (l.type == LightType.Directional) { sunLight = l; break; }
+        var go_sun = GameObject.Find("Directional Light");
+        if (go_sun) sunLight = go_sun.GetComponent<Light>();
+        if (!sunLight)
+        {
+            // Cari light manapun yang directional
+            foreach (var l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
+                if (l.type == LightType.Directional) { sunLight = l; break; }
+        }
         if (!sunLight)
         {
             var go = new GameObject("Directional Light");
@@ -318,8 +327,7 @@ public static class SceneSetupTool
 
             var npcGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             npcGo.name = npcName;
-            // Coba set tag NPC; skip kalau belum terdaftar di TagManager
-            try { npcGo.tag = "NPC"; } catch { /* tag belum ada, abaikan */ }
+            npcGo.tag = "NPC";
             npcGo.transform.SetParent(npcRoot.transform);
             npcGo.transform.position = pos;
             ApplyColor(npcGo, col);
@@ -762,6 +770,26 @@ public static class SceneSetupTool
         rect.pivot = pivot;
         rect.anchoredPosition = anchoredPos;
         rect.sizeDelta = sizeDelta;
+    }
+
+    /// <summary>
+    /// Daftarkan tag baru di TagManager jika belum ada.
+    /// </summary>
+    static void EnsureTagExists(string tag)
+    {
+        var tagManager = new SerializedObject(
+            AssetDatabase.LoadMainAssetAtPath("ProjectSettings/TagManager.asset"));
+        var tagsProp = tagManager.FindProperty("tags");
+
+        // Cek apakah tag sudah ada
+        for (int i = 0; i < tagsProp.arraySize; i++)
+            if (tagsProp.GetArrayElementAtIndex(i).stringValue == tag)
+                return; // sudah ada
+
+        // Tambahkan tag baru
+        tagsProp.InsertArrayElementAtIndex(tagsProp.arraySize);
+        tagsProp.GetArrayElementAtIndex(tagsProp.arraySize - 1).stringValue = tag;
+        tagManager.ApplyModifiedProperties();
     }
 }
 #endif
