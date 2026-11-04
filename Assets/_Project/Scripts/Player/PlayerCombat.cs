@@ -16,7 +16,7 @@ public class PlayerCombat : MonoBehaviour
     void Update()
     {
         var ms = Mouse.current;
-        if (ms == null || player.inputLocked) return;
+        if (ms == null || (player != null && player.inputLocked)) return;
         if (!ms.leftButton.wasPressedThisFrame || Time.time < next) return;
 
         next = Time.time + cooldown;

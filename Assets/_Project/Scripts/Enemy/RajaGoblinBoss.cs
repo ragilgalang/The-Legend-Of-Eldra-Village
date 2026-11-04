@@ -29,7 +29,8 @@ public class RajaGoblinBoss : MonoBehaviour
 
     void Start()
     {
-        player = GameObject.FindWithTag("Player").transform;
+        var p = GameObject.FindWithTag("Player") ?? GameObject.Find("Player");
+        if (p) player = p.transform;
         agent.stoppingDistance = meleeRange - 0.5f;
         hp.OnChanged += OnHealth;
         hp.OnDied += OnDied;
@@ -97,7 +98,7 @@ public class RajaGoblinBoss : MonoBehaviour
         dead = true;
         agent.enabled = false;
         if (anim) anim.SetTrigger("Die");
-        GameManager.Instance.BossDefeated = true;
+        if (GameManager.Instance) GameManager.Instance.BossDefeated = true;
         QuestManager.Instance?.Report(QuestObjective.Type.Kill, "raja_goblin");
         Destroy(gameObject, 6f);
     }

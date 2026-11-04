@@ -14,7 +14,7 @@ public class PlayerInteractor : MonoBehaviour
 
     void Update()
     {
-        if (player.inputLocked) { SetFocus(null); return; }
+        if (player != null && player.inputLocked) { SetFocus(null); return; }
 
         Interactable best = null;
         float bestDist = float.MaxValue;

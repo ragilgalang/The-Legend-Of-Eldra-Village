@@ -11,8 +11,15 @@ public class NightSpawner : MonoBehaviour
     readonly System.Collections.Generic.List<GameObject> alive = new();
     Coroutine routine;
 
-    void OnEnable()  => DayNightCycle.Instance.OnPhaseChanged += OnPhase;
-    void OnDisable() => DayNightCycle.Instance.OnPhaseChanged -= OnPhase;
+    void OnEnable()
+    {
+        if (DayNightCycle.Instance) DayNightCycle.Instance.OnPhaseChanged += OnPhase;
+    }
+
+    void OnDisable()
+    {
+        if (DayNightCycle.Instance) DayNightCycle.Instance.OnPhaseChanged -= OnPhase;
+    }
 
     void OnPhase(TimePhase p)
     {
@@ -25,12 +32,16 @@ public class NightSpawner : MonoBehaviour
         int wave = 0;
         while (true)
         {
-            int count = baseCount + DayNightCycle.Instance.DayCount * 2 + wave;
+            if (forestSpawnPoints == null || forestSpawnPoints.Length == 0 ||
+                enemyPrefabs == null || enemyPrefabs.Length == 0) yield break;
+
+            int dayCount = DayNightCycle.Instance ? DayNightCycle.Instance.DayCount : 1;
+            int count = baseCount + dayCount * 2 + wave;
             for (int i = 0; i < count; i++)
             {
                 var sp = forestSpawnPoints[Random.Range(0, forestSpawnPoints.Length)];
                 var prefab = enemyPrefabs[Random.Range(0, enemyPrefabs.Length)];
-                alive.Add(Instantiate(prefab, sp.position, sp.rotation));
+                if (sp && prefab) alive.Add(Instantiate(prefab, sp.position, sp.rotation));
                 yield return new WaitForSeconds(0.6f);
             }
             wave++;

@@ -8,7 +8,7 @@ public class InventoryHUD : MonoBehaviour
 
     void Start()
     {
-        Inventory.Instance.OnChanged += Refresh;
+        if (Inventory.Instance) Inventory.Instance.OnChanged += Refresh;
         Refresh();
     }
 
@@ -19,6 +19,7 @@ public class InventoryHUD : MonoBehaviour
 
     void Refresh()
     {
+        if (!text || !Inventory.Instance) return;
         var sb = new StringBuilder("Tas\n");
         foreach (var kv in Inventory.Instance.Snapshot())
             sb.AppendLine($"{kv.Key}: {kv.Value}");

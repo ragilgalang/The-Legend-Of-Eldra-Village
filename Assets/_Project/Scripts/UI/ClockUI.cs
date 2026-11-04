@@ -11,6 +11,8 @@ public class ClockUI : MonoBehaviour
     void Update()
     {
         var c = DayNightCycle.Instance;
+        if (!c || !timeText) return;
+
         int h = Mathf.FloorToInt(c.Hour);
         int m = Mathf.FloorToInt((c.Hour - h) * 60f);
         timeText.text = $"Hari {c.DayCount}  {h:00}:{m:00}  ({phaseNames[(int)c.Phase]})";

@@ -8,9 +8,24 @@ public class HealthBar : MonoBehaviour
 
     void Start()
     {
+        if (!target)
+        {
+            var p = GameObject.FindWithTag("Player") ?? GameObject.Find("Player");
+            if (p) target = p.GetComponent<Health>();
+        }
+        if (!slider) slider = GetComponent<Slider>();
+        if (!slider || !target) return;
+
         slider.maxValue = target.max;
         slider.value = target.Current;
-        target.OnChanged += (cur, max) => { slider.maxValue = max; slider.value = cur; };
+        target.OnChanged += (cur, max) =>
+        {
+            if (slider)
+            {
+                slider.maxValue = max;
+                slider.value = cur;
+            }
+        };
     }
 }
 

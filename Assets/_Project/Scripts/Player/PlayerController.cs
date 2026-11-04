@@ -29,13 +29,13 @@ public class PlayerController : MonoBehaviour
         }
 
         // Arah gerak berdasarkan yaw pandangan, bukan transform kamera
-        float yaw = CameraRig.Instance.AimYaw;
+        float yaw = (CameraRig.Instance != null) ? CameraRig.Instance.AimYaw : transform.eulerAngles.y;
         Quaternion yawRot = Quaternion.Euler(0, yaw, 0);
         Vector3 f = yawRot * Vector3.forward;
         Vector3 r = yawRot * Vector3.right;
         Vector3 dir = Vector3.ClampMagnitude(f * move.y + r * move.x, 1f);
 
-        if (CameraRig.Instance.IsFirstPerson)
+        if (CameraRig.Instance != null && CameraRig.Instance.IsFirstPerson)
         {
             // Orang pertama: badan selalu searah pandangan mouse
             transform.rotation = yawRot;

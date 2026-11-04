@@ -8,8 +8,11 @@ public class QuestHUD : MonoBehaviour
 
     void Start()
     {
-        QuestManager.Instance.OnProgress += Refresh;
-        QuestManager.Instance.OnQuestCompleted += _ => Refresh();
+        if (QuestManager.Instance)
+        {
+            QuestManager.Instance.OnProgress += Refresh;
+            QuestManager.Instance.OnQuestCompleted += _ => Refresh();
+        }
         Refresh();
     }
 
@@ -20,9 +23,14 @@ public class QuestHUD : MonoBehaviour
 
     void Refresh()
     {
-        var q = QuestManager.Instance.Current;
-        if (q == null) { text.text = ""; return; }
+        if (!text) return;
+        if (!QuestManager.Instance || QuestManager.Instance.Current == null)
+        {
+            text.text = "";
+            return;
+        }
 
+        var q = QuestManager.Instance.Current;
         var sb = new StringBuilder(q.title + "\n");
         foreach (var o in q.objectives)
             sb.AppendLine($"- {o.targetId}: {o.current}/{o.requiredAmount}");

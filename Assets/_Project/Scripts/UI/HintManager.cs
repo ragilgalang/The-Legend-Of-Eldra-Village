@@ -13,32 +13,40 @@ public class HintManager : MonoBehaviour
     readonly HashSet<string> shown = new();
     Coroutine routine;
 
-    void Awake() { Instance = this; hintText.gameObject.SetActive(false); }
+    void Awake()
+    {
+        Instance = this;
+        if (hintText) hintText.gameObject.SetActive(false);
+    }
 
     void Start()
     {
         Show("move", "WASD untuk bergerak, Shift untuk berlari, V untuk mengganti kamera.");
-        DayNightCycle.Instance.OnPhaseChanged += p =>
+        if (DayNightCycle.Instance)
         {
-            if (p == TimePhase.Dusk)  Show("dusk",  "Senja tiba. Kembali ke desa dan siapkan pertahanan!");
-            if (p == TimePhase.Night) Show("night", "Malam hari: goblin dan serigala turun. Klik kiri untuk menyerang.");
-            if (p == TimePhase.Dawn)  Show("dawn",  "Fajar. Gunakan siang untuk membangun (B) dan menyelesaikan quest.");
-        };
+            DayNightCycle.Instance.OnPhaseChanged += p =>
+            {
+                if (p == TimePhase.Dusk)  Show("dusk",  "Senja tiba. Kembali ke desa dan siapkan pertahanan!");
+                if (p == TimePhase.Night) Show("night", "Malam hari: goblin dan serigala turun. Klik kiri untuk menyerang.");
+                if (p == TimePhase.Dawn)  Show("dawn",  "Fajar. Gunakan siang untuk membangun (B) dan menyelesaikan quest.");
+            };
+        }
     }
 
     public void Show(string id, string message)
     {
-        if (!shown.Add(id)) return;      // tiap petunjuk hanya sekali
+        if (!hintText || !shown.Add(id)) return;      // tiap petunjuk hanya sekali
         if (routine != null) StopCoroutine(routine);
         routine = StartCoroutine(Do(message));
     }
 
     IEnumerator Do(string msg)
     {
+        if (!hintText) yield break;
         hintText.text = msg;
         hintText.gameObject.SetActive(true);
         yield return new WaitForSeconds(showTime);
-        hintText.gameObject.SetActive(false);
+        if (hintText) hintText.gameObject.SetActive(false);
     }
 }
 

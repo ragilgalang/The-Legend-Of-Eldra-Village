@@ -27,7 +27,7 @@ public class EnemyAI : MonoBehaviour
     {
         homePoint = transform.position;                 // titik spawn di hutan
         agent.stoppingDistance = attackRange - 0.4f;
-        DayNightCycle.Instance.OnPhaseChanged += OnPhase;
+        if (DayNightCycle.Instance) DayNightCycle.Instance.OnPhaseChanged += OnPhase;
     }
 
     void OnDestroy()

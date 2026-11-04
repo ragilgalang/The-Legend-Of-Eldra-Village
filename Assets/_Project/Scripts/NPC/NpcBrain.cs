@@ -15,8 +15,11 @@ public class NpcBrain : MonoBehaviour
 
     void Start()
     {
-        DayNightCycle.Instance.OnPhaseChanged += HandlePhase;
-        HandlePhase(DayNightCycle.Instance.Phase);
+        if (DayNightCycle.Instance)
+        {
+            DayNightCycle.Instance.OnPhaseChanged += HandlePhase;
+            HandlePhase(DayNightCycle.Instance.Phase);
+        }
     }
 
     void OnDestroy()
@@ -31,12 +34,12 @@ public class NpcBrain : MonoBehaviour
             case TimePhase.Day:
             case TimePhase.Dawn:
                 SetHidden(false);
-                agent.Warp(homeDoor.position);
-                agent.SetDestination(workSpot.position);
+                if (homeDoor) agent.Warp(homeDoor.position);
+                if (workSpot) agent.SetDestination(workSpot.position);
                 goingHome = false;
                 break;
             case TimePhase.Dusk:
-                if (agent.enabled) { agent.SetDestination(homeDoor.position); goingHome = true; }
+                if (agent.enabled && homeDoor) { agent.SetDestination(homeDoor.position); goingHome = true; }
                 break;
             case TimePhase.Night:
                 SetHidden(true);
@@ -59,7 +62,7 @@ public class NpcBrain : MonoBehaviour
 
     void SetHidden(bool hidden)
     {
-        visual.SetActive(!hidden);
+        if (visual) visual.SetActive(!hidden);
         agent.enabled = !hidden;
     }
 }

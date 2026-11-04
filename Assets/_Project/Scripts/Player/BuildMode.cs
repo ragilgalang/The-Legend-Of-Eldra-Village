@@ -35,7 +35,7 @@ public class BuildMode : MonoBehaviour
     void Update()
     {
         var kb = Keyboard.current;
-        if (kb == null || player.inputLocked) return;
+        if (kb == null || (player != null && player.inputLocked)) return;
 
         if (kb.bKey.wasPressedThisFrame) SetActive(!Active);
         if (!Active) return;

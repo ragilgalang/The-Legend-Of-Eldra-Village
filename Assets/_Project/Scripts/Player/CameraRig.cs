@@ -49,7 +49,13 @@ public class CameraRig : MonoBehaviour
 
     void Start()
     {
-        yaw = target.eulerAngles.y;
+        if (!target)
+        {
+            var p = GameObject.FindWithTag("Player") ?? GameObject.Find("Player");
+            if (p) target = p.transform;
+        }
+        if (target) yaw = target.eulerAngles.y;
+
         Mode = startMode;
         curHeight = TargetHeight();
         curDistance = TargetDistance();
@@ -69,6 +75,8 @@ public class CameraRig : MonoBehaviour
 
     void LateUpdate()
     {
+        if (!target) return;
+
         // Putar pandangan hanya saat kursor terkunci (tidak saat dialog)
         if (Cursor.lockState == CursorLockMode.Locked && Mouse.current != null)
         {
@@ -131,6 +139,7 @@ public class CameraRig : MonoBehaviour
 
     void UpdateRendererVisibility()
     {
+        if (playerRenderers == null) return;
         bool hide = IsFirstPerson && curDistance < 0.3f;
         var sm = hide ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
                       : UnityEngine.Rendering.ShadowCastingMode.On;
