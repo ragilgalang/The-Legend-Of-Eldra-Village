@@ -29,17 +29,26 @@ public class NpcBrain : MonoBehaviour
 
     void HandlePhase(TimePhase phase)
     {
+        if (!agent) return;
+
         switch (phase)
         {
             case TimePhase.Day:
             case TimePhase.Dawn:
                 SetHidden(false);
-                if (homeDoor) agent.Warp(homeDoor.position);
-                if (workSpot) agent.SetDestination(workSpot.position);
+                if (agent.isOnNavMesh)
+                {
+                    if (homeDoor) agent.Warp(homeDoor.position);
+                    if (workSpot) agent.SetDestination(workSpot.position);
+                }
                 goingHome = false;
                 break;
             case TimePhase.Dusk:
-                if (agent.enabled && homeDoor) { agent.SetDestination(homeDoor.position); goingHome = true; }
+                if (agent.enabled && agent.isOnNavMesh && homeDoor)
+                {
+                    agent.SetDestination(homeDoor.position);
+                    goingHome = true;
+                }
                 break;
             case TimePhase.Night:
                 SetHidden(true);
@@ -49,7 +58,7 @@ public class NpcBrain : MonoBehaviour
 
     void Update()
     {
-        if (!agent.enabled) return;
+        if (!agent || !agent.enabled || !agent.isOnNavMesh) return;
 
         bool arrived = !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.3f;
         if (anim)
@@ -63,6 +72,6 @@ public class NpcBrain : MonoBehaviour
     void SetHidden(bool hidden)
     {
         if (visual) visual.SetActive(!hidden);
-        agent.enabled = !hidden;
+        if (agent && agent.isOnNavMesh) agent.enabled = !hidden;
     }
 }
