@@ -27,15 +27,21 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        gameOverPanel.SetActive(false);
-        pausePanel.SetActive(false);
-        endingPanel.SetActive(false);
+        if (gameOverPanel) gameOverPanel.SetActive(false);
+        if (pausePanel) pausePanel.SetActive(false);
+        if (endingPanel) endingPanel.SetActive(false);
 
-        playerHealth.OnDied += _ => GameOver();
-        QuestManager.Instance.OnQuestCompleted += q =>
+        if (!player) player = FindFirstObjectByType<PlayerController>();
+        if (!playerHealth && player) playerHealth = player.GetComponent<Health>();
+
+        if (playerHealth) playerHealth.OnDied += _ => GameOver();
+        if (QuestManager.Instance)
         {
-            if (q.questId == finalQuestId) StartFinalNight();
-        };
+            QuestManager.Instance.OnQuestCompleted += q =>
+            {
+                if (q.questId == finalQuestId) StartFinalNight();
+            };
+        }
     }
 
     void Update()
@@ -49,7 +55,7 @@ public class GameManager : MonoBehaviour
     {
         paused = value;
         Time.timeScale = paused ? 0f : 1f;
-        pausePanel.SetActive(paused);
+        if (pausePanel) pausePanel.SetActive(paused);
         UnlockCursor(paused);
     }
 
@@ -64,16 +70,16 @@ public class GameManager : MonoBehaviour
     public void TriggerEnding()
     {
         if (MusicManager.Instance != null) MusicManager.Instance.SetBoss(false);
-        player.inputLocked = true;
-        endingPanel.SetActive(true);
+        if (player) player.inputLocked = true;
+        if (endingPanel) endingPanel.SetActive(true);
         UnlockCursor(true);
     }
 
     void GameOver()
     {
         over = true;
-        player.inputLocked = true;
-        gameOverPanel.SetActive(true);
+        if (player) player.inputLocked = true;
+        if (gameOverPanel) gameOverPanel.SetActive(true);
         UnlockCursor(true);
         Time.timeScale = 0f;
     }

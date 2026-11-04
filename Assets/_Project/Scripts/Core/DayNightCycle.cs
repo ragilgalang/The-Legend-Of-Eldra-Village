@@ -37,10 +37,13 @@ public class DayNightCycle : MonoBehaviour
         if (Hour >= 24f) { Hour -= 24f; DayCount++; OnNewDay?.Invoke(DayCount); }
 
         float t = Hour / 24f;
-        sun.transform.rotation = Quaternion.Euler(t * 360f - 90f, 170f, 0);
-        sun.color = sunColor.Evaluate(t);
-        sun.intensity = sunIntensity.Evaluate(t);
-        RenderSettings.fogColor = fogColor.Evaluate(t);
+        if (sun)
+        {
+            sun.transform.rotation = Quaternion.Euler(t * 360f - 90f, 170f, 0);
+            if (sunColor != null) sun.color = sunColor.Evaluate(t);
+            if (sunIntensity != null && sunIntensity.length > 0) sun.intensity = sunIntensity.Evaluate(t);
+        }
+        if (fogColor != null) RenderSettings.fogColor = fogColor.Evaluate(t);
 
         var newPhase = GetPhase(Hour);
         if (newPhase != Phase)
