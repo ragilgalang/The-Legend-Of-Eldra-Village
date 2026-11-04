@@ -72,7 +72,7 @@ public static class SceneSetupTool
 
         // Directional Light (Sun)
         Light sunLight = null;
-        foreach (var l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
+        foreach (var l in Object.FindObjectsByType<Light>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             if (l.type == LightType.Directional) { sunLight = l; break; }
         if (!sunLight)
         {
@@ -140,13 +140,13 @@ public static class SceneSetupTool
         var cc = player.GetComponent<CharacterController>() ?? player.AddComponent<CharacterController>();
         cc.height = 2f; cc.radius = 0.5f; cc.center = Vector3.zero;
 
-        playerCtrl     = player.GetComponent<PlayerController>()   ?? player.AddComponent<PlayerController>();
-        playerHealth   = player.GetComponent<Health>()              ?? player.AddComponent<Health>();
+        playerCtrl       = player.GetComponent<PlayerController>()  ?? player.AddComponent<PlayerController>();
+        playerHealth     = player.GetComponent<Health>()             ?? player.AddComponent<Health>();
         playerHealth.max = 100f;
-        player.GetComponent<PlayerCombat>()    ?? player.AddComponent<PlayerCombat>();
-        playerInteractor = player.GetComponent<PlayerInteractor>()  ?? player.AddComponent<PlayerInteractor>();
-        player.GetComponent<HitFlash>()        ?? player.AddComponent<HitFlash>();
-        player.GetComponent<BuildMode>()       ?? player.AddComponent<BuildMode>();
+        if (!player.GetComponent<PlayerCombat>())    player.AddComponent<PlayerCombat>();
+        playerInteractor = player.GetComponent<PlayerInteractor>()   ?? player.AddComponent<PlayerInteractor>();
+        if (!player.GetComponent<HitFlash>())        player.AddComponent<HitFlash>();
+        if (!player.GetComponent<BuildMode>())       player.AddComponent<BuildMode>();
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -318,7 +318,8 @@ public static class SceneSetupTool
 
             var npcGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             npcGo.name = npcName;
-            npcGo.tag = "NPC";
+            // Coba set tag NPC; skip kalau belum terdaftar di TagManager
+            try { npcGo.tag = "NPC"; } catch { /* tag belum ada, abaikan */ }
             npcGo.transform.SetParent(npcRoot.transform);
             npcGo.transform.position = pos;
             ApplyColor(npcGo, col);
@@ -562,7 +563,7 @@ public static class SceneSetupTool
         }
 
         // EventSystem
-        if (!Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>())
+        if (!Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>())
         {
             var es = new GameObject("EventSystem");
             es.AddComponent<UnityEngine.EventSystems.EventSystem>();
@@ -686,7 +687,7 @@ public static class SceneSetupTool
         dlgTxt.text = "...";
         dlgTxt.fontSize = 18;
         dlgTxt.color = Color.white;
-        dlgTxt.enableWordWrapping = true;
+        dlgTxt.textWrappingMode = TMPro.TextWrappingModes.Normal;
         var dlgRect = dlgTxt.rectTransform;
         dlgRect.anchorMin = new Vector2(0f, 0f);
         dlgRect.anchorMax = new Vector2(1f, 1f);
@@ -697,7 +698,7 @@ public static class SceneSetupTool
         panelGo.SetActive(false);
 
         // Wire ke DialogueManager
-        var dm = Object.FindFirstObjectByType<DialogueManager>();
+        var dm = Object.FindAnyObjectByType<DialogueManager>();
         if (dm)
         {
             var so = new SerializedObject(dm);
@@ -753,7 +754,7 @@ public static class SceneSetupTool
         textComp.fontSize = fontSize;
         textComp.color = color;
         textComp.alignment = align;
-        textComp.enableWordWrapping = true;
+        textComp.textWrappingMode = TMPro.TextWrappingModes.Normal;
 
         var rect = textComp.rectTransform;
         rect.anchorMin = anchorMin;
