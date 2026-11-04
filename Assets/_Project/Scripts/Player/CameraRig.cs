@@ -35,6 +35,7 @@ public class CameraRig : MonoBehaviour
     public CameraMode Mode { get; private set; }
     public bool IsFirstPerson => Mode == CameraMode.FirstPerson;
     public float AimYaw => yaw;                        // arah hadap/gerak pemain
+    public float Sensitivity { get => sensitivity; set => sensitivity = value; }
 
     Camera cam;
     float yaw, pitch = 12f;
@@ -130,17 +131,10 @@ public class CameraRig : MonoBehaviour
 
     void UpdateRendererVisibility()
     {
-        // Model hanya disembunyikan jika kamera benar-benar sudah dekat
         bool hide = IsFirstPerson && curDistance < 0.3f;
-        var mode = hide ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
-                        : UnityEngine.Rendering.ShadowCastingMode.On;
+        var sm = hide ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
+                      : UnityEngine.Rendering.ShadowCastingMode.On;
         foreach (var r in playerRenderers)
-        {
-            if (!r) continue;
-            r.shadowCastingMode = mode;
-            r.forceRenderingOff = hide && mode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
-                                  ? false : false;
-        }
-        // Untuk menyembunyikan penuh tapi tetap bayangan: gunakan ShadowsOnly (sudah cukup).
+            if (r) r.shadowCastingMode = sm;
     }
 }

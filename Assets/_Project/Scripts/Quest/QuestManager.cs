@@ -55,5 +55,7 @@ public class QuestManager : MonoBehaviour
         OnQuestCompleted?.Invoke(done);
         if (done.nextQuest) StartQuest(done.nextQuest);
     }
+
+    public void Refresh() => OnProgress?.Invoke();
 }
 
