@@ -57,6 +57,40 @@ public static class AssetMaterialSetup
         return mat;
     }
 
+    public static Material SetupTreeMaterial()
+    {
+        string matFolder = $"{SlavicArtFolder}/Materials";
+        if (!AssetDatabase.IsValidFolder(matFolder))
+        {
+            if (!AssetDatabase.IsValidFolder(SlavicArtFolder))
+                AssetDatabase.CreateFolder("Assets/_Project/Art", "SlavicWorld");
+            AssetDatabase.CreateFolder(SlavicArtFolder, "Materials");
+        }
+
+        string matPath = $"{matFolder}/M_Slavic_Tree_Lush.mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        if (!mat)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            mat = new Material(shader);
+            AssetDatabase.CreateAsset(mat, matPath);
+        }
+
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{SlavicArtFolder}/Textures/EA03_FREE_Slavica.png");
+        if (tex)
+        {
+            mat.SetTexture("_BaseMap", tex);
+            mat.SetTexture("_MainTex", tex);
+            // Dedaunan alami bersifat matte (smoothness rendah) agar tidak berkilap seperti plastik
+            mat.SetFloat("_Smoothness", 0.02f);
+            mat.SetFloat("_Metallic", 0.0f);
+            mat.SetColor("_BaseColor", new Color(1.02f, 1.08f, 0.95f, 1.0f));
+            EditorUtility.SetDirty(mat);
+        }
+
+        return mat;
+    }
+
     public static void SetupMedievalMaterials()
     {
         string matFolder = $"{MedievalArtFolder}/Materials";
