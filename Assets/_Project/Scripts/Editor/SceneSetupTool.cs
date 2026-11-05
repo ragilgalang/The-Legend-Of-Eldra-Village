@@ -1158,6 +1158,7 @@ public static class SceneSetupTool
         if (existing)
         {
             textComp = existing.GetComponent<TextMeshProUGUI>();
+            if (textComp) textComp.text = defaultText;
             return;
         }
 

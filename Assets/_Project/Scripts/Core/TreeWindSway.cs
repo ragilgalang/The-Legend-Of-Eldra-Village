@@ -109,48 +109,59 @@ public class TreeWindSway : MonoBehaviour
 
     void SetupFallingLeavesParticle()
     {
-        var psGo = new GameObject("FallingLeaves_FX");
-        psGo.transform.SetParent(transform, false);
-        psGo.transform.localPosition = new Vector3(0, 7f, 0);
-
-        var ps = psGo.AddComponent<ParticleSystem>();
-        var main = ps.main;
-        main.loop = true;
-        main.startLifetime = new ParticleSystem.MinMaxCurve(3.5f, 6.0f);
-        main.startSpeed = new ParticleSystem.MinMaxCurve(0.4f, 1.2f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.25f);
-        main.startRotation = new ParticleSystem.MinMaxCurve(0f, 360f * Mathf.Deg2Rad);
-        main.startColor = new ParticleSystem.MinMaxGradient(
-            new Color(0.42f, 0.78f, 0.22f, 0.85f),
-            new Color(0.88f, 0.72f, 0.25f, 0.85f)
-        );
-        main.gravityModifier = 0.08f;
-        main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.maxParticles = 35;
-
-        var emission = ps.emission;
-        emission.rateOverTime = 3.0f;
-
-        var shape = ps.shape;
-        shape.shapeType = ParticleSystemShapeType.Sphere;
-        shape.radius = 4.0f;
-
-        var velocity = ps.velocityOverLifetime;
-        velocity.enabled = true;
-        velocity.x = new ParticleSystem.MinMaxCurve(0.6f, 1.6f);
-        velocity.z = new ParticleSystem.MinMaxCurve(-0.3f, 0.3f);
-
-        var rotOverLife = ps.rotationOverLifetime;
-        rotOverLife.enabled = true;
-        rotOverLife.z = new ParticleSystem.MinMaxCurve(-1.8f, 1.8f);
-
-        var renderer = psGo.GetComponent<ParticleSystemRenderer>();
-        var leafShader = Shader.Find("Universal Render Pipeline/Particles/Unlit") 
-                         ?? Shader.Find("Particles/Standard Unlit") 
-                         ?? Shader.Find("Universal Render Pipeline/Lit");
-        if (leafShader)
+        try
         {
-            renderer.sharedMaterial = new Material(leafShader);
+            var psGo = new GameObject("FallingLeaves_FX");
+            psGo.transform.SetParent(transform, false);
+            psGo.transform.localPosition = new Vector3(0, 7f, 0);
+
+            var ps = psGo.AddComponent<ParticleSystem>();
+            var main = ps.main;
+            main.loop = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(3.5f, 6.0f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.4f, 1.2f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.25f);
+            main.startRotation = new ParticleSystem.MinMaxCurve(0f, 360f * Mathf.Deg2Rad);
+            main.startColor = new ParticleSystem.MinMaxGradient(
+                new Color(0.42f, 0.78f, 0.22f, 0.85f),
+                new Color(0.88f, 0.72f, 0.25f, 0.85f)
+            );
+            main.gravityModifier = 0.08f;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 35;
+
+            var emission = ps.emission;
+            emission.rateOverTime = 3.0f;
+
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = 4.0f;
+
+            var velocity = ps.velocityOverLifetime;
+            velocity.enabled = true;
+            velocity.space = ParticleSystemSimulationSpace.World;
+            velocity.x = new ParticleSystem.MinMaxCurve(0.6f, 1.6f);
+            velocity.y = new ParticleSystem.MinMaxCurve(-0.5f, -0.1f);
+            velocity.z = new ParticleSystem.MinMaxCurve(-0.3f, 0.3f);
+
+            var rotOverLife = ps.rotationOverLifetime;
+            rotOverLife.enabled = true;
+            rotOverLife.separateAxes = false;
+            rotOverLife.z = new ParticleSystem.MinMaxCurve(-1.8f, 1.8f);
+
+            var renderer = psGo.GetComponent<ParticleSystemRenderer>();
+            var leafShader = Shader.Find("Universal Render Pipeline/Particles/Unlit") 
+                             ?? Shader.Find("Particles/Standard Unlit") 
+                             ?? Shader.Find("Universal Render Pipeline/Lit");
+            if (leafShader)
+            {
+                renderer.sharedMaterial = new Material(leafShader);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[TreeWindSway] Particle FX setup skipped: {ex.Message}");
         }
     }
 }
+
