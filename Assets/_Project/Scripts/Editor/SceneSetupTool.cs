@@ -417,6 +417,7 @@ public static class SceneSetupTool
             Object.DestroyImmediate(head.GetComponent<Collider>());
 
             npcGo.AddComponent<NpcBrain>();
+            npcGo.AddComponent<NpcBehaviourTree>();
             var npcDlg = npcGo.AddComponent<NpcDialogue>();
             CreateSimpleDialogue(npcName, greeting, npcDlg);
         }
