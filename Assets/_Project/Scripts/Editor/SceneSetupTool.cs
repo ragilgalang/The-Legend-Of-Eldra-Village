@@ -23,38 +23,42 @@ public static class SceneSetupTool
             return;
         }
 
-        // Pastikan tag "NPC" terdaftar di TagManager
+        // 1. Pastikan tag "NPC" terdaftar di TagManager
         EnsureTagExists("NPC");
 
+        // 2. Setup / Load Materials
+        var slavicMat = AssetMaterialSetup.SetupSlavicMaterial();
+        AssetMaterialSetup.SetupMedievalMaterials();
+
+        // 3. Bangun Scene
         SetupEnvironment();
         SetupPlayer(out GameObject player, out PlayerController playerCtrl,
                     out Health playerHealth, out PlayerInteractor playerInteractor);
         SetupCamera(player);
         SetupManagers(playerCtrl, playerHealth);
-        SetupVillage();
+        SetupVillage(slavicMat);
         SetupNPCs();
         SetupEnemySpawners();
-        SetupTowers();
-        SetupWorldObjects();
+        SetupTowers(slavicMat);
+        SetupWorldObjects(slavicMat);
         SetupHUD(playerInteractor, playerHealth);
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         Selection.activeGameObject = player;
 
         EditorUtility.DisplayDialog(
-            "✅ Scene Siap!",
-            "Legenda Desa Eldara berhasil disetup!\n\n" +
-            "Yang dibuat:\n" +
-            "🌏 Terrain + Ground\n" +
-            "🧑 Player (WASD, Shift lari, E interaksi, V ganti kamera)\n" +
-            "🏘️ 5 Rumah desa + pagar\n" +
-            "🧑‍🤝‍🧑 4 NPC (Kepala Desa, Pandai Besi, Petani, Dukun)\n" +
-            "👹 4 Titik spawn musuh (aktif malam hari)\n" +
-            "🏰 6 Slot tower + 3 SpikeTrap\n" +
-            "⚙️ Semua Manager & HUD\n\n" +
-            "Tekan ▶ Play untuk mencoba!\n" +
-            "(Bake NavMesh di Window > AI > Navigation jika NPC tidak jalan)",
-            "Siap!"
+            "✅ Desa Eldara Berhasil Dibangun!",
+            "Legenda Desa Eldara telah diperbarui dengan Aset 3D Nyata!\n\n" +
+            "Yang baru di scene:\n" +
+            "🏡 Rumah desa 3D (Balai Desa, Rumah Pandai Besi, Petani, Dukun, Pos Penjaga)\n" +
+            "🌲 Pohon-pohon 3D realistis di sekeliling desa\n" +
+            "🪵 Pagar kayu 3D mengelilingi perimeter desa\n" +
+            "🏰 Menara pengawas kayu 3D di 6 titik pertahanan\n" +
+            "⛏️ Bongkahan bijih besi, tumpukan balok kayu, dan batu alam 3D\n" +
+            "🛤️ Jalan setapak batu (cobblestone) + gerobak & peti prop\n" +
+            "🌿 Tanah rumput bertekstur + kabut atmosferik (fog)\n\n" +
+            "Tekan ▶ Play untuk menjelajahi desa barumu!",
+            "Ayo Mainkan!"
         );
     }
 
@@ -63,15 +67,42 @@ public static class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
     static void SetupEnvironment()
     {
-        // Ground plane (fallback, tampak di bawah terrain)
+        // Ground plane luas (150 x 150 meter)
         GameObject ground = GameObject.Find("Ground");
         if (!ground)
         {
             ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
             ground.name = "Ground";
             ground.transform.position = Vector3.zero;
-            ground.transform.localScale = new Vector3(10f, 1f, 10f);
         }
+        ground.transform.localScale = new Vector3(15f, 1f, 15f);
+
+        // Pasang Texture Rumput di Ground
+        string grassMatPath = "Assets/_Project/Art/SlavicWorld/Materials/M_Ground_Grass.mat";
+        var grassMat = AssetDatabase.LoadAssetAtPath<Material>(grassMatPath);
+        if (!grassMat)
+        {
+            var grassTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/SlavicWorld/Textures/Grass_Texture.png");
+            if (grassTex)
+            {
+                var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                grassMat = new Material(shader);
+                grassMat.SetTexture("_BaseMap", grassTex);
+                grassMat.SetTextureScale("_BaseMap", new Vector2(30f, 30f));
+                grassMat.SetFloat("_Smoothness", 0.05f);
+                AssetDatabase.CreateAsset(grassMat, grassMatPath);
+            }
+        }
+        if (grassMat)
+        {
+            ground.GetComponent<Renderer>().sharedMaterial = grassMat;
+        }
+
+        // Efek Kabut Atmosferik (Distance Fog)
+        RenderSettings.fog = true;
+        RenderSettings.fogMode = FogMode.ExponentialSquared;
+        RenderSettings.fogDensity = 0.007f;
+        RenderSettings.fogColor = new Color(0.72f, 0.78f, 0.85f);
 
         // Directional Light (Sun)
         Light sunLight = null;
@@ -79,7 +110,6 @@ public static class SceneSetupTool
         if (go_sun) sunLight = go_sun.GetComponent<Light>();
         if (!sunLight)
         {
-            // Cari light manapun yang directional
             foreach (var l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
                 if (l.type == LightType.Directional) { sunLight = l; break; }
         }
@@ -91,7 +121,7 @@ public static class SceneSetupTool
             sunLight.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
         }
 
-        // DayNightCycle manager (di sini karena butuh sunLight referensi langsung)
+        // DayNightCycle manager
         GameObject managers = GetOrCreateManagerRoot();
         var dnc = managers.GetComponent<DayNightCycle>() ?? managers.AddComponent<DayNightCycle>();
         var soDnc = new SerializedObject(dnc);
@@ -141,8 +171,9 @@ public static class SceneSetupTool
             visor.transform.localScale = new Vector3(0.5f, 0.15f, 0.25f);
             Object.DestroyImmediate(visor.GetComponent<Collider>());
             ApplyColor(visor, Color.black);
+            ApplyColor(player, new Color(0.2f, 0.55f, 0.85f)); // Biru petualang
         }
-        // Hapus CapsuleCollider bawaan, ganti CharacterController
+
         var oldCol = player.GetComponent<CapsuleCollider>();
         if (oldCol) Object.DestroyImmediate(oldCol);
 
@@ -208,65 +239,143 @@ public static class SceneSetupTool
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  5. DESA (5 RUMAH + PAGAR)
+    //  5. DESA (RUMAH 3D + PAGAR KAYU + POHON + PROPS)
     // ─────────────────────────────────────────────────────────────────────
-    static void SetupVillage()
+    static void SetupVillage(Material slavicMat)
     {
         GameObject village = GameObject.Find("Village");
-        if (village) return; // sudah ada
+        if (village) Object.DestroyImmediate(village);
 
         village = new GameObject("Village");
 
-        // Posisi 5 rumah (berlabel nama NPC yang tinggal di sana)
-        var houseData = new (Vector3 pos, string name, Color col)[]
+        // 1. Rumah-rumah 3D Nyata
+        var houseData = new (Vector3 pos, Quaternion rot, string name, string fbx, Color fallbackCol)[]
         {
-            (new Vector3(-8f, 0f, 8f),  "House_KepalaDesа",  new Color(0.6f, 0.4f, 0.2f)),
-            (new Vector3( 8f, 0f, 8f),  "House_PandaiBesi",  new Color(0.4f, 0.4f, 0.4f)),
-            (new Vector3(-8f, 0f,-8f),  "House_Petani",      new Color(0.5f, 0.7f, 0.3f)),
-            (new Vector3( 8f, 0f,-8f),  "House_Dukun",       new Color(0.7f, 0.5f, 0.8f)),
-            (new Vector3( 0f, 0f,10f),  "House_Penjaga",     new Color(0.7f, 0.6f, 0.4f)),
+            (new Vector3(-10f, 0f, 10f), Quaternion.Euler(0, 135f, 0), "House_KepalaDesа", "EA03_Village_OutBuilding_PentHouse_01a", new Color(0.6f, 0.4f, 0.2f)),
+            (new Vector3( 10f, 0f, 10f), Quaternion.Euler(0, -135f, 0), "House_PandaiBesi", "EA03_Village_OutBuilding_Shed_01a",     new Color(0.4f, 0.4f, 0.4f)),
+            (new Vector3(-10f, 0f,-10f), Quaternion.Euler(0, 45f, 0),   "House_Petani",     "EA03_Village_AnimalBreeding_Hovel_01a", new Color(0.5f, 0.7f, 0.3f)),
+            (new Vector3( 10f, 0f,-10f), Quaternion.Euler(0, -45f, 0),  "House_Dukun",      "EA03_Village_OutBuilding_Shed_03b",     new Color(0.7f, 0.5f, 0.8f)),
+            (new Vector3(  0f, 0f, 14f), Quaternion.Euler(0, 180f, 0),  "House_Penjaga",    "EA03_Village_OutBuilding_Convenience_01a", new Color(0.7f, 0.6f, 0.4f)),
         };
 
-        foreach (var (pos, hName, col) in houseData)
+        foreach (var (pos, rot, hName, fbx, fallbackCol) in houseData)
         {
-            if (GameObject.Find(hName)) continue;
+            var houseObj = InstantiateArtModel(fbx, pos, rot, Vector3.one, village.transform, slavicMat);
+            if (!houseObj)
+            {
+                // Fallback primitive
+                houseObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                houseObj.name = hName;
+                houseObj.transform.SetParent(village.transform);
+                houseObj.transform.position = pos + new Vector3(0, 1.5f, 0);
+                houseObj.transform.localScale = new Vector3(4f, 3f, 4f);
+                ApplyColor(houseObj, fallbackCol);
 
-            // Badan rumah
-            var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            body.name = hName;
-            body.transform.SetParent(village.transform);
-            body.transform.position = pos + new Vector3(0, 1.5f, 0);
-            body.transform.localScale = new Vector3(4f, 3f, 4f);
-            ApplyColor(body, col);
-
-            // Atap (prisma dari cube miring)
-            var roof = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            roof.name = hName + "_Roof";
-            roof.transform.SetParent(village.transform);
-            roof.transform.position = pos + new Vector3(0, 3.5f, 0);
-            roof.transform.localScale = new Vector3(4.5f, 1.5f, 4.5f);
-            roof.transform.localRotation = Quaternion.Euler(0, 45f, 0);
-            ApplyColor(roof, new Color(0.5f, 0.2f, 0.1f));
-            Object.DestroyImmediate(roof.GetComponent<Collider>());
+                var roof = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                roof.name = hName + "_Roof";
+                roof.transform.SetParent(village.transform);
+                roof.transform.position = pos + new Vector3(0, 3.5f, 0);
+                roof.transform.localScale = new Vector3(4.5f, 1.5f, 4.5f);
+                roof.transform.localRotation = Quaternion.Euler(0, 45f, 0);
+                ApplyColor(roof, new Color(0.5f, 0.2f, 0.1f));
+                Object.DestroyImmediate(roof.GetComponent<Collider>());
+            }
+            else
+            {
+                houseObj.name = hName;
+            }
         }
 
-        // Pagar keliling desa (empat sisi, cube panjang tipis)
-        BuildFence(village.transform, new Vector3( 0f, 0.75f, 15f), new Vector3(30f, 1.5f, 0.4f), "Fence_N");
-        BuildFence(village.transform, new Vector3( 0f, 0.75f,-15f), new Vector3(30f, 1.5f, 0.4f), "Fence_S");
-        BuildFence(village.transform, new Vector3( 15f,0.75f,  0f), new Vector3(0.4f,1.5f, 30f), "Fence_E");
-        BuildFence(village.transform, new Vector3(-15f,0.75f,  0f), new Vector3(0.4f,1.5f, 30f), "Fence_W");
+        // 2. Pagar Keliling Desa (3D Wooden Fences)
+        BuildVillageFences(village.transform, slavicMat);
 
-        // Pohon dekoratif
-        PlaceTree(village.transform, new Vector3( 5f, 0f, 2f));
-        PlaceTree(village.transform, new Vector3(-5f, 0f, 2f));
-        PlaceTree(village.transform, new Vector3( 5f, 0f,-5f));
-        PlaceTree(village.transform, new Vector3(-5f, 0f,-5f));
-        PlaceTree(village.transform, new Vector3( 0f, 0f,-12f));
+        // 3. Pohon-pohon 3D Nyata
+        PlaceVillageTrees(village.transform, slavicMat);
+
+        // 4. Props Dekoratif Desa (Jalan setapak batu, gerobak, peti)
+        PlaceVillageProps(village.transform, slavicMat);
+    }
+
+    static void BuildVillageFences(Transform parent, Material slavicMat)
+    {
+        string fenceFbx = "EA03_Village_Fence_01a";
+        bool hasModel = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/_Project/Art/SlavicWorld/Models/{fenceFbx}.fbx") != null;
+
+        if (hasModel)
+        {
+            // Sisi Utara (Z = 16) dengan celah pintu gerbang tengah
+            for (float x = -15f; x <= 15f; x += 3.2f)
+            {
+                if (Mathf.Abs(x) < 2.5f) continue;
+                InstantiateArtModel(fenceFbx, new Vector3(x, 0, 16f), Quaternion.identity, Vector3.one, parent, slavicMat);
+            }
+            // Sisi Selatan (Z = -16) dengan celah gerbang tengah
+            for (float x = -15f; x <= 15f; x += 3.2f)
+            {
+                if (Mathf.Abs(x) < 2.5f) continue;
+                InstantiateArtModel(fenceFbx, new Vector3(x, 0, -16f), Quaternion.Euler(0, 180f, 0), Vector3.one, parent, slavicMat);
+            }
+            // Sisi Timur (X = 16)
+            for (float z = -15f; z <= 15f; z += 3.2f)
+            {
+                InstantiateArtModel(fenceFbx, new Vector3(16f, 0, z), Quaternion.Euler(0, 90f, 0), Vector3.one, parent, slavicMat);
+            }
+            // Sisi Barat (X = -16)
+            for (float z = -15f; z <= 15f; z += 3.2f)
+            {
+                InstantiateArtModel(fenceFbx, new Vector3(-16f, 0, z), Quaternion.Euler(0, -90f, 0), Vector3.one, parent, slavicMat);
+            }
+        }
+        else
+        {
+            // Fallback primitive
+            BuildFence(parent, new Vector3( 0f, 0.75f, 16f), new Vector3(32f, 1.5f, 0.4f), "Fence_N");
+            BuildFence(parent, new Vector3( 0f, 0.75f,-16f), new Vector3(32f, 1.5f, 0.4f), "Fence_S");
+            BuildFence(parent, new Vector3( 16f,0.75f,  0f), new Vector3(0.4f,1.5f, 32f), "Fence_E");
+            BuildFence(parent, new Vector3(-16f,0.75f,  0f), new Vector3(0.4f,1.5f, 32f), "Fence_W");
+        }
+    }
+
+    static void PlaceVillageTrees(Transform parent, Material slavicMat)
+    {
+        var treeData = new (Vector3 pos, string fbx)[]
+        {
+            (new Vector3( 6f, 0f,  3f), "EA03_Nature_Tree_01b"),
+            (new Vector3(-6f, 0f,  3f), "EA03_Nature_Tree_02b"),
+            (new Vector3( 6f, 0f, -4f), "EA03_Nature_Tree_03b"),
+            (new Vector3(-6f, 0f, -4f), "EA03_Nature_Tree_05a"),
+            (new Vector3( 0f, 0f,-11f), "EA03_Nature_Tree_06b"),
+            (new Vector3(-13f, 0f,  3f), "EA03_Nature_Tree_01b"),
+            (new Vector3( 13f, 0f,  3f), "EA03_Nature_Tree_02b"),
+            (new Vector3(-4f, 0f, 13f), "EA03_Nature_Tree_03b"),
+            (new Vector3( 4f, 0f, 13f), "EA03_Nature_Tree_05a"),
+            (new Vector3(-13f, 0f,-13f), "EA03_Nature_Tree_06b"),
+            (new Vector3( 13f, 0f,-13f), "EA03_Nature_Tree_01b"),
+        };
+
+        foreach (var (pos, fbx) in treeData)
+        {
+            var tree = InstantiateArtModel(fbx, pos, Quaternion.Euler(0, Random.Range(0, 360f), 0), Vector3.one, parent, slavicMat);
+            if (!tree)
+            {
+                PlaceTreeFallback(parent, pos);
+            }
+        }
+    }
+
+    static void PlaceVillageProps(Transform parent, Material slavicMat)
+    {
+        // Jalan setapak batu (Cobblestone path)
+        InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(0, 0.02f, 0), Quaternion.identity, new Vector3(1.5f, 1f, 1.5f), parent, slavicMat);
+
+        // Gerobak & Peti Medieval
+        InstantiateArtModel("Prop_Wagon", new Vector3(4f, 0f, 2f), Quaternion.Euler(0, 35f, 0), Vector3.one, parent);
+        InstantiateArtModel("Prop_Crate", new Vector3(5.5f, 0f, 2.8f), Quaternion.Euler(0, 15f, 0), Vector3.one, parent);
+        InstantiateArtModel("Prop_Crate", new Vector3(5.5f, 0.8f, 2.8f), Quaternion.Euler(0, 45f, 0), Vector3.one * 0.8f, parent);
     }
 
     static void BuildFence(Transform parent, Vector3 pos, Vector3 scale, string fName)
     {
-        if (GameObject.Find(fName)) return;
         var fence = GameObject.CreatePrimitive(PrimitiveType.Cube);
         fence.name = fName;
         fence.transform.SetParent(parent);
@@ -275,7 +384,7 @@ public static class SceneSetupTool
         ApplyColor(fence, new Color(0.4f, 0.25f, 0.1f));
     }
 
-    static void PlaceTree(Transform parent, Vector3 pos)
+    static void PlaceTreeFallback(Transform parent, Vector3 pos)
     {
         var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         trunk.name = "Tree_Trunk";
@@ -300,31 +409,30 @@ public static class SceneSetupTool
     static void SetupNPCs()
     {
         GameObject npcRoot = GameObject.Find("--- NPCs ---");
-        if (!npcRoot) npcRoot = new GameObject("--- NPCs ---");
+        if (npcRoot) Object.DestroyImmediate(npcRoot);
+        npcRoot = new GameObject("--- NPCs ---");
 
         var npcData = new (string npcName, Vector3 pos, Color col, string greeting)[]
         {
-            ("NPC_KepalaDesа",  new Vector3(-8f, 1.05f, 5f),
-             new Color(1f, 0.8f, 0.4f),
-             "Selamat datang, petualang! Desa kami dalam bahaya. Malam ini para goblin akan menyerang!"),
+            ("NPC_KepalaDesа",  new Vector3(-8f, 1.05f, 6f),
+             new Color(1f, 0.8f, 0.3f), // Jubah emas
+             "Selamat datang, petualang! Desa Eldara dalam bahaya. Saat malam tiba, para goblin akan menyerang desa kita!"),
 
-            ("NPC_PandaiBesi",  new Vector3( 8f, 1.05f, 5f),
-             new Color(0.5f, 0.5f, 0.5f),
-             "Kalau kamu punya besi, aku bisa bikin senjata atau bangunan pelindung."),
+            ("NPC_PandaiBesi",  new Vector3( 8f, 1.05f, 6f),
+             new Color(0.6f, 0.3f, 0.2f), // Pakaian tempa kulit
+             "Butuh senjata atau menara pertahanan? Bawakan aku bijih besi dan batu, aku siap membangunnya!"),
 
-            ("NPC_Petani",      new Vector3(-8f, 1.05f,-5f),
-             new Color(0.4f, 0.7f, 0.3f),
-             "Tolong, lahan pertanianku rusak! Butuh kayu untuk memperbaiki pagar."),
+            ("NPC_Petani",      new Vector3(-8f, 1.05f,-6f),
+             new Color(0.3f, 0.65f, 0.25f), // Pakaian hijau petani
+             "Lahan gandumku hancur diserang monster. Kumpulkan balok kayu untuk membantu memperbaiki lumbung!"),
 
-            ("NPC_Dukun",       new Vector3( 8f, 1.05f,-5f),
-             new Color(0.6f, 0.3f, 0.9f),
-             "Altar segel itu... kunci untuk menghentikan kutukan malam. Jangan sentuh sebelum saatnya."),
+            ("NPC_Dukun",       new Vector3( 8f, 1.05f,-6f),
+             new Color(0.55f, 0.25f, 0.85f), // Jubah ungu misterius
+             "Altar Segel kuno di utara menyimpan rahasia kutukan malam ini. Jangan sentuh altar itu sebelum kamu siap menghadapi Raja Goblin!"),
         };
 
         foreach (var (npcName, pos, col, greeting) in npcData)
         {
-            if (GameObject.Find(npcName)) continue;
-
             var npcGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             npcGo.name = npcName;
             npcGo.tag = "NPC";
@@ -332,7 +440,7 @@ public static class SceneSetupTool
             npcGo.transform.position = pos;
             ApplyColor(npcGo, col);
 
-            // Label nama di atas kepala (sphere kecil sebagai penanda)
+            // Label topi / kepala
             var head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             head.name = "Head";
             head.transform.SetParent(npcGo.transform);
@@ -341,16 +449,12 @@ public static class SceneSetupTool
             ApplyColor(head, col * 0.7f);
             Object.DestroyImmediate(head.GetComponent<Collider>());
 
-            // Tambah komponen NPC
             npcGo.AddComponent<NpcBrain>();
             var npcDlg = npcGo.AddComponent<NpcDialogue>();
-
-            // Buat DialogueData sederhana (ScriptableObject) langsung di Assets
             CreateSimpleDialogue(npcName, greeting, npcDlg);
         }
     }
 
-    // Helper buat DialogueData asset sederhana (1 baris dialogue)
     static void CreateSimpleDialogue(string npcName, string text, NpcDialogue npcDlg)
     {
         string folder = "Assets/_Project/Dialogues";
@@ -362,7 +466,6 @@ public static class SceneSetupTool
         if (!dlgData)
         {
             dlgData = ScriptableObject.CreateInstance<DialogueData>();
-            // DialogueData.lines adalah DialogueData.Line[] (bukan string[])
             dlgData.lines = new DialogueData.Line[]
             {
                 new DialogueData.Line { speaker = npcName.Replace("NPC_", ""), text = text }
@@ -388,22 +491,19 @@ public static class SceneSetupTool
 
         var spawnerRoot = new GameObject("--- ENEMY SPAWNERS ---");
 
-        // 4 titik spawn di luar pagar (4 penjuru)
         var spawnPositions = new Vector3[]
         {
-            new Vector3( 0f, 0f, 18f),   // Utara
-            new Vector3( 0f, 0f,-18f),   // Selatan
-            new Vector3( 18f,0f, 0f),    // Timur
-            new Vector3(-18f,0f, 0f),    // Barat
+            new Vector3( 0f, 0f, 22f),   // Utara
+            new Vector3( 0f, 0f,-22f),   // Selatan
+            new Vector3( 22f,0f, 0f),    // Timur
+            new Vector3(-22f,0f, 0f),    // Barat
         };
 
         var spawnerGo = new GameObject("NightSpawner");
         spawnerGo.transform.SetParent(spawnerRoot.transform);
         spawnerGo.transform.position = Vector3.zero;
+        spawnerGo.AddComponent<NightSpawner>();
 
-        var nightSpawner = spawnerGo.AddComponent<NightSpawner>();
-
-        // Buat marker visual untuk tiap titik spawn
         for (int i = 0; i < spawnPositions.Length; i++)
         {
             var marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -415,64 +515,58 @@ public static class SceneSetupTool
             Object.DestroyImmediate(marker.GetComponent<Collider>());
         }
 
-        // Boss Spawn Point (di dekat altar)
         var bossMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         bossMarker.name = "BossSpawnPoint";
         bossMarker.transform.SetParent(spawnerRoot.transform);
-        bossMarker.transform.position = new Vector3(0f, 0f, 20f);
+        bossMarker.transform.position = new Vector3(0f, 0f, 25f);
         bossMarker.transform.localScale = new Vector3(3f, 0.5f, 3f);
         ApplyColor(bossMarker, new Color(0.8f, 0f, 0.8f));
         Object.DestroyImmediate(bossMarker.GetComponent<Collider>());
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  8. TOWER SLOTS & SPIKITRAP
+    //  8. TOWER SLOTS 3D & SPIKETRAP
     // ─────────────────────────────────────────────────────────────────────
-    static void SetupTowers()
+    static void SetupTowers(Material slavicMat)
     {
-        if (GameObject.Find("--- TOWERS ---")) return;
+        GameObject towerRoot = GameObject.Find("--- TOWERS ---");
+        if (towerRoot) Object.DestroyImmediate(towerRoot);
 
-        var towerRoot = new GameObject("--- TOWERS ---");
+        towerRoot = new GameObject("--- TOWERS ---");
 
-        // 6 slot tower di sepanjang pagar (posisi strategis)
+        // 6 Titik Menara Pengawas di penjuru pagar desa
         var towerSlots = new Vector3[]
         {
-            new Vector3(-10f, 0f, 14f),  // Sudut NW
-            new Vector3( 10f, 0f, 14f),  // Sudut NE
-            new Vector3(-14f, 0f,  0f),  // Barat tengah
-            new Vector3( 14f, 0f,  0f),  // Timur tengah
-            new Vector3(-10f, 0f,-14f),  // Sudut SW
-            new Vector3( 10f, 0f,-14f),  // Sudut SE
+            new Vector3(-13f, 0f, 13f),  // NW
+            new Vector3( 13f, 0f, 13f),  // NE
+            new Vector3(-15f, 0f,  0f),  // W
+            new Vector3( 15f, 0f,  0f),  // E
+            new Vector3(-13f, 0f,-13f),  // SW
+            new Vector3( 13f, 0f,-13f),  // SE
         };
 
         for (int i = 0; i < towerSlots.Length; i++)
         {
-            // Fondasi / platform tower
-            var platform = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            platform.name = $"TowerSlot_{i + 1}";
-            platform.transform.SetParent(towerRoot.transform);
-            platform.transform.position = towerSlots[i] + new Vector3(0, 0.1f, 0);
-            platform.transform.localScale = new Vector3(2f, 0.2f, 2f);
-            ApplyColor(platform, new Color(0.6f, 0.6f, 0.5f));
-            Object.DestroyImmediate(platform.GetComponent<Collider>());
-
-            // Tower bangunan di atas platform
-            var tower = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            tower.name = $"Tower_{i + 1}";
-            tower.transform.SetParent(towerRoot.transform);
-            tower.transform.position = towerSlots[i] + new Vector3(0, 1.5f, 0);
-            tower.transform.localScale = new Vector3(1.5f, 3f, 1.5f);
-            ApplyColor(tower, new Color(0.5f, 0.4f, 0.3f));
-
-            tower.AddComponent<Tower>();
+            string slotName = $"TowerSlot_{i + 1}";
+            var towerObj = InstantiateArtModel("EA03_Village_Tover_01a", towerSlots[i], Quaternion.identity, Vector3.one, towerRoot.transform, slavicMat);
+            if (!towerObj)
+            {
+                // Fallback primitive
+                towerObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                towerObj.transform.position = towerSlots[i] + new Vector3(0, 1.5f, 0);
+                towerObj.transform.localScale = new Vector3(1.5f, 3f, 1.5f);
+                ApplyColor(towerObj, new Color(0.5f, 0.4f, 0.3f));
+            }
+            towerObj.name = slotName;
+            if (!towerObj.GetComponent<Tower>()) towerObj.AddComponent<Tower>();
         }
 
-        // 3 SpikeTrap di jalur masuk desa
+        // SpikeTraps di pintu masuk
         var trapPositions = new Vector3[]
         {
-            new Vector3( 0f, 0.05f, 13f),   // Pintu utara
-            new Vector3(-5f, 0.05f,-13f),   // Pintu selatan kiri
-            new Vector3( 5f, 0.05f,-13f),   // Pintu selatan kanan
+            new Vector3( 0f, 0.05f, 15f),
+            new Vector3(-4f, 0.05f,-15f),
+            new Vector3( 4f, 0.05f,-15f),
         };
 
         for (int i = 0; i < trapPositions.Length; i++)
@@ -488,64 +582,75 @@ public static class SceneSetupTool
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  9. WORLD OBJECTS (Resource + Altar)
+    //  9. WORLD OBJECTS 3D (Resource + Altar)
     // ─────────────────────────────────────────────────────────────────────
-    static void SetupWorldObjects()
+    static void SetupWorldObjects(Material slavicMat)
     {
         GameObject itemsRoot = GameObject.Find("--- WORLD OBJECTS ---");
-        if (!itemsRoot) itemsRoot = new GameObject("--- WORLD OBJECTS ---");
+        if (itemsRoot) Object.DestroyImmediate(itemsRoot);
 
-        // Resource nodes
-        PlaceResource(itemsRoot.transform, "Iron_Ore_1", "iron_ore", "Tekan E untuk menambang Bijih Besi",
-                      new Vector3( 4f, 0.5f, 4f), new Color(0.4f, 0.4f, 0.5f));
-        PlaceResource(itemsRoot.transform, "Iron_Ore_2", "iron_ore", "Tekan E untuk menambang Bijih Besi",
-                      new Vector3(-4f, 0.5f, 4f), new Color(0.4f, 0.4f, 0.5f));
-        PlaceResource(itemsRoot.transform, "Wood_Log_1", "wood",     "Tekan E untuk menebang Kayu",
-                      new Vector3( 4f, 0.5f,-4f), new Color(0.5f, 0.3f, 0.1f));
-        PlaceResource(itemsRoot.transform, "Wood_Log_2", "wood",     "Tekan E untuk menebang Kayu",
-                      new Vector3(-4f, 0.5f,-4f), new Color(0.5f, 0.3f, 0.1f));
-        PlaceResource(itemsRoot.transform, "Stone_Rock",  "stone",   "Tekan E untuk memecah Batu",
-                      new Vector3( 0f, 0.5f, 6f), new Color(0.55f, 0.55f, 0.55f));
+        itemsRoot = new GameObject("--- WORLD OBJECTS ---");
 
-        // Altar Segel (di tengah utara desa, di dalam pagar)
-        if (!GameObject.Find("Seal_Altar"))
+        // 1. Bijih Besi 3D (Rock CatHead)
+        PlaceArtResource(itemsRoot.transform, "Iron_Ore_1", "EA03_Environment_Rock_CatHead_01a", "iron_ore",
+            "Tekan E untuk menambang Bijih Besi", new Vector3(5f, 0f, 5f), Quaternion.identity, new Vector3(1.2f, 1.2f, 1.2f), slavicMat, new Color(0.4f, 0.4f, 0.5f));
+        PlaceArtResource(itemsRoot.transform, "Iron_Ore_2", "EA03_Environment_Rock_CatHead_01b", "iron_ore",
+            "Tekan E untuk menambang Bijih Besi", new Vector3(-5f, 0f, 5f), Quaternion.Euler(0, 70f, 0), new Vector3(1.2f, 1.2f, 1.2f), slavicMat, new Color(0.4f, 0.4f, 0.5f));
+
+        // 2. Balok Kayu 3D (CutOut Wood Logs)
+        PlaceArtResource(itemsRoot.transform, "Wood_Log_1", "EA03_Prop_Forester_CutOutTrees_03", "wood",
+            "Tekan E untuk mengambil Kayu", new Vector3(5f, 0f, -5f), Quaternion.identity, Vector3.one, slavicMat, new Color(0.5f, 0.3f, 0.1f));
+        PlaceArtResource(itemsRoot.transform, "Wood_Log_2", "EA03_Prop_Forester_CutOutTrees_03", "wood",
+            "Tekan E untuk mengambil Kayu", new Vector3(-5f, 0f, -5f), Quaternion.Euler(0, 90f, 0), Vector3.one, slavicMat, new Color(0.5f, 0.3f, 0.1f));
+
+        // 3. Batu Alam 3D (Rock Head)
+        PlaceArtResource(itemsRoot.transform, "Stone_Rock", "EA03_Environment_Rock_Head_01a", "stone",
+            "Tekan E untuk memecah Batu", new Vector3(0f, 0f, 7f), Quaternion.identity, Vector3.one, slavicMat, new Color(0.55f, 0.55f, 0.55f));
+
+        // 4. Altar Segel di Utara Desa
+        var altar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        altar.name = "Seal_Altar";
+        altar.transform.SetParent(itemsRoot.transform);
+        altar.transform.position = new Vector3(0f, 0.25f, 12f);
+        altar.transform.localScale = new Vector3(3f, 0.5f, 3f);
+        ApplyColor(altar, new Color(0.6f, 0.5f, 1f));
+        altar.AddComponent<SealAltar>();
+
+        // Pilar-pilar Altar
+        for (int p = 0; p < 4; p++)
         {
-            var altar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            altar.name = "Seal_Altar";
-            altar.transform.SetParent(itemsRoot.transform);
-            altar.transform.position = new Vector3(0f, 0.25f, 12f);
-            altar.transform.localScale = new Vector3(3f, 0.5f, 3f);
-            ApplyColor(altar, new Color(0.6f, 0.5f, 1f));
-            altar.AddComponent<SealAltar>();
-
-            // Pilar-pilar altar
-            for (int p = 0; p < 4; p++)
+            float angle = p * 90f * Mathf.Deg2Rad;
+            Vector3 pillarPos = new Vector3(Mathf.Cos(angle) * 2f, 0f, 12f + Mathf.Sin(angle) * 2f);
+            var pillar = InstantiateArtModel("EA03_Environment_Rock_Head_01c", pillarPos, Quaternion.identity, new Vector3(0.7f, 2f, 0.7f), itemsRoot.transform, slavicMat);
+            if (!pillar)
             {
-                float angle = p * 90f * Mathf.Deg2Rad;
-                var pillar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                pillar.name = $"AltarPillar_{p}";
-                pillar.transform.SetParent(itemsRoot.transform);
-                pillar.transform.position = new Vector3(
-                    Mathf.Cos(angle) * 2f, 1f, 12f + Mathf.Sin(angle) * 2f);
-                pillar.transform.localScale = new Vector3(0.3f, 2f, 0.3f);
-                ApplyColor(pillar, new Color(0.7f, 0.6f, 1f));
-                Object.DestroyImmediate(pillar.GetComponent<Collider>());
+                var fallback = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                fallback.name = $"AltarPillar_{p}";
+                fallback.transform.SetParent(itemsRoot.transform);
+                fallback.transform.position = pillarPos + new Vector3(0, 1f, 0);
+                fallback.transform.localScale = new Vector3(0.3f, 2f, 0.3f);
+                ApplyColor(fallback, new Color(0.7f, 0.6f, 1f));
+                Object.DestroyImmediate(fallback.GetComponent<Collider>());
             }
         }
     }
 
-    static void PlaceResource(Transform parent, string goName, string itemId,
-                              string prompt, Vector3 pos, Color col)
+    static void PlaceArtResource(Transform parent, string goName, string fbxName, string itemId,
+                                 string prompt, Vector3 pos, Quaternion rot, Vector3 scale,
+                                 Material slavicMat, Color fallbackCol)
     {
-        if (GameObject.Find(goName)) return;
-        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        var go = InstantiateArtModel(fbxName, pos, rot, scale, parent, slavicMat);
+        if (!go)
+        {
+            go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.transform.SetParent(parent);
+            go.transform.position = pos + new Vector3(0, 0.5f, 0);
+            go.transform.localScale = scale;
+            ApplyColor(go, fallbackCol);
+        }
         go.name = goName;
-        go.transform.SetParent(parent);
-        go.transform.position = pos;
-        go.transform.localScale = new Vector3(0.8f, 0.8f, 0.8f);
-        ApplyColor(go, col);
 
-        var pickup = go.AddComponent<ResourcePickup>();
+        var pickup = go.GetComponent<ResourcePickup>() ?? go.AddComponent<ResourcePickup>();
         pickup.itemId = itemId;
         pickup.amount = 1;
         pickup.prompt = prompt;
@@ -556,7 +661,6 @@ public static class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
     static void SetupHUD(PlayerInteractor playerInteractor, Health playerHealth)
     {
-        // Canvas
         GameObject canvasGo = GameObject.Find("HUD Canvas");
         if (!canvasGo)
         {
@@ -570,7 +674,6 @@ public static class SceneSetupTool
             canvasGo.AddComponent<GraphicRaycaster>();
         }
 
-        // EventSystem
         if (!Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>())
         {
             var es = new GameObject("EventSystem");
@@ -578,7 +681,7 @@ public static class SceneSetupTool
             es.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
         }
 
-        // ── Clock (atas tengah) ──
+        // Clock (atas tengah)
         MakeHUDText(canvasGo, "ClockText", "Hari 1  07:00  (Siang)",
                     24, Color.white, TextAlignmentOptions.Top,
                     new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
@@ -593,7 +696,7 @@ public static class SceneSetupTool
             so.ApplyModifiedProperties();
         }
 
-        // ── Inventory (kiri tengah) ──
+        // Inventory (kiri tengah)
         MakeHUDText(canvasGo, "InventoryText", "🎒 Tas:\n(Kosong)",
                     16, Color.yellow, TextAlignmentOptions.TopLeft,
                     new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
@@ -607,8 +710,8 @@ public static class SceneSetupTool
             so.ApplyModifiedProperties();
         }
 
-        // ── Quest HUD (kanan atas) ──
-        MakeHUDText(canvasGo, "QuestText", "📜 Quest:\n-",
+        // Quest HUD (kanan atas)
+        MakeHUDText(canvasGo, "QuestText", "📜 Quest:\n- Kumpulkan kayu & bijih besi\n- Bicara dengan Kepala Desa",
                     16, new Color(1f, 0.9f, 0.5f), TextAlignmentOptions.TopRight,
                     new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
                     new Vector2(-20, -20), new Vector2(300, 200),
@@ -621,25 +724,22 @@ public static class SceneSetupTool
             so.ApplyModifiedProperties();
         }
 
-        // ── Health Bar (bawah tengah) ──
+        // Health Bar (bawah tengah)
         MakeHUDText(canvasGo, "HealthText", "❤️ 100 / 100",
                     20, new Color(1f, 0.3f, 0.3f), TextAlignmentOptions.Center,
                     new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                     new Vector2(0, 30), new Vector2(300, 40),
                     out var hpText);
-        // HealthBar menggunakan Slider; buat simple text dulu (HealthBar akan auto-find player)
         if (!canvasGo.GetComponentInChildren<HealthBar>())
         {
             var hbComp = GameObject.Find("HealthText").AddComponent<HealthBar>();
             var so = new SerializedObject(hbComp);
-            // Wire target jika ada field 'target'
             var targetProp = so.FindProperty("target");
-            if (targetProp != null)
-                targetProp.objectReferenceValue = playerHealth;
+            if (targetProp != null) targetProp.objectReferenceValue = playerHealth;
             so.ApplyModifiedProperties();
         }
 
-        // ── Interaction Prompt (tengah layar) ──
+        // Interaction Prompt (tengah layar)
         MakeHUDText(canvasGo, "InteractionPrompt", "[ E ] Tekan untuk interaksi",
                     22, Color.white, TextAlignmentOptions.Center,
                     new Vector2(0.5f, 0.4f), new Vector2(0.5f, 0.4f), new Vector2(0.5f, 0.5f),
@@ -653,7 +753,6 @@ public static class SceneSetupTool
             if (pProp != null) { pProp.objectReferenceValue = promptText; so.ApplyModifiedProperties(); }
         }
 
-        // ── Dialogue Panel (bawah layar) ──
         SetupDialoguePanel(canvasGo);
     }
 
@@ -661,34 +760,31 @@ public static class SceneSetupTool
     {
         if (GameObject.Find("DialoguePanel")) return;
 
-        // Panel background
         var panelGo = new GameObject("DialoguePanel");
         panelGo.transform.SetParent(canvasGo.transform, false);
         var img = panelGo.AddComponent<Image>();
-        img.color = new Color(0f, 0f, 0f, 0.8f);
+        img.color = new Color(0f, 0f, 0f, 0.85f);
         var panelRect = panelGo.GetComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.1f, 0f);
-        panelRect.anchorMax = new Vector2(0.9f, 0f);
-        panelRect.pivot    = new Vector2(0.5f, 0f);
-        panelRect.anchoredPosition = new Vector2(0, 20);
+        panelRect.anchorMin = new Vector2(0.15f, 0f);
+        panelRect.anchorMax = new Vector2(0.85f, 0f);
+        panelRect.pivot     = new Vector2(0.5f, 0f);
+        panelRect.anchoredPosition = new Vector2(0, 25);
         panelRect.sizeDelta = new Vector2(0, 180);
 
-        // Speaker name
         var nameGo = new GameObject("SpeakerName");
         nameGo.transform.SetParent(panelGo.transform, false);
         var nameTxt = nameGo.AddComponent<TextMeshProUGUI>();
         nameTxt.text = "Kepala Desa";
-        nameTxt.fontSize = 20;
+        nameTxt.fontSize = 22;
         nameTxt.fontStyle = FontStyles.Bold;
-        nameTxt.color = Color.yellow;
+        nameTxt.color = new Color(1f, 0.85f, 0.3f);
         var nameRect = nameTxt.rectTransform;
         nameRect.anchorMin = new Vector2(0f, 1f);
         nameRect.anchorMax = new Vector2(1f, 1f);
         nameRect.pivot     = new Vector2(0.5f, 1f);
-        nameRect.anchoredPosition = new Vector2(0, 0);
-        nameRect.sizeDelta = new Vector2(-40, 30);
+        nameRect.anchoredPosition = new Vector2(25, -15);
+        nameRect.sizeDelta = new Vector2(-50, 35);
 
-        // Dialogue text
         var dlgTxtGo = new GameObject("DialogueText");
         dlgTxtGo.transform.SetParent(panelGo.transform, false);
         var dlgTxt = dlgTxtGo.AddComponent<TextMeshProUGUI>();
@@ -700,12 +796,11 @@ public static class SceneSetupTool
         dlgRect.anchorMin = new Vector2(0f, 0f);
         dlgRect.anchorMax = new Vector2(1f, 1f);
         dlgRect.pivot     = new Vector2(0.5f, 0.5f);
-        dlgRect.offsetMin = new Vector2(20, 10);
-        dlgRect.offsetMax = new Vector2(-20, -40);
+        dlgRect.offsetMin = new Vector2(25, 15);
+        dlgRect.offsetMax = new Vector2(-25, -45);
 
         panelGo.SetActive(false);
 
-        // Wire ke DialogueManager
         var dm = Object.FindAnyObjectByType<DialogueManager>();
         if (dm)
         {
@@ -719,8 +814,50 @@ public static class SceneSetupTool
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  HELPERS
+    //  HELPERS (3D MODEL INSTANTIATOR & TAGS)
     // ─────────────────────────────────────────────────────────────────────
+    static GameObject InstantiateArtModel(string fbxName, Vector3 position, Quaternion rotation, Vector3 scale, Transform parent, Material customMat = null)
+    {
+        string path = $"Assets/_Project/Art/SlavicWorld/Models/{fbxName}.fbx";
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (!prefab)
+        {
+            path = $"Assets/_Project/Art/MedievalVillage/Models/{fbxName}.fbx";
+            prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        }
+
+        if (prefab)
+        {
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            instance.transform.SetParent(parent);
+            instance.transform.position = position;
+            instance.transform.rotation = rotation;
+            instance.transform.localScale = scale;
+
+            if (customMat)
+            {
+                foreach (var r in instance.GetComponentsInChildren<Renderer>(true))
+                {
+                    r.sharedMaterial = customMat;
+                }
+            }
+
+            // Pasang MeshCollider agar bisa dipijak & ditabrak
+            foreach (var mf in instance.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (!mf.GetComponent<Collider>())
+                {
+                    var mc = mf.gameObject.AddComponent<MeshCollider>();
+                    mc.sharedMesh = mf.sharedMesh;
+                }
+            }
+
+            return instance;
+        }
+
+        return null;
+    }
+
     static GameObject GetOrCreateManagerRoot()
     {
         var go = GameObject.Find("--- CORE MANAGERS ---");
@@ -738,9 +875,6 @@ public static class SceneSetupTool
         r.sharedMaterial = mat;
     }
 
-    /// <summary>
-    /// Buat TMP Text di Canvas; return referensi TextMeshProUGUI-nya.
-    /// </summary>
     static void MakeHUDText(
         GameObject canvas, string goName, string defaultText,
         float fontSize, Color color, TextAlignmentOptions align,
@@ -772,21 +906,16 @@ public static class SceneSetupTool
         rect.sizeDelta = sizeDelta;
     }
 
-    /// <summary>
-    /// Daftarkan tag baru di TagManager jika belum ada.
-    /// </summary>
     static void EnsureTagExists(string tag)
     {
         var tagManager = new SerializedObject(
             AssetDatabase.LoadMainAssetAtPath("ProjectSettings/TagManager.asset"));
         var tagsProp = tagManager.FindProperty("tags");
 
-        // Cek apakah tag sudah ada
         for (int i = 0; i < tagsProp.arraySize; i++)
             if (tagsProp.GetArrayElementAtIndex(i).stringValue == tag)
-                return; // sudah ada
+                return;
 
-        // Tambahkan tag baru
         tagsProp.InsertArrayElementAtIndex(tagsProp.arraySize);
         tagsProp.GetArrayElementAtIndex(tagsProp.arraySize - 1).stringValue = tag;
         tagManager.ApplyModifiedProperties();
