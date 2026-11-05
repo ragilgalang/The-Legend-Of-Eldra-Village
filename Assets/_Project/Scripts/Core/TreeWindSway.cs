@@ -7,7 +7,8 @@ using UnityEngine;
 /// - Riak dedaunan tajuk berfrekuensi tinggi (fluttering leaves)
 /// - Offset fase spasial acak per pohon (pohon tidak bergoyang serempak seperti robot)
 /// - Efek hembusan angin (wind gusts) berkala
-/// - Partikel guguran dedaunan lembut di bawah pohon desa utama
+/// - Animasi "napas" canopy saat hembusan kuat (scale pulsate)
+/// NOTE: Particle system dihapus untuk menghindari error "Velocity curves must be in same mode"
 /// </summary>
 public class TreeWindSway : MonoBehaviour
 {
@@ -23,7 +24,9 @@ public class TreeWindSway : MonoBehaviour
     [Range(0.2f, 3.0f)]
     public float swaySpeed = 1.1f;
 
-    [Tooltip("Apakah pohon ini memunculkan efek guguran daun lembut?")]
+    // Field ini dipertahankan agar tidak breaking change serialisasi lama,
+    // tapi particle system tidak lagi dibuat (hapus error 999+ velocity curves)
+    [HideInInspector]
     public bool enableFallingLeaves = false;
 
     private Quaternion baseRotation;
@@ -31,6 +34,8 @@ public class TreeWindSway : MonoBehaviour
     private float gustPhase;
     private Transform[] childBranches;
     private Quaternion[] initialChildRotations;
+    private Transform canopyTransform;
+    private Vector3 canopyBaseScale;
 
     void Awake()
     {
@@ -50,15 +55,14 @@ public class TreeWindSway : MonoBehaviour
             {
                 childBranches[i] = transform.GetChild(i);
                 initialChildRotations[i] = childBranches[i].localRotation;
-            }
-        }
-    }
 
-    void Start()
-    {
-        if (enableFallingLeaves)
-        {
-            SetupFallingLeavesParticle();
+                // Cache canopy untuk animasi skala "napas"
+                if (childBranches[i] != null && childBranches[i].name == "Canopy_Foliage")
+                {
+                    canopyTransform = childBranches[i];
+                    canopyBaseScale = canopyTransform.localScale;
+                }
+            }
         }
     }
 
@@ -105,63 +109,13 @@ public class TreeWindSway : MonoBehaviour
                 childBranches[i].localRotation = initialChildRotations[i] * branchSway;
             }
         }
-    }
 
-    void SetupFallingLeavesParticle()
-    {
-        try
+        // 4. Animasi "Napas" Canopy — scale pulsate saat hembusan angin kuat
+        // Efek ini menyimulasikan gerakan massa dedaunan yang membuka-menutup seperti bernapas
+        if (canopyTransform != null)
         {
-            var psGo = new GameObject("FallingLeaves_FX");
-            psGo.transform.SetParent(transform, false);
-            psGo.transform.localPosition = new Vector3(0, 7f, 0);
-
-            var ps = psGo.AddComponent<ParticleSystem>();
-            var main = ps.main;
-            main.loop = true;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(3.5f, 6.0f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0.4f, 1.2f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.25f);
-            main.startRotation = new ParticleSystem.MinMaxCurve(0f, 360f * Mathf.Deg2Rad);
-            main.startColor = new ParticleSystem.MinMaxGradient(
-                new Color(0.42f, 0.78f, 0.22f, 0.85f),
-                new Color(0.88f, 0.72f, 0.25f, 0.85f)
-            );
-            main.gravityModifier = 0.08f;
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.maxParticles = 35;
-
-            var emission = ps.emission;
-            emission.rateOverTime = 3.0f;
-
-            var shape = ps.shape;
-            shape.shapeType = ParticleSystemShapeType.Sphere;
-            shape.radius = 4.0f;
-
-            var velocity = ps.velocityOverLifetime;
-            velocity.enabled = true;
-            velocity.space = ParticleSystemSimulationSpace.World;
-            velocity.x = new ParticleSystem.MinMaxCurve(0.6f, 1.6f);
-            velocity.y = new ParticleSystem.MinMaxCurve(-0.5f, -0.1f);
-            velocity.z = new ParticleSystem.MinMaxCurve(-0.3f, 0.3f);
-
-            var rotOverLife = ps.rotationOverLifetime;
-            rotOverLife.enabled = true;
-            rotOverLife.separateAxes = false;
-            rotOverLife.z = new ParticleSystem.MinMaxCurve(-1.8f, 1.8f);
-
-            var renderer = psGo.GetComponent<ParticleSystemRenderer>();
-            var leafShader = Shader.Find("Universal Render Pipeline/Particles/Unlit") 
-                             ?? Shader.Find("Particles/Standard Unlit") 
-                             ?? Shader.Find("Universal Render Pipeline/Lit");
-            if (leafShader)
-            {
-                renderer.sharedMaterial = new Material(leafShader);
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"[TreeWindSway] Particle FX setup skipped: {ex.Message}");
+            float breathe = 1.0f + Mathf.Sin(time * 1.8f + spatialPhase * 0.7f) * 0.022f * (1f + gust);
+            canopyTransform.localScale = canopyBaseScale * breathe;
         }
     }
 }
-

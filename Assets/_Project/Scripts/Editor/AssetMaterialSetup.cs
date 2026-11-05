@@ -146,11 +146,62 @@ public static class AssetMaterialSetup
 
             mat.SetTexture("_BaseMap", tex);
             mat.SetTexture("_MainTex", tex);
+            mat.SetFloat("_Surface", 0f); // Opaque Cutout
+            mat.SetFloat("_AlphaClip", 1f);
+            mat.SetFloat("_Cutoff", 0.38f);
+            mat.SetFloat("_Cull", 0f); // Render dua sisi (Double-Sided)
+            mat.SetFloat("_DoubleSidedEnable", 1f);
+            mat.EnableKeyword("_DOUBLE_SIDED_ON");
+            mat.SetFloat("_Smoothness", 0.04f); // Matte alami tanpa pantulan plastik
+            mat.SetFloat("_Metallic", 0.0f);
+            mat.enableInstancing = true; // GPU instancing untuk ribuan dedaunan
+            mat.EnableKeyword("_ALPHATEST_ON");
+            mat.SetOverrideTag("RenderType", "TransparentCutout");
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            EditorUtility.SetDirty(mat);
+        }
+
+        return mat;
+    }
+
+    public static Material SetupGrassMaterial()
+    {
+        string matFolder = $"{MedievalArtFolder}/Materials";
+        if (!AssetDatabase.IsValidFolder(matFolder))
+            AssetDatabase.CreateFolder("Assets/_Project/Art/MedievalVillage", "Materials");
+
+        string matPath = $"{matFolder}/M_Foliage_Grass.mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        if (!mat)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            mat = new Material(shader);
+            AssetDatabase.CreateAsset(mat, matPath);
+        }
+
+        string texPath = $"{MedievalArtFolder}/Textures/T_RealisticGrass_Tuft.png";
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+        if (tex)
+        {
+            var importer = AssetImporter.GetAtPath(texPath) as TextureImporter;
+            if (importer && !importer.alphaIsTransparency)
+            {
+                importer.alphaIsTransparency = true;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.SaveAndReimport();
+            }
+
+            mat.SetTexture("_BaseMap", tex);
+            mat.SetTexture("_MainTex", tex);
+            mat.SetFloat("_Surface", 0f);
             mat.SetFloat("_AlphaClip", 1f);
             mat.SetFloat("_Cutoff", 0.35f);
-            mat.SetFloat("_Cull", 0f); // Render dua sisi (Double-Sided)
-            mat.SetFloat("_Smoothness", 0.05f); // Matte alami tanpa pantulan plastik
+            mat.SetFloat("_Cull", 0f); // Double-sided
+            mat.SetFloat("_DoubleSidedEnable", 1f);
+            mat.EnableKeyword("_DOUBLE_SIDED_ON");
+            mat.SetFloat("_Smoothness", 0.04f); // Matte alami tanpa pantulan plastik
             mat.SetFloat("_Metallic", 0.0f);
+            mat.enableInstancing = true; // GPU Instancing untuk FPS maksimal
             mat.EnableKeyword("_ALPHATEST_ON");
             mat.SetOverrideTag("RenderType", "TransparentCutout");
             mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;

@@ -6,10 +6,10 @@ using System.Collections.Generic;
 /// <summary>
 /// Generator Pohon Realistis 3D (SpeedTree-Style Procedural Generator) untuk Desa Eldara.
 /// Menghasilkan pohon dengan:
-/// - Batang kayu bertekstur kulit kayu PBR (bark) dengan akar kokoh di tanah
-/// - Tajuk dedaunan lebat dari kartu daun (leaf cards) bersilang dengan alpha cutout
-/// - Spherical Normals (rahasia pencahayaan halus bervolume tanpa sudut poligonal kasar)
-/// - Animasi hembusan angin dinamis (TreeWindSway)
+/// - Batang kayu bertekstur kulit kayu PBR (bark) dengan akar kokoh di tanah & dahan penyangga
+/// - Tajuk dedaunan lebat dari kartu daun (leaf cards) bersilang tri-axial dengan alpha cutout
+/// - Spherical Normals (pencahayaan bervolume lembut tanpa sudut poligonal kaku)
+/// - Animasi hembusan angin dinamis & canopy breathing (TreeWindSway)
 /// </summary>
 public static class RealisticTreeBuilder
 {
@@ -72,9 +72,9 @@ public static class RealisticTreeBuilder
         Mesh canopyMesh = GenerateCanopyMesh(type);
         canopyFilter.sharedMesh = canopyMesh;
 
-        // ── 3. ANIMASI ANGIN DINAMIS ──
+        // ── 3. ANIMASI ANGIN DINAMIS & CANOPY RIPPLE ──
         var sway = treeRoot.AddComponent<TreeWindSway>();
-        sway.swayIntensity = type == TreeType.Pine ? 1.8f : Random.Range(2.2f, 3.2f);
+        sway.swayIntensity = type == TreeType.Pine ? 1.6f : Random.Range(2.0f, 2.8f);
         sway.swaySpeed = Random.Range(0.95f, 1.25f);
 
         return treeRoot;
@@ -95,9 +95,9 @@ public static class RealisticTreeBuilder
 
         int radialSegments = 10;
         int heightSegments = type == TreeType.Pine ? 8 : 7;
-        float totalHeight = type == TreeType.Pine ? 12f : (type == TreeType.Oak ? 8.5f : 7.0f);
-        float baseRadius = type == TreeType.Oak ? 0.65f : (type == TreeType.Pine ? 0.48f : 0.38f);
-        float topRadius = type == TreeType.Pine ? 0.08f : 0.28f;
+        float totalHeight = type == TreeType.Pine ? 12.5f : (type == TreeType.Oak ? 8.5f : 7.2f);
+        float baseRadius = type == TreeType.Oak ? 0.68f : (type == TreeType.Pine ? 0.48f : 0.38f);
+        float topRadius = type == TreeType.Pine ? 0.06f : 0.28f;
 
         // Buat silinder batang bertingkat dengan akar mekar di bawah
         for (int y = 0; y <= heightSegments; y++)
@@ -142,17 +142,17 @@ public static class RealisticTreeBuilder
             }
         }
 
-        // Jika pohon Oak atau Birch, tambahkan 4 dahan cabang utama yang menopang tajuk
+        // Jika pohon Oak atau Birch, tambahkan dahan cabang utama yang menopang tajuk
         if (type != TreeType.Pine)
         {
             int branchCount = type == TreeType.Oak ? 5 : 4;
-            float branchStartHeight = totalHeight * 0.6f;
+            float branchStartHeight = totalHeight * 0.58f;
 
             for (int b = 0; b < branchCount; b++)
             {
                 float bAngle = (b / (float)branchCount) * Mathf.PI * 2f + (b * 0.4f);
                 Vector3 bDir = new Vector3(Mathf.Cos(bAngle), 0.65f, Mathf.Sin(bAngle)).normalized;
-                Vector3 bStart = new Vector3(0, branchStartHeight + (b * 0.4f), 0);
+                Vector3 bStart = new Vector3(0, branchStartHeight + (b * 0.45f), 0);
                 float bLen = Random.Range(2.2f, 3.4f);
                 Vector3 bEnd = bStart + bDir * bLen;
 
@@ -212,7 +212,7 @@ public static class RealisticTreeBuilder
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  GENERASI TAJUK DAUN (LEAF CARDS & SPHERICAL NORMALS)
+    //  GENERASI TAJUK DAUN (LEAF CLUSTERS & SPHERICAL NORMALS)
     // ─────────────────────────────────────────────────────────────────────
     private static Mesh GenerateCanopyMesh(TreeType type)
     {
@@ -226,48 +226,50 @@ public static class RealisticTreeBuilder
 
         if (type == TreeType.Pine)
         {
-            // Cemara/Pinus: 6 tingkat mahkota berbentuk kerucut
-            int tiers = 6;
+            // Cemara/Pinus: 8 tingkat mahkota kerucut berlapis
+            int tiers = 8;
             for (int t = 0; t < tiers; t++)
             {
                 float prog = t / (float)tiers;
-                float y = Mathf.Lerp(3.5f, 11.5f, prog);
-                float radius = Mathf.Lerp(3.2f, 0.7f, prog);
-                int cardCount = 6 + (int)((1f - prog) * 6);
+                float y = Mathf.Lerp(3.2f, 12.0f, prog);
+                float radius = Mathf.Lerp(3.5f, 0.6f, prog);
+                int cardCount = 7 + (int)((1f - prog) * 7);
 
                 Vector3 tierCenter = new Vector3(0, y, 0);
 
                 for (int c = 0; c < cardCount; c++)
                 {
                     float angle = (c / (float)cardCount) * Mathf.PI * 2f + (t * 0.45f);
-                    Vector3 pos = tierCenter + new Vector3(Mathf.Cos(angle) * radius, Random.Range(-0.2f, 0.2f), Mathf.Sin(angle) * radius);
-                    float cardSize = Mathf.Lerp(2.2f, 1.4f, prog);
+                    Vector3 pos = tierCenter + new Vector3(Mathf.Cos(angle) * radius, Random.Range(-0.15f, 0.15f), Mathf.Sin(angle) * radius);
+                    float cardSize = Mathf.Lerp(2.0f, 1.2f, prog);
 
-                    AddCrossedLeafCard(vertices, normals, uvs, triangles, pos, tierCenter, cardSize, angle * Mathf.Rad2Deg);
+                    // Kartu pinus dicondongkan melandai ke bawah (dip angle)
+                    AddPineFoliageCard(vertices, normals, uvs, triangles, pos, tierCenter, cardSize, angle * Mathf.Rad2Deg);
                 }
             }
         }
         else
         {
-            // Oak / Birch: Tajuk bulat awan lebat (cloud dome) dengan 70-110 kartu daun
-            int clusterCount = type == TreeType.Oak ? 85 : 55;
-            float canopyCenterY = type == TreeType.Oak ? 6.5f : 5.5f;
+            // Oak / Birch: Tajuk awan bulat rimbun (volumetric cloud dome)
+            // Menggunakan 130-160 kluster kartu daun berukuran ideal yang saling tumpang tindih
+            int clusterCount = type == TreeType.Oak ? 145 : 95;
+            float canopyCenterY = type == TreeType.Oak ? 6.5f : 5.6f;
             Vector3 canopyCenter = new Vector3(0, canopyCenterY, 0);
-            float domeRadiusX = type == TreeType.Oak ? 3.8f : 2.5f;
-            float domeRadiusY = type == TreeType.Oak ? 2.8f : 2.2f;
+            float domeRadiusX = type == TreeType.Oak ? 3.9f : 2.6f;
+            float domeRadiusY = type == TreeType.Oak ? 2.9f : 2.4f;
 
             for (int i = 0; i < clusterCount; i++)
             {
                 // Distribusi titik dalam volume bola/kubah
                 Vector3 randDir = Random.insideUnitSphere;
-                // Buat bagian bawah agak datar dan bagian atas cembung
-                randDir.y = Mathf.Abs(randDir.y) * 1.1f - 0.2f;
+                randDir.y = Mathf.Abs(randDir.y) * 1.15f - 0.15f;
 
                 Vector3 pos = canopyCenter + new Vector3(randDir.x * domeRadiusX, randDir.y * domeRadiusY, randDir.z * domeRadiusX);
-                float cardSize = type == TreeType.Oak ? Random.Range(2.0f, 2.7f) : Random.Range(1.6f, 2.2f);
+                float cardSize = type == TreeType.Oak ? Random.Range(1.4f, 1.95f) : Random.Range(1.15f, 1.6f);
                 float rotDeg = Random.Range(0f, 360f);
 
-                AddCrossedLeafCard(vertices, normals, uvs, triangles, pos, canopyCenter, cardSize, rotDeg);
+                // Tambahkan kluster 3 kartu bersilang (tri-axial)
+                AddTriAxialLeafCluster(vertices, normals, uvs, triangles, pos, canopyCenter, cardSize, rotDeg);
             }
         }
 
@@ -280,23 +282,30 @@ public static class RealisticTreeBuilder
     }
 
     /// <summary>
-    /// Menambahkan 2 atau 3 kartu daun bersilang (cross-quads) pada satu titik kluster.
-    /// Menggunakan SPHERICAL NORMALS yang menghadap ke luar dari pusat tajuk pohon
-    /// agar pencahayaan matahari memancar lembut dan bervolume seperti daun asli.
+    /// Menambahkan kluster 3 kartu daun (Tri-Axial Leaf Cluster) pada satu titik:
+    /// - 2 kartu vertikal bersilang 60 derajat
+    /// - 1 kartu horizontal/miring kubah (dome cap) untuk ketebalan dari atas & bawah
+    /// Menggunakan SPHERICAL NORMALS menghadap ke luar pusat tajuk agar pencahayaan bervolume lembut.
     /// </summary>
-    private static void AddCrossedLeafCard(
+    private static void AddTriAxialLeafCluster(
         List<Vector3> verts, List<Vector3> norms, List<Vector2> uvs, List<int> tris,
         Vector3 clusterCenter, Vector3 mainCanopyCenter, float size, float baseRotation)
     {
-        // Tiap kluster terdiri dari 2 quad saling silang (salib X) + 1 quad miring
         float half = size * 0.5f;
 
-        float[] angles = { baseRotation, baseRotation + 90f };
+        // 3 quad dengan orientasi ruang 3D berbeda:
+        // 1: Vertikal di sudut A
+        // 2: Vertikal bersilang di sudut A + 60
+        // 3: Miring horizontal / kubah 35 derajat
+        Quaternion[] rotations = {
+            Quaternion.Euler(Random.Range(-12f, 12f), baseRotation, Random.Range(-10f, 10f)),
+            Quaternion.Euler(Random.Range(-12f, 12f), baseRotation + 60f, Random.Range(-10f, 10f)),
+            Quaternion.Euler(35f + Random.Range(-10f, 10f), baseRotation + 120f, Random.Range(-10f, 10f))
+        };
 
-        foreach (float deg in angles)
+        foreach (var rot in rotations)
         {
             int baseIdx = verts.Count;
-            Quaternion rot = Quaternion.Euler(Random.Range(-15f, 15f), deg, Random.Range(-10f, 10f));
 
             Vector3 right = rot * Vector3.right * half;
             Vector3 up    = rot * Vector3.up * half;
@@ -311,9 +320,7 @@ public static class RealisticTreeBuilder
             verts.Add(v2);
             verts.Add(v3);
 
-            // RAHASIA REALISME: SPHERICAL NORMALS
-            // Normal dihitung dari arah pusat tajuk pohon ke posisi vertex,
-            // sehingga matahari menyinari daun seperti volume bola yang lembut!
+            // SPHERICAL NORMALS: Menghadap ke luar dari pusat tajuk pohon
             norms.Add((v0 - mainCanopyCenter).normalized);
             norms.Add((v1 - mainCanopyCenter).normalized);
             norms.Add((v2 - mainCanopyCenter).normalized);
@@ -325,22 +332,60 @@ public static class RealisticTreeBuilder
             uvs.Add(new Vector2(0f, 1f));
 
             // Segitiga depan
-            tris.Add(baseIdx + 0);
-            tris.Add(baseIdx + 2);
-            tris.Add(baseIdx + 1);
+            tris.Add(baseIdx + 0); tris.Add(baseIdx + 2); tris.Add(baseIdx + 1);
+            tris.Add(baseIdx + 0); tris.Add(baseIdx + 3); tris.Add(baseIdx + 2);
 
-            tris.Add(baseIdx + 0);
-            tris.Add(baseIdx + 3);
-            tris.Add(baseIdx + 2);
+            // Segitiga belakang (two-sided rendering)
+            tris.Add(baseIdx + 0); tris.Add(baseIdx + 1); tris.Add(baseIdx + 2);
+            tris.Add(baseIdx + 0); tris.Add(baseIdx + 2); tris.Add(baseIdx + 3);
+        }
+    }
 
-            // Segitiga belakang (agar tampak dari kedua sisi)
-            tris.Add(baseIdx + 0);
-            tris.Add(baseIdx + 1);
-            tris.Add(baseIdx + 2);
+    /// <summary>
+    /// Menambahkan kartu dedaunan pinus dengan sudut kemiringan dahan ke bawah (dip angle)
+    /// </summary>
+    private static void AddPineFoliageCard(
+        List<Vector3> verts, List<Vector3> norms, List<Vector2> uvs, List<int> tris,
+        Vector3 clusterCenter, Vector3 tierCenter, float size, float baseAngle)
+    {
+        float half = size * 0.5f;
 
-            tris.Add(baseIdx + 0);
-            tris.Add(baseIdx + 2);
-            tris.Add(baseIdx + 3);
+        // 2 kartu bersilang melandai ke arah luar dahan
+        float[] angOffsets = { 0f, 50f };
+        foreach (float offset in angOffsets)
+        {
+            int baseIdx = verts.Count;
+            // Kemiringan 22 derajat ke bawah mengikuti lengkung dahan pinus alami
+            Quaternion rot = Quaternion.Euler(22f, baseAngle + offset, Random.Range(-8f, 8f));
+
+            Vector3 right = rot * Vector3.right * half;
+            Vector3 up    = rot * Vector3.up * half;
+
+            Vector3 v0 = clusterCenter - right - up;
+            Vector3 v1 = clusterCenter + right - up;
+            Vector3 v2 = clusterCenter + right + up;
+            Vector3 v3 = clusterCenter - right + up;
+
+            verts.Add(v0);
+            verts.Add(v1);
+            verts.Add(v2);
+            verts.Add(v3);
+
+            norms.Add((v0 - tierCenter).normalized);
+            norms.Add((v1 - tierCenter).normalized);
+            norms.Add((v2 - tierCenter).normalized);
+            norms.Add((v3 - tierCenter).normalized);
+
+            uvs.Add(new Vector2(0f, 0f));
+            uvs.Add(new Vector2(1f, 0f));
+            uvs.Add(new Vector2(1f, 1f));
+            uvs.Add(new Vector2(0f, 1f));
+
+            tris.Add(baseIdx + 0); tris.Add(baseIdx + 2); tris.Add(baseIdx + 1);
+            tris.Add(baseIdx + 0); tris.Add(baseIdx + 3); tris.Add(baseIdx + 2);
+
+            tris.Add(baseIdx + 0); tris.Add(baseIdx + 1); tris.Add(baseIdx + 2);
+            tris.Add(baseIdx + 0); tris.Add(baseIdx + 2); tris.Add(baseIdx + 3);
         }
     }
 }

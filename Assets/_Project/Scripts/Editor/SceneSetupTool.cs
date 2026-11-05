@@ -53,6 +53,10 @@ public static class SceneSetupTool
         // 8. Hutan Lebat & Tebing Alam Keliling (100+ Pohon & Gugusan Batu)
         SetupSurroundingWilderness(slavicMat);
 
+        // 8b. Hamparan Padang Rumput 3D Realistis & Bunga Liar Dinamis
+        var grassTuftMat = AssetMaterialSetup.SetupGrassMaterial();
+        SetupRealisticGrassFields(grassTuftMat);
+
         // 9. Titik Sumber Daya Tambang & Altar Segel Kuno
         SetupWorldObjects(slavicMat);
 
@@ -100,24 +104,39 @@ public static class SceneSetupTool
         }
         ground.transform.localScale = new Vector3(25f, 1f, 25f);
 
-        // Material Rumput Bertekstur
+        // Material Rumput Bertekstur PBR dengan Normal Map
         string grassMatPath = "Assets/_Project/Art/SlavicWorld/Materials/M_Ground_Grass.mat";
         var grassMat = AssetDatabase.LoadAssetAtPath<Material>(grassMatPath);
         if (!grassMat)
         {
-            var grassTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/SlavicWorld/Textures/Grass_Texture.png");
-            if (grassTex)
-            {
-                var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-                grassMat = new Material(shader);
-                grassMat.SetTexture("_BaseMap", grassTex);
-                grassMat.SetTextureScale("_BaseMap", new Vector2(50f, 50f));
-                grassMat.SetFloat("_Smoothness", 0.05f);
-                AssetDatabase.CreateAsset(grassMat, grassMatPath);
-            }
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            grassMat = new Material(shader);
+            AssetDatabase.CreateAsset(grassMat, grassMatPath);
         }
         if (grassMat)
         {
+            var grassTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/SlavicWorld/Textures/Grass_Texture.png");
+            if (grassTex)
+            {
+                grassMat.SetTexture("_BaseMap", grassTex);
+                grassMat.SetTextureScale("_BaseMap", new Vector2(45f, 45f));
+            }
+            var normTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/SlavicWorld/Textures/Flower_Grass_NM.png");
+            if (normTex)
+            {
+                var importer = AssetImporter.GetAtPath("Assets/_Project/Art/SlavicWorld/Textures/Flower_Grass_NM.png") as TextureImporter;
+                if (importer && importer.textureType != TextureImporterType.NormalMap)
+                {
+                    importer.textureType = TextureImporterType.NormalMap;
+                    importer.SaveAndReimport();
+                }
+                grassMat.SetTexture("_BumpMap", normTex);
+                grassMat.EnableKeyword("_NORMALMAP");
+                grassMat.SetFloat("_BumpScale", 0.75f);
+            }
+            grassMat.SetColor("_BaseColor", new Color(0.78f, 0.92f, 0.65f, 1f));
+            grassMat.SetFloat("_Smoothness", 0.04f);
+            EditorUtility.SetDirty(grassMat);
             ground.GetComponent<Renderer>().sharedMaterial = grassMat;
         }
 
@@ -773,6 +792,88 @@ public static class SceneSetupTool
                 Vector3 rockPos = pos + new Vector3(Random.Range(-3f, 3f), 0, Random.Range(-3f, 3f));
                 InstantiateArtModel(rFbx, rockPos, Quaternion.Euler(0, Random.Range(0, 360f), 0), Vector3.one * Random.Range(1.2f, 2.5f), natureRoot.transform, slavicMat);
             }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  8b. HAMPARAN PADANG RUMPUT 3D REALISTIS & BUNGA LIAR
+    // ─────────────────────────────────────────────────────────────────────
+    static void SetupRealisticGrassFields(Material grassMat)
+    {
+        GameObject grassRoot = GameObject.Find("--- GRASS FIELDS ---");
+        if (grassRoot) Object.DestroyImmediate(grassRoot);
+
+        grassRoot = new GameObject("--- GRASS FIELDS ---");
+
+        if (!grassMat) return;
+
+        // 1. Tepi Jalan Setapak & Alun-Alun Desa (Bordir rumput alami di sela batu)
+        Vector3[] pathwayPoints = {
+            new Vector3( 2.2f, 0f,  4.5f), new Vector3(-2.2f, 0f,  4.5f),
+            new Vector3( 2.2f, 0f,  9.0f), new Vector3(-2.2f, 0f,  9.0f),
+            new Vector3( 2.5f, 0f, 15.0f), new Vector3(-2.5f, 0f, 15.0f),
+            new Vector3( 5.5f, 0f,  2.0f), new Vector3( 9.5f, 0f,  2.0f),
+            new Vector3(-5.5f, 0f,  2.0f), new Vector3(-9.5f, 0f,  2.0f),
+            new Vector3( 2.2f, 0f, -6.0f), new Vector3(-2.2f, 0f, -6.0f),
+            new Vector3( 2.2f, 0f,-12.0f), new Vector3(-2.2f, 0f,-12.0f),
+            new Vector3( 0.0f, 0f,  0.5f), new Vector3( 0.0f, 0f, -0.5f),
+        };
+        foreach (var pt in pathwayPoints)
+        {
+            RealisticGrassBuilder.BuildGrassClump(pt, 7, 1.8f, grassRoot.transform, grassMat);
+        }
+
+        // 2. Pekarangan & Halaman Sekitar Bangunan Desa
+        Vector3[] yardCenters = {
+            new Vector3(-16f, 0f,  16f), // Halaman Rumah Warga 1
+            new Vector3( 16f, 0f,  18f), // Halaman Rumah Warga 2
+            new Vector3(-16f, 0f,  -4f), // Halaman Pandai Besi
+            new Vector3( 18f, 0f,  -4f), // Halaman Rumah Pedagang
+            new Vector3(  0f, 0f, -16f), // Halaman Selatan Dekat Gerbang
+            new Vector3(-12f, 0f,  24f), // Halaman Utara Balai Desa
+            new Vector3( 14f, 0f,  25f), // Halaman Kebun Desa
+        };
+        foreach (var yc in yardCenters)
+        {
+            RealisticGrassBuilder.BuildGrassClump(yc, 18, 5.5f, grassRoot.transform, grassMat);
+        }
+
+        // 3. Pangkal Pohon-Pohon Desa & Semak Alami
+        var innerTrees = new Vector3[]
+        {
+            new Vector3( 10f, 0f, 12f), new Vector3(-12f, 0f, 10f),
+            new Vector3( 12f, 0f, -8f), new Vector3(-10f, 0f, -8f),
+            new Vector3(-4f, 0f, 12f),  new Vector3( 4f, 0f, 12f),
+            new Vector3(-14f, 0f, -2f), new Vector3( 14f, 0f, -2f),
+            new Vector3( 0f, 0f, -14f), new Vector3( 24f, 0f, 22f),
+            new Vector3(-26f, 0f, 20f), new Vector3(-14f, 0f, -12f),
+        };
+        foreach (var tp in innerTrees)
+        {
+            RealisticGrassBuilder.BuildGrassClump(tp, 10, 3.0f, grassRoot.transform, grassMat);
+        }
+
+        // 4. Sepanjang Garis Perimeter Pagar Kayu & Menara Pertahanan (Radius ~32m)
+        int fenceClumps = 36;
+        for (int i = 0; i < fenceClumps; i++)
+        {
+            float ang = (i / (float)fenceClumps) * 360f * Mathf.Deg2Rad;
+            float deg = ang * Mathf.Rad2Deg;
+            if (deg > 255f && deg < 285f) continue; // Celah gerbang masuk selatan
+
+            float r = Random.Range(30f, 34f);
+            Vector3 pos = new Vector3(Mathf.Cos(ang) * r, 0f, Mathf.Sin(ang) * r);
+            RealisticGrassBuilder.BuildGrassClump(pos, 6, 2.5f, grassRoot.transform, grassMat);
+        }
+
+        // 5. Hamparan Padang Rumput Liar Luar Desa (Wild Meadows, Radius 36m - 75m)
+        int meadowClumps = 48;
+        for (int i = 0; i < meadowClumps; i++)
+        {
+            float ang = (i / (float)meadowClumps) * 360f * Mathf.Deg2Rad;
+            float r = Random.Range(36f, 75f);
+            Vector3 pos = new Vector3(Mathf.Cos(ang) * r, 0f, Mathf.Sin(ang) * r);
+            RealisticGrassBuilder.BuildGrassClump(pos, 8, 4.0f, grassRoot.transform, grassMat);
         }
     }
 
