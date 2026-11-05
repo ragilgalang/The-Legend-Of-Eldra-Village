@@ -69,6 +69,9 @@ public static class SceneSetupTool
             "🏰 Desa Eldara Skala Penuh Berhasil Dibangun!",
             "Selamat datang di Desa Eldara versi ekspansif!\n\n" +
             "Fitur yang telah dibangun:\n" +
+            "☀️ Matahari 3D menyala melengkung di langit (terbit di timur, tenggelam di barat)\n" +
+            "🌙 Bulan perak terbit di sisi seberang saat malam tiba\n" +
+            "☁️ 22+ Awan 3D melayang dinamis ditiup angin & berubah warna fajar-siang-senja\n" +
             "🏛️ Balai Desa Megah + 6 Rumah Warga & Pondok Khusus\n" +
             "🎪 Alun-Alun Pasar: Gerobak pedagang, peti, tong kayu, bangku, & rambu desa\n" +
             "🌾 Kawasan Pertanian: Lumbung gandum, kandang ternak, & pagar kebun\n" +
@@ -168,6 +171,9 @@ public static class SceneSetupTool
         );
         soDnc.FindProperty("sunColor").gradientValue = grad;
         soDnc.ApplyModifiedProperties();
+
+        // Pastikan visual bola Matahari dan Bulan terpasang di langit
+        dnc.EnsureCelestialVisuals();
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -244,6 +250,7 @@ public static class SceneSetupTool
         if (!managers.GetComponent<DialogueManager>()) managers.AddComponent<DialogueManager>();
         if (!managers.GetComponent<MusicManager>())    managers.AddComponent<MusicManager>();
         if (!managers.GetComponent<NightLight>())      managers.AddComponent<NightLight>();
+        if (!managers.GetComponent<CloudManager>())    managers.AddComponent<CloudManager>();
 
         var gm = managers.GetComponent<GameManager>() ?? managers.AddComponent<GameManager>();
         var soGm = new SerializedObject(gm);
