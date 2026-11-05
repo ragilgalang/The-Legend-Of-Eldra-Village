@@ -276,98 +276,236 @@ public static class SceneSetupTool
         village = new GameObject("Village");
 
         // ── A. JALAN SETAPAK UTAMA (COBBLESTONE ROADS) ──
-        // Jalur poros Utara-Selatan (dari gerbang masuk melewati alun-alun ke Balai Desa)
         for (float z = -20f; z <= 26f; z += 4.5f)
-        {
             InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(0, 0.02f, z), Quaternion.identity, new Vector3(1.4f, 1f, 1.4f), village.transform, slavicMat);
-        }
-        // Jalur poros Timur-Barat (menghubungkan Tambang dan Peternakan)
         for (float x = -26f; x <= 26f; x += 4.5f)
         {
             if (Mathf.Abs(x) < 2f) continue;
             InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, 0), Quaternion.Euler(0, 90f, 0), new Vector3(1.4f, 1f, 1.4f), village.transform, slavicMat);
         }
 
-        // ── B. ALUN-ALUN & PASAR DESA (CENTER PLAZA) ──
-        // Gerobak pedagang di tengah alun-alun
+        // ── B. ALUN-ALUN & PASAR DESA ──
         InstantiateArtModel("Prop_Wagon", new Vector3(5f, 0f, 3f), Quaternion.Euler(0, 35f, 0), Vector3.one, village.transform);
         InstantiateArtModel("Prop_Wagon", new Vector3(-5f, 0f, -4f), Quaternion.Euler(0, 160f, 0), Vector3.one, village.transform);
-
-        // Tumpukan peti pasar & tong
         InstantiateArtModel("EA03_Prop_Container_Crate_01a", new Vector3(7f, 0f, 4f), Quaternion.Euler(0, 15f, 0), Vector3.one, village.transform, slavicMat);
         InstantiateArtModel("EA03_Prop_Container_Crate_02a", new Vector3(7.8f, 0f, 4.2f), Quaternion.Euler(0, 75f, 0), Vector3.one, village.transform, slavicMat);
         InstantiateArtModel("EA03_Prop_Container_Crate_03a", new Vector3(7.3f, 0.8f, 4.1f), Quaternion.Euler(0, 30f, 0), Vector3.one * 0.9f, village.transform, slavicMat);
         InstantiateArtModel("EA03_Prop_Container_Barrel_01d", new Vector3(6f, 0f, 1.5f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
         InstantiateArtModel("EA03_Prop_Container_Barrel_01d", new Vector3(6.7f, 0f, 1.8f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
-
-        // Tempat duduk & meja santai warga di alun-alun
         InstantiateArtModel("EA03_Prop_Tabble_01a", new Vector3(-4f, 0f, 4f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
         InstantiateArtModel("EA03_Prop_Town_Bench_01a", new Vector3(-4f, 0f, 5.2f), Quaternion.Euler(0, 180f, 0), Vector3.one, village.transform, slavicMat);
         InstantiateArtModel("EA03_Prop_Town_Bench_01a", new Vector3(-4f, 0f, 2.8f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
-
-        // Rambu Penunjuk Arah Desa
         InstantiateArtModel("EA03_Prop_Sign_Chapel_01", new Vector3(2f, 0f, -2f), Quaternion.Euler(0, -45f, 0), Vector3.one, village.transform, slavicMat);
 
-        // ── C. BANGUNAN DESA UTAMA (10 STRUKTUR 3D) ──
-        // 1. Balai Desa Eldara (Town Hall / Balai Pertemuan Utama)
+        // ── C. BANGUNAN DESA UTAMA — MENGGUNAKAN MODULAR MEDIEVAL HOUSE ──
+
+        // 1. Balai Desa Eldara (Town Hall besar, dari SlavicWorld karena sudah proper)
         var hall = InstantiateArtModel("EA03_Town_Building_Administrative _01a", new Vector3(0f, 0f, 26f), Quaternion.Euler(0, 180f, 0), new Vector3(1.1f, 1.1f, 1.1f), village.transform, slavicMat);
         if (hall) { hall.name = "Bld_TownHall"; AddPorchLantern(hall.transform, new Vector3(0, 3f, -4f)); }
 
-        // 2. Rumah Kepala Desa (Besar dengan teras kayu)
-        var houseLeader = InstantiateArtModel("EA03_Village_OutBuilding_PentHouse_01a", new Vector3(-18f, 0f, 18f), Quaternion.Euler(0, 135f, 0), Vector3.one, village.transform, slavicMat);
-        if (houseLeader) { houseLeader.name = "House_KepalaDesa"; AddPorchLantern(houseLeader.transform, new Vector3(2f, 2.5f, 0)); }
+        // 2. Rumah Kepala Desa — MODULAR: Rumah besar bata merah dengan 2 jendela lebar
+        var houseLeader = BuildModularHouse(village.transform, "House_KepalaDesa",
+            new Vector3(-18f, 0f, 18f), 135f, "brick", true, true);
 
-        // 3. Rumah Warga Utara 1
-        var houseN1 = InstantiateArtModel("EA03_Village_AnimalBreeding_Hovel_01a", new Vector3(18f, 0f, 20f), Quaternion.Euler(0, -135f, 0), Vector3.one, village.transform, slavicMat);
-        if (houseN1) { houseN1.name = "House_WargaUtara"; AddPorchLantern(houseN1.transform, new Vector3(-2f, 2.5f, 0)); }
+        // 3. Rumah Warga Utara — MODULAR: Rumah plester sederhana
+        var houseN1 = BuildModularHouse(village.transform, "House_WargaUtara",
+            new Vector3(18f, 0f, 20f), -135f, "plaster", false, true);
 
-        // 4. Bengkel Pandai Besi
-        var smith = InstantiateArtModel("EA03_Village_OutBuilding_Shed_01a", new Vector3(24f, 0f, 6f), Quaternion.Euler(0, -90f, 0), Vector3.one, village.transform, slavicMat);
+        // 4. Bengkel Pandai Besi — MODULAR: Rumah kayu+plester, tanpa cerobong
+        var smith = BuildModularHouse(village.transform, "House_PandaiBesi",
+            new Vector3(24f, 0f, 6f), -90f, "wood", false, false);
         if (smith)
         {
-            smith.name = "House_PandaiBesi";
-            AddPorchLantern(smith.transform, new Vector3(-3f, 2.5f, 0));
             // Alat-alat pandai besi di depan bengkel
             InstantiateArtModel("EA03_Prop_Tool_Stump_02a", new Vector3(20f, 0f, 6f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
             InstantiateArtModel("EA03_Prop_Tool_Pick_01a", new Vector3(20.3f, 0.4f, 6.2f), Quaternion.Euler(45, 0, 0), Vector3.one, village.transform, slavicMat);
             InstantiateArtModel("EA03_Prop_Forester_CutOutTrees_03", new Vector3(22f, 0f, 11f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
         }
 
-        // 5. Gudang Peralatan & Material Besi
-        var smithStorage = InstantiateArtModel("EA03_Village_OutBuilding_WoodRoof_01b", new Vector3(26f, 0f, -6f), Quaternion.Euler(0, -90f, 0), Vector3.one, village.transform, slavicMat);
-        if (smithStorage) smithStorage.name = "Storage_PandaiBesi";
+        // 5. Gudang Peralatan (lebih kecil, kayu)
+        var smithStorage = BuildModularHouse(village.transform, "Storage_PandaiBesi",
+            new Vector3(26f, 0f, -6f), -90f, "wood", false, false, small: true);
 
-        // 6. Rumah Petani
-        var farmHouse = InstantiateArtModel("EA03_Village_AnimalBreeding_Hovel_01a", new Vector3(-22f, 0f, 6f), Quaternion.Euler(0, 90f, 0), Vector3.one, village.transform, slavicMat);
+        // 6. Rumah Petani — MODULAR: Plester, 1 jendela, cerobong
+        var farmHouse = BuildModularHouse(village.transform, "House_Petani",
+            new Vector3(-22f, 0f, 6f), 90f, "plaster", true, true);
         if (farmHouse)
         {
-            farmHouse.name = "House_Petani";
-            AddPorchLantern(farmHouse.transform, new Vector3(3f, 2.5f, 0));
-            // Keranjang sayur & jerami
             InstantiateArtModel("EA03_Prop_Container_Bale_01a", new Vector3(-18f, 0f, 8f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
             InstantiateArtModel("EA03_Prop_Container_Bale_01a", new Vector3(-18f, 0.9f, 8.2f), Quaternion.Euler(0, 45, 0), Vector3.one, village.transform, slavicMat);
             InstantiateArtModel("EA03_Prop_Vegetable_Basket_02", new Vector3(-19f, 0f, 5f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
         }
 
-        // 7. Lumbung Gandum & Pertanian Barat
-        var barn = InstantiateArtModel("EA03_Village_OutBuilding_PentHouse_01a", new Vector3(-26f, 0f, -8f), Quaternion.Euler(0, 60f, 0), Vector3.one, village.transform, slavicMat);
-        if (barn) barn.name = "Barn_Gandum";
+        // 7. Lumbung Gandum — MODULAR: Bata besar, tanpa jendela depan
+        BuildModularHouse(village.transform, "Barn_Gandum",
+            new Vector3(-26f, 0f, -8f), 60f, "brick", false, false);
 
-        // 8. Pondok Dukun Mistis (Di sudut tenggara dekat hutan)
-        var shamanHut = InstantiateArtModel("EA03_Village_OutBuilding_Shed_03b", new Vector3(18f, 0f, -14f), Quaternion.Euler(0, -45f, 0), Vector3.one, village.transform, slavicMat);
+        // 8. Pondok Dukun Mistis — MODULAR: Plester gelap, lentera ungu
+        var shamanHut = BuildModularHouse(village.transform, "House_Dukun",
+            new Vector3(18f, 0f, -14f), -45f, "plaster", true, true, small: true);
         if (shamanHut)
+            AddPorchLantern(shamanHut.transform, new Vector3(-2f, 2.5f, 0), new Color(0.8f, 0.4f, 1f));
+
+        // 9. Rumah Warga Selatan — MODULAR: Kayu, 1 jendela
+        BuildModularHouse(village.transform, "House_WargaSelatan",
+            new Vector3(-16f, 0f, -18f), 45f, "wood", false, true);
+
+        // 10. Pos Penjaga Gerbang — MODULAR: Bata kecil
+        BuildModularHouse(village.transform, "House_Penjaga",
+            new Vector3(-9f, 0f, -22f), 0f, "brick", false, false, small: true);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  MODULAR HOUSE BUILDER (MedievalVillage Kit)
+    //  Merakit rumah 4x4 meter modular lengkap:
+    //  - 8 panel dinding (pintu, jendela, kisi kayu Tudor, batu plester)
+    //  - 4 pilar sudut batu/kayu
+    //  - 4 ubin lantai kayu gelap
+    //  - Atap genteng bulat 4x4 + 2 segitiga gable depan-belakang
+    //  - Pintu kayu dengan engsel, daun jendela terbuka, cerobong asap batu
+    //  - Tangga teras batu & lentera dinding berpendar hangat
+    // ─────────────────────────────────────────────────────────────────────
+    static GameObject BuildModularHouse(
+        Transform parent, string houseName,
+        Vector3 centerPos, float yRotDeg,
+        string style = "plaster",
+        bool withChimney = false,
+        bool withBalcony = false,
+        bool small = false)
+    {
+        // Material per elemen arsitektur
+        var matPlaster = GetMedievalMat("M_Medieval_Plaster");
+        var matBrick   = GetMedievalMat("M_Medieval_UnevenBrick");
+        var matWood    = GetMedievalMat("M_Medieval_WoodTrim");
+        var matRoof    = GetMedievalMat("M_Medieval_RoundTiles");
+
+        // Fallback jika belum ter-load
+        if (!matPlaster) matPlaster = AssetMaterialSetup.SetupSlavicMaterial();
+        if (!matBrick)   matBrick   = matPlaster;
+        if (!matWood)    matWood    = matPlaster;
+        if (!matRoof)    matRoof    = matPlaster;
+
+        Material matWall   = (style == "brick") ? matBrick : (style == "wood" ? matWood : matPlaster);
+        Material matCorner = (style == "wood")  ? matWood : matBrick;
+
+        float s = small ? 0.8f : 1f;
+
+        var houseRoot = new GameObject(houseName);
+        houseRoot.transform.SetParent(parent);
+        houseRoot.transform.position = centerPos;
+        houseRoot.transform.rotation = Quaternion.Euler(0, yRotDeg, 0);
+
+        // Sub-root agar seluruh prop modul terskala proporsional tanpa distorsi
+        var modelContainer = new GameObject("Visual_Structure");
+        modelContainer.transform.SetParent(houseRoot.transform, false);
+        modelContainer.transform.localScale = Vector3.one * s;
+
+        // Model dinding pintu & jendela sesuai style
+        string doorWallFbx = (style == "brick") ? "Wall_UnevenBrick_Door_Flat" : "Wall_Plaster_Door_Flat";
+        string winWallFbx  = (style == "brick") ? "Wall_UnevenBrick_Window_Wide_Flat" : "Wall_Plaster_Window_Wide_Flat";
+        string solidWallFbx= (style == "brick") ? "Wall_UnevenBrick_Straight" : "Wall_Plaster_Straight";
+        string timberWallFbx= "Wall_Plaster_WoodGrid"; // Kisi kayu Tudor untuk variasi estetik realistis
+
+        // ── 1. DINDING DEPAN (Z = -2, menghadap Selatan lokal) ──
+        // Segmen Kiri (X = -1): Pintu Masuk
+        InstantiateArtModelLocal(doorWallFbx, new Vector3(-1f, 0, -2f), Quaternion.identity, Vector3.one, modelContainer.transform, matWall);
+        // Daun Pintu Kayu (sedikit terbuka 30 derajat agar mengundang)
+        InstantiateArtModelLocal("Door_1_Flat", new Vector3(-1.45f, 0, -1.95f), Quaternion.Euler(0, -35f, 0), Vector3.one, modelContainer.transform, matWood);
+
+        // Segmen Kanan (X = 1): Jendela Lebar
+        InstantiateArtModelLocal(winWallFbx, new Vector3(1f, 0, -2f), Quaternion.identity, Vector3.one, modelContainer.transform, matWall);
+        // Daun Jendela Kayu Terbuka (Window Shutters)
+        InstantiateArtModelLocal("WindowShutters_Wide_Flat_Open", new Vector3(1f, 0, -2f), Quaternion.identity, Vector3.one, modelContainer.transform, matWood);
+
+        // ── 2. DINDING BELAKANG (Z = 2, menghadap Utara lokal) ──
+        InstantiateArtModelLocal(solidWallFbx, new Vector3(-1f, 0, 2f), Quaternion.Euler(0, 180f, 0), Vector3.one, modelContainer.transform, matWall);
+        InstantiateArtModelLocal(winWallFbx,   new Vector3( 1f, 0, 2f), Quaternion.Euler(0, 180f, 0), Vector3.one, modelContainer.transform, matWall);
+
+        // ── 3. DINDING KIRI (X = -2, menghadap Barat lokal) ──
+        InstantiateArtModelLocal(winWallFbx,    new Vector3(-2f, 0, -1f), Quaternion.Euler(0, 90f, 0), Vector3.one, modelContainer.transform, matWall);
+        InstantiateArtModelLocal(timberWallFbx, new Vector3(-2f, 0,  1f), Quaternion.Euler(0, 90f, 0), Vector3.one, modelContainer.transform, matWall);
+
+        // ── 4. DINDING KANAN (X = 2, menghadap Timur lokal) ──
+        InstantiateArtModelLocal(timberWallFbx, new Vector3(2f, 0, -1f), Quaternion.Euler(0, -90f, 0), Vector3.one, modelContainer.transform, matWall);
+        InstantiateArtModelLocal(solidWallFbx,  new Vector3(2f, 0,  1f), Quaternion.Euler(0, -90f, 0), Vector3.one, modelContainer.transform, matWall);
+
+        // ── 5. PILAR SUDUT (4 Sudut Bangunan) ──
+        string cornerFbx = (style == "wood") ? "Corner_Exterior_Wood" : "Corner_Exterior_Brick";
+        InstantiateArtModelLocal(cornerFbx, new Vector3(-2f, 0, -2f), Quaternion.Euler(0, 0f, 0),   Vector3.one, modelContainer.transform, matCorner);
+        InstantiateArtModelLocal(cornerFbx, new Vector3( 2f, 0, -2f), Quaternion.Euler(0, 90f, 0),  Vector3.one, modelContainer.transform, matCorner);
+        InstantiateArtModelLocal(cornerFbx, new Vector3( 2f, 0,  2f), Quaternion.Euler(0, 180f, 0), Vector3.one, modelContainer.transform, matCorner);
+        InstantiateArtModelLocal(cornerFbx, new Vector3(-2f, 0,  2f), Quaternion.Euler(0, 270f, 0), Vector3.one, modelContainer.transform, matCorner);
+
+        // ── 6. LANTAI INTERIOR KAYU (4 Ubin Gelap) ──
+        InstantiateArtModelLocal("Floor_WoodDark", new Vector3(-1f, 0.02f, -1f), Quaternion.identity, Vector3.one, modelContainer.transform, matWood);
+        InstantiateArtModelLocal("Floor_WoodDark", new Vector3( 1f, 0.02f, -1f), Quaternion.identity, Vector3.one, modelContainer.transform, matWood);
+        InstantiateArtModelLocal("Floor_WoodDark", new Vector3(-1f, 0.02f,  1f), Quaternion.identity, Vector3.one, modelContainer.transform, matWood);
+        InstantiateArtModelLocal("Floor_WoodDark", new Vector3( 1f, 0.02f,  1f), Quaternion.identity, Vector3.one, modelContainer.transform, matWood);
+
+        // ── 7. ATAP GENTENG BULAT MEDIEVAL 4x4 ──
+        InstantiateArtModelLocal("Roof_RoundTiles_4x4", new Vector3(0, 3.1f, 0), Quaternion.identity, Vector3.one, modelContainer.transform, matRoof);
+        // Segitiga Dinding Penutup Atap Depan & Belakang (Gable)
+        InstantiateArtModelLocal("Roof_Front_Brick4", new Vector3(0, 3.1f, -2f), Quaternion.identity, Vector3.one, modelContainer.transform, matCorner);
+        InstantiateArtModelLocal("Roof_Front_Brick4", new Vector3(0, 3.1f,  2f), Quaternion.Euler(0, 180f, 0), Vector3.one, modelContainer.transform, matCorner);
+
+        // ── 8. CEROBONG ASAP BATU (Prop Chimney) ──
+        if (withChimney)
         {
-            shamanHut.name = "House_Dukun";
-            AddPorchLantern(shamanHut.transform, new Vector3(-2f, 2.5f, 0), new Color(0.8f, 0.4f, 1f)); // Lentera ungu mistis
+            InstantiateArtModelLocal("Prop_Chimney", new Vector3(1.1f, 4.2f, 0.6f), Quaternion.identity, Vector3.one, modelContainer.transform, matCorner);
         }
 
-        // 9. Rumah Warga Selatan (Pondok Nelayan / Penjaga Kolam)
-        var houseS1 = InstantiateArtModel("EA03_Village_OutBuilding_Shed_01a", new Vector3(-16f, 0f, -18f), Quaternion.Euler(0, 45f, 0), Vector3.one, village.transform, slavicMat);
-        if (houseS1) { houseS1.name = "House_WargaSelatan"; AddPorchLantern(houseS1.transform, new Vector3(2f, 2.5f, 0)); }
+        // ── 9. TANGGA TERAS DEPAN PINTU ──
+        InstantiateArtModelLocal("Stairs_Exterior_Straight", new Vector3(-1f, 0, -2.65f), Quaternion.identity, Vector3.one, modelContainer.transform, matCorner);
 
-        // 10. Pos Penjaga Gerbang Selatan
-        var guardPost = InstantiateArtModel("EA03_Village_OutBuilding_Convenience_01a", new Vector3(-9f, 0f, -22f), Quaternion.Euler(0, 0f, 0), Vector3.one, village.transform, slavicMat);
-        if (guardPost) guardPost.name = "House_Penjaga";
+        // ── 10. BALKON DEPAN (Jika ada) ──
+        if (withBalcony)
+        {
+            InstantiateArtModelLocal("Balcony_Simple_Straight", new Vector3(1f, 1.8f, -2.1f), Quaternion.identity, Vector3.one, modelContainer.transform, matWood);
+        }
+
+        // ── 11. LENTERA DINDING TERAS HANGAT ──
+        AddPorchLantern(houseRoot.transform, new Vector3(-0.35f * s, 2.3f * s, -2.2f * s));
+
+        return houseRoot;
+    }
+
+    // Helper: InstantiateArtModel dengan posisi/rotasi lokal (relatif ke parent)
+    static GameObject InstantiateArtModelLocal(string fbxName, Vector3 localPos, Quaternion localRot, Vector3 scale, Transform parent, Material mat)
+    {
+        string path = $"Assets/_Project/Art/MedievalVillage/Models/{fbxName}.fbx";
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (!prefab)
+        {
+            path = $"Assets/_Project/Art/SlavicWorld/Models/{fbxName}.fbx";
+            prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        }
+        if (!prefab) return null;
+
+        var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+        instance.transform.SetParent(parent);
+        instance.transform.localPosition = localPos;
+        instance.transform.localRotation = localRot;
+        instance.transform.localScale    = scale;
+
+        if (mat)
+            foreach (var r in instance.GetComponentsInChildren<Renderer>(true))
+                r.sharedMaterial = mat;
+
+        foreach (var mf in instance.GetComponentsInChildren<MeshFilter>(true))
+            if (!mf.GetComponent<Collider>())
+            {
+                var mc = mf.gameObject.AddComponent<MeshCollider>();
+                mc.sharedMesh = mf.sharedMesh;
+            }
+
+        return instance;
+    }
+
+    // Helper: Dapatkan material MedievalVillage berdasarkan nama
+    static Material GetMedievalMat(string matName)
+    {
+        string path = $"Assets/_Project/Art/MedievalVillage/Materials/{matName}.mat";
+        return AssetDatabase.LoadAssetAtPath<Material>(path);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -381,7 +519,7 @@ public static class SceneSetupTool
 
         var npcData = new (string npcName, Vector3 pos, Color col, string greeting)[]
         {
-            ("NPC_KepalaDesа",  new Vector3(-14f, 1.05f, 16f),
+            ("NPC_KepalaDesa",  new Vector3(-14f, 1.05f, 16f),
              new Color(1f, 0.85f, 0.35f),
              "Selamat datang, petualang! Desa Eldara dalam bahaya besar. Saat matahari terbenam, pasukan goblin akan menyerbu dari kegelapan hutan. Persiapkan menara dan senjatamu!"),
 

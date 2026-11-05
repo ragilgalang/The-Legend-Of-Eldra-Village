@@ -254,3 +254,4 @@ public class NpcBehaviourTree : MonoBehaviour
         if (agent && agent.isOnNavMesh) agent.enabled = !hide;
     }
 }
+
