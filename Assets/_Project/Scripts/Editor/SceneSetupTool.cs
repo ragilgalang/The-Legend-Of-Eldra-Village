@@ -653,7 +653,7 @@ public static class SceneSetupTool
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  8. HUTAN RIMBA & BATU ALAM KELILING (POHON REALISTIS & ANIMASI ANGIN)
+    //  8. HUTAN RIMBA & BATU ALAM KELILING (POHON REALISTIS SPEEDTREE STYLE)
     // ─────────────────────────────────────────────────────────────────────
     static void SetupSurroundingWilderness(Material slavicMat)
     {
@@ -662,20 +662,9 @@ public static class SceneSetupTool
 
         natureRoot = new GameObject("--- WILDERNESS ---");
 
-        var treeMat = AssetMaterialSetup.SetupTreeMaterial();
-
-        // Model pohon kualitas tinggi (dikeluarkan model silinder/potato low-poly)
-        // 03c: 5,148 vertices (pohon ek rimbun megah dengan banyak cabang & tajuk tebal)
-        // 03b: 2,962 vertices (pohon kanopi tinggi hutan)
-        // 05a: 1,026 vertices (pohon dedalu / weeping willow anggun)
-        // 02b: 429 vertices (pohon pekarangan berdaun lebat)
-        string[] treeModels = {
-            "EA03_Nature_Tree_03c",
-            "EA03_Nature_Tree_03c", // Bobot lebih besar untuk pohon ek rimbun terbaik
-            "EA03_Nature_Tree_03b",
-            "EA03_Nature_Tree_05a",
-            "EA03_Nature_Tree_02b"
-        };
+        var barkMat     = GetMedievalMat("M_Medieval_WoodTrim") ?? slavicMat;
+        var oakLeafMat  = AssetMaterialSetup.SetupFoliageMaterial("M_Foliage_Oak", "T_RealisticLeaf_Oak");
+        var pineLeafMat = AssetMaterialSetup.SetupFoliageMaterial("M_Foliage_Pine", "T_RealisticLeaf_Pine");
 
         string[] rockModels = {
             "EA03_Environment_Rock_CatHead_01a", "EA03_Environment_Rock_CatHead_01b",
@@ -701,26 +690,31 @@ public static class SceneSetupTool
         foreach (var pos in innerTrees)
         {
             innerIndex++;
-            string fbx = treeModels[Random.Range(0, treeModels.Length)];
-            float scale = Random.Range(1.0f, 1.35f);
-            var treeObj = InstantiateArtModel(fbx, pos, Quaternion.Euler(0, Random.Range(0, 360f), 0), Vector3.one * scale, natureRoot.transform, treeMat);
+            float scale = Random.Range(1.0f, 1.3f);
+            GameObject treeObj;
+
+            // Variasi pohon desa: Pohon Ek Rimbun dan Pohon Birch Indah
+            if (innerIndex % 3 == 0)
+            {
+                treeObj = RealisticTreeBuilder.BuildBirchTree(pos, scale, natureRoot.transform, barkMat, oakLeafMat);
+            }
+            else
+            {
+                treeObj = RealisticTreeBuilder.BuildOakTree(pos, scale, natureRoot.transform, barkMat, oakLeafMat);
+            }
 
             if (treeObj)
             {
-                // Tambahkan animasi angin dinamis (TreeWindSway)
-                var sway = treeObj.AddComponent<TreeWindSway>();
-                sway.swayIntensity = Random.Range(2.2f, 3.4f);
-                sway.swaySpeed = Random.Range(0.95f, 1.25f);
-                // Aktifkan efek guguran daun pada pohon alun-alun desa
-                if (innerIndex <= 4)
+                var sway = treeObj.GetComponent<TreeWindSway>();
+                if (sway && innerIndex <= 4)
                 {
                     sway.enableFallingLeaves = true;
                 }
 
-                // Semak liar & tanaman akar di pangkal pohon (understory foliage)
+                // Semak liar & tanaman paku di pangkal pohon
                 InstantiateArtModel("EA03_Nature_TrunkPlant_01a", pos, Quaternion.Euler(0, Random.Range(0, 360f), 0), Vector3.one * 0.9f, natureRoot.transform, slavicMat);
 
-                if (Random.value > 0.4f)
+                if (Random.value > 0.35f)
                 {
                     string bFbx = bushModels[Random.Range(0, bushModels.Length)];
                     Vector3 bushPos = pos + new Vector3(Random.Range(-1.5f, 1.5f), 0, Random.Range(-1.5f, 1.5f));
@@ -741,26 +735,24 @@ public static class SceneSetupTool
         for (int i = 0; i < ringCount; i++)
         {
             float angle = (i / (float)ringCount) * 360f * Mathf.Deg2Rad;
-            // Lewatkan celah jalan raya di Selatan (sudut sekitar 270 derajat / -Z)
             float deg = angle * Mathf.Rad2Deg;
-            if (deg > 255f && deg < 285f) continue;
+            if (deg > 255f && deg < 285f) continue; // Celah gerbang selatan
 
             float radius = Random.Range(42f, 92f);
             Vector3 pos = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+            float scale = Random.Range(0.95f, 1.45f);
 
-            string fbx = treeModels[Random.Range(0, treeModels.Length)];
-            float scale = Random.Range(1.0f, 1.55f);
-            var treeObj = InstantiateArtModel(fbx, pos, Quaternion.Euler(0, Random.Range(0, 360f), 0), Vector3.one * scale, natureRoot.transform, treeMat);
-
-            if (treeObj)
+            // Kombinasi Pohon Pinus Pegunungan & Pohon Ek Lebat
+            if (i % 2 == 0)
             {
-                // Tambahkan animasi angin dinamis
-                var sway = treeObj.AddComponent<TreeWindSway>();
-                sway.swayIntensity = Random.Range(2.0f, 3.6f);
-                sway.swaySpeed = Random.Range(0.85f, 1.3f);
+                RealisticTreeBuilder.BuildPineTree(pos, scale, natureRoot.transform, barkMat, pineLeafMat);
+            }
+            else
+            {
+                RealisticTreeBuilder.BuildOakTree(pos, scale, natureRoot.transform, barkMat, oakLeafMat);
             }
 
-            // Tambahkan semak belukar di hutan
+            // Semak belukar di lantai hutan
             if (i % 2 == 0)
             {
                 string bFbx = bushModels[Random.Range(0, bushModels.Length)];
@@ -774,7 +766,7 @@ public static class SceneSetupTool
                 }
             }
 
-            // Tambahkan bongkahan batu besar di antara pepohonan secara acak
+            // Bongkahan batu tebing alami
             if (i % 3 == 0)
             {
                 string rFbx = rockModels[Random.Range(0, rockModels.Length)];

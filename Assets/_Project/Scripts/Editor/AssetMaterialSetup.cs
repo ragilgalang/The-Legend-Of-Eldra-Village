@@ -107,6 +107,57 @@ public static class AssetMaterialSetup
         CreatePbrMat(matFolder, "M_Medieval_WoodTrim", "T_WoodTrim");
         CreatePbrMat(matFolder, "M_Medieval_RockTrim", "T_RockTrim");
         CreatePbrMat(matFolder, "M_Medieval_RoundTiles", "T_RoundTiles");
+
+        // Material Dedaunan Realistis dengan Alpha Cutout & Double-Sided
+        SetupFoliageMaterial("M_Foliage_Oak", "T_RealisticLeaf_Oak");
+        SetupFoliageMaterial("M_Foliage_Pine", "T_RealisticLeaf_Pine");
+    }
+
+    public static Material SetupFoliageMaterial(string matName, string texName)
+    {
+        string matFolder = $"{MedievalArtFolder}/Materials";
+        if (!AssetDatabase.IsValidFolder(matFolder))
+        {
+            if (!AssetDatabase.IsValidFolder(MedievalArtFolder))
+                AssetDatabase.CreateFolder("Assets/_Project/Art", "MedievalVillage");
+            AssetDatabase.CreateFolder(MedievalArtFolder, "Materials");
+        }
+
+        string matPath = $"{matFolder}/{matName}.mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        if (!mat)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            mat = new Material(shader);
+            AssetDatabase.CreateAsset(mat, matPath);
+        }
+
+        string texPath = $"{MedievalArtFolder}/Textures/{texName}.png";
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+        if (tex)
+        {
+            var importer = AssetImporter.GetAtPath(texPath) as TextureImporter;
+            if (importer && !importer.alphaIsTransparency)
+            {
+                importer.alphaIsTransparency = true;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.SaveAndReimport();
+            }
+
+            mat.SetTexture("_BaseMap", tex);
+            mat.SetTexture("_MainTex", tex);
+            mat.SetFloat("_AlphaClip", 1f);
+            mat.SetFloat("_Cutoff", 0.35f);
+            mat.SetFloat("_Cull", 0f); // Render dua sisi (Double-Sided)
+            mat.SetFloat("_Smoothness", 0.05f); // Matte alami tanpa pantulan plastik
+            mat.SetFloat("_Metallic", 0.0f);
+            mat.EnableKeyword("_ALPHATEST_ON");
+            mat.SetOverrideTag("RenderType", "TransparentCutout");
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            EditorUtility.SetDirty(mat);
+        }
+
+        return mat;
     }
 
     static void CreatePbrMat(string folder, string matName, string texPrefix)
