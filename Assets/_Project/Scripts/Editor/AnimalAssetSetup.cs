@@ -20,6 +20,13 @@ public static class AnimalAssetSetup
     private const string MatsFolder = "Assets/_Project/Art/Animals/Materials";
     private const string AnimsFolder = "Assets/_Project/Art/Animals/Animations";
 
+    [MenuItem("Eldara/Setup Animal Assets & Controllers")]
+    public static void SetupAllAnimalsMenu()
+    {
+        PreflightSetup();
+        EditorUtility.DisplayDialog("Sukses!", "Aset hewan (Material URP, Animasi Looping, Animator Controller) berhasil disiapkan!", "OK");
+    }
+
     public static void PreflightSetup()
     {
         EnsureFolders();
