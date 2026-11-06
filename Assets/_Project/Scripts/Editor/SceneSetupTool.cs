@@ -80,7 +80,7 @@ public static class SceneSetupTool
             "☀️ Matahari 3D menyala melengkung di langit (terbit di timur, tenggelam di barat)\n" +
             "🌙 Bulan perak terbit di sisi seberang saat malam tiba\n" +
             "☁️ 22+ Awan 3D melayang dinamis ditiup angin & berubah warna fajar-siang-senja\n" +
-            "🏛️ Balai Desa Megah + 6 Rumah Warga & Pondok Khusus\n" +
+            "🏡 11 Gaya Rumah Kayu Realistis: Rumah Gadang, Joglo, Minka Jepang, Log Cabin, Chalet Alpen, A-Frame, Rumah Panggung, Barn, Treehouse, Pondok Danau, & Villa Modern\n" +
             "🎪 Alun-Alun Pasar: Gerobak pedagang, peti, tong kayu, bangku, & rambu desa\n" +
             "🌾 Kawasan Pertanian: Lumbung gandum, kandang ternak, & pagar kebun\n" +
             "⚒️ Kawasan Pandai Besi: Bengkel tempa, tumpukan balok kayu, & area tambang bijih\n" +
@@ -321,38 +321,37 @@ public static class SceneSetupTool
         InstantiateArtModel("EA03_Prop_Town_Bench_01a", new Vector3(-4f, 0f, 2.8f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
         InstantiateArtModel("EA03_Prop_Sign_Chapel_01", new Vector3(2f, 0f, -2f), Quaternion.Euler(0, -45f, 0), Vector3.one, village.transform, slavicMat);
 
-        // ── C. BANGUNAN DESA UTAMA — MENGGUNAKAN MODULAR MEDIEVAL HOUSE ──
+        // ── C. BANGUNAN DESA UTAMA — 11 GAYA RUMAH KAYU REALISTIS & MODULAR ──
 
-        // 1. Balai Desa Eldara (Town Hall besar, dari SlavicWorld karena sudah proper)
+        // 1. Balai Desa Eldara (Town Hall besar administratif di utara alun-alun)
         var hall = InstantiateArtModel("EA03_Town_Building_Administrative _01a", new Vector3(0f, 0f, 26f), Quaternion.Euler(0, 180f, 0), new Vector3(1.1f, 1.1f, 1.1f), village.transform, slavicMat);
         if (hall) { hall.name = "Bld_TownHall"; AddPorchLantern(hall.transform, new Vector3(0, 3f, -4f)); }
 
-        // 2. Rumah Kepala Desa — MODULAR: Rumah besar bata merah dengan 2 jendela lebar
-        var houseLeader = BuildModularHouse(village.transform, "House_KepalaDesa",
-            new Vector3(-18f, 0f, 18f), 135f, "brick", true, true);
+        // 2. Rumah Kepala Desa / Tetua Adat — GADANG (Rumah Gadang Minangkabau: atap gonjong tanduk kerbau & rangkiang padi)
+        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Gadang,
+            new Vector3(-18f, 0f, 18f), Quaternion.Euler(0, 135f, 0), village.transform, "House_KepalaDesa_Gadang");
 
-        // 3. Rumah Warga Utara — MODULAR: Rumah plester sederhana
-        var houseN1 = BuildModularHouse(village.transform, "House_WargaUtara",
-            new Vector3(18f, 0f, 20f), -135f, "plaster", false, true);
+        // 3. Rumah Warga Utara — CABIN (Log Cabin balok kayu tersusun bertumpuk & cerobong asap batu)
+        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Cabin,
+            new Vector3(18f, 0f, 20f), Quaternion.Euler(0, -135f, 0), village.transform, "House_WargaUtara_Cabin");
 
-        // 4. Bengkel Pandai Besi — MODULAR: Rumah kayu+plester, tanpa cerobong
+        // 4. Bengkel Pandai Besi — Modular Wood & Stone
         var smith = BuildModularHouse(village.transform, "House_PandaiBesi",
             new Vector3(24f, 0f, 6f), -90f, "wood", false, false);
         if (smith)
         {
-            // Alat-alat pandai besi di depan bengkel
             InstantiateArtModel("EA03_Prop_Tool_Stump_02a", new Vector3(20f, 0f, 6f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
             InstantiateArtModel("EA03_Prop_Tool_Pick_01a", new Vector3(20.3f, 0.4f, 6.2f), Quaternion.Euler(45, 0, 0), Vector3.one, village.transform, slavicMat);
             InstantiateArtModel("EA03_Prop_Forester_CutOutTrees_03", new Vector3(22f, 0f, 11f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
         }
 
-        // 5. Gudang Peralatan (lebih kecil, kayu)
-        var smithStorage = BuildModularHouse(village.transform, "Storage_PandaiBesi",
+        // 5. Gudang Peralatan Pandai Besi (kayu)
+        BuildModularHouse(village.transform, "Storage_PandaiBesi",
             new Vector3(26f, 0f, -6f), -90f, "wood", false, false, small: true);
 
-        // 6. Rumah Petani — MODULAR: Plester, 1 jendela, cerobong
-        var farmHouse = BuildModularHouse(village.transform, "House_Petani",
-            new Vector3(-22f, 0f, 6f), 90f, "plaster", true, true);
+        // 6. Rumah Petani — PANGGUNG (Rumah Panggung tiang stilt kayu tinggi 2m menopang dek lantai)
+        var farmHouse = ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Panggung,
+            new Vector3(-22f, 0f, 6f), Quaternion.Euler(0, 90f, 0), village.transform, "House_Petani_Panggung");
         if (farmHouse)
         {
             InstantiateArtModel("EA03_Prop_Container_Bale_01a", new Vector3(-18f, 0f, 8f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
@@ -360,21 +359,39 @@ public static class SceneSetupTool
             InstantiateArtModel("EA03_Prop_Vegetable_Basket_02", new Vector3(-19f, 0f, 5f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
         }
 
-        // 7. Lumbung Gandum — MODULAR: Bata besar, tanpa jendela depan
-        BuildModularHouse(village.transform, "Barn_Gandum",
-            new Vector3(-26f, 0f, -8f), 60f, "brick", false, false);
+        // 7. Lumbung Gandum — BARN (Barn Modern papan hitam, atap gambrel, silo logam gandum, & hay bales)
+        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Barn,
+            new Vector3(-28f, 0f, -8f), Quaternion.Euler(0, 60f, 0), village.transform, "Barn_Gandum");
 
-        // 8. Pondok Dukun Mistis — MODULAR: Plester gelap, lentera ungu
-        var shamanHut = BuildModularHouse(village.transform, "House_Dukun",
-            new Vector3(18f, 0f, -14f), -45f, "plaster", true, true, small: true);
-        if (shamanHut)
-            AddPorchLantern(shamanHut.transform, new Vector3(-2f, 2.5f, 0), new Color(0.8f, 0.4f, 1f));
+        // 8. Pondok Dukun Mistis — MINKA (Rumah Tradisional Jepang: pintu shoji, gerbang torii, lentera batu, kolam koi, sakura)
+        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Minka,
+            new Vector3(18f, 0f, -14f), Quaternion.Euler(0, -45f, 0), village.transform, "House_Dukun_Minka");
 
-        // 9. Rumah Warga Selatan — MODULAR: Kayu, 1 jendela
-        BuildModularHouse(village.transform, "House_WargaSelatan",
-            new Vector3(-16f, 0f, -18f), 45f, "wood", false, true);
+        // 9. Rumah Warga Selatan — CHALET (Chalet Salju Pegunungan: lantai batu alam, balkon ukir, mantel salju, snowman)
+        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Chalet,
+            new Vector3(-16f, 0f, -18f), Quaternion.Euler(0, 45f, 0), village.transform, "House_WargaSelatan_Chalet");
 
-        // 10. Pos Penjaga Gerbang — MODULAR: Bata kecil
+        // 10. Pondok Singgah Pengelana — AFRAME (Kabin Segitiga A-Frame fasad kaca penuh & api unggun batu)
+        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.AFrame,
+            new Vector3(-10f, 0f, -24f), Quaternion.Euler(0, 15f, 0), village.transform, "House_AFrame_Singgah");
+
+        // 11. Balai Pendopo Adat — JOGLO (Joglo Jawa: 4 soko guru jati, atap tumpangsari bertingkat & kolam teratai)
+        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Joglo,
+            new Vector3(-34f, 0f, 22f), Quaternion.Euler(0, 45f, 0), village.transform, "Pavilion_Joglo");
+
+        // 12. Pondok Tepi Air — DANAU (Pondok Danau dermaga kayu menjorok ke perairan & perahu sampan)
+        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Danau,
+            new Vector3(-36f, 0f, -20f), Quaternion.Euler(0, 75f, 0), village.transform, "House_PondokDanau");
+
+        // 13. Paviliun Warga — MODERN (Villa Kayu Modern 2 lantai cantilever, kaca minimalis & kolam refleksi)
+        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Modern,
+            new Vector3(28f, 0f, 20f), Quaternion.Euler(0, -120f, 0), village.transform, "Villa_Modern");
+
+        // 14. Gardu Pengawas Rimba — POHON (Rumah Pohon di dahan kanopi raksasa 10m dengan jembatan gantung)
+        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Pohon,
+            new Vector3(32f, 0f, -18f), Quaternion.Euler(0, -35f, 0), village.transform, "Treehouse_Pengawas");
+
+        // 15. Pos Penjaga Gerbang Selatan
         BuildModularHouse(village.transform, "House_Penjaga",
             new Vector3(-9f, 0f, -22f), 0f, "brick", false, false, small: true);
     }
