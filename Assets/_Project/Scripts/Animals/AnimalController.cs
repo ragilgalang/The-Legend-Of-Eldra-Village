@@ -442,7 +442,15 @@ public class AnimalController : Interactable
 
         if (animator != null)
         {
-            float animSpeedRatio = isMoving ? Mathf.Clamp(currentSpeed / moveSpeed, 0.75f, 1.35f) : 1.0f;
+            // Sinkronisasi kecepatan playback: animasi kaki sesuai laju gerak tubuh
+            // Pastikan applyRootMotion=false agar animasi TIDAK menggerakkan posisi karakter
+            if (animator.applyRootMotion)
+            {
+                animator.applyRootMotion = false;
+            }
+
+            // Skala kecepatan animasi agar langkah kaki sinkron dengan kecepatan berjalan
+            float animSpeedRatio = isMoving ? Mathf.Clamp(currentSpeed / moveSpeed, 0.7f, 1.4f) : 1.0f;
             animator.speed = animSpeedRatio;
         }
     }

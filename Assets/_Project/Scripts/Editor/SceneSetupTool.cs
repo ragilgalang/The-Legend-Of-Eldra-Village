@@ -70,6 +70,7 @@ public static class SceneSetupTool
         SetupHUD(playerInteractor, playerHealth);
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        EditorSceneManager.SaveOpenScenes();
         Selection.activeGameObject = player;
 
         EditorUtility.DisplayDialog(
@@ -90,6 +91,31 @@ public static class SceneSetupTool
             "🏮 Lentera Malam: Lampu lentera hangat di tiap rumah & menara\n\n" +
             "Tekan ▶ Play untuk mulai menjelajahi dunia barumu!",
             "Bagus Sekali, Mainkan!"
+        );
+    }
+
+    [MenuItem("Eldara/Refresh Fauna & Animasi Hewan")]
+    public static void RefreshFaunaAndAnimations()
+    {
+        if (Application.isPlaying)
+        {
+            EditorUtility.DisplayDialog("Stop!", "Hentikan Play Mode dulu sebelum refresh fauna.", "OK");
+            return;
+        }
+
+        AnimalAssetSetup.PreflightSetup();
+        SetupFaunaAndAnimals();
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        EditorSceneManager.SaveOpenScenes();
+
+        EditorUtility.DisplayDialog(
+            "🐾 Fauna & Animasi Hewan Siap!",
+            "Seluruh model FBX hewan telah diimpor ulang dengan Avatar Generic.\n" +
+            "Animator Controller terhubung sempurna ke tulang kaki & badan.\n\n" +
+            "Milo (anjing), Luna & Oliver (kucing), serta kawanan serigala kini berjalan melangkah aktif (bukan menggeser/menyeret)!\n\n" +
+            "Tekan ▶ Play untuk melihat hewan berjalan!",
+            "Mantap!"
         );
     }
 

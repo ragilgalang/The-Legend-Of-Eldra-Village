@@ -153,6 +153,12 @@ public static class AnimalAssetSetup
                     reimport = true;
                 }
 
+                if (importer.avatarSetup != ModelImporterAvatarSetup.CreateFromThisModel)
+                {
+                    importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                    reimport = true;
+                }
+
                 var defaultClips = importer.defaultClipAnimations;
                 if (defaultClips != null && defaultClips.Length > 0)
                 {
@@ -194,8 +200,8 @@ public static class AnimalAssetSetup
     private static RuntimeAnimatorController EnsureAnimalController(string animalName)
     {
         string controllerPath = $"{AnimsFolder}/AC_{animalName}.controller";
-        var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
-        if (ctrl != null) return ctrl;
+        // Selalu buat ulang jika ada animasi baru atau perubahan
+        var existingCtrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
 
         string fbxPath = $"{AnimalsFolder}/FBX/{animalName}.fbx";
         AnimationClip idleClip = null;
@@ -206,49 +212,81 @@ public static class AnimalAssetSetup
             if (obj is AnimationClip clip && !clip.name.StartsWith("__preview__"))
             {
                 string lower = clip.name.ToLowerInvariant();
-                if (lower.Contains("walk") || lower.Contains("run"))
+                if (lower.Contains("walk") || lower.Contains("run") || lower.Contains("trot"))
                     walkClip = clip;
                 else if (lower.Contains("idle"))
                     idleClip = clip;
             }
         }
 
-        if (idleClip == null) return null;
+        if (idleClip == null) return existingCtrl;
 
-        ctrl = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
-        ctrl.AddParameter("isMoving", AnimatorControllerParameterType.Bool);
+        AnimatorController ctrl;
+        if (existingCtrl != null)
+        {
+            ctrl = existingCtrl;
+        }
+        else
+        {
+            ctrl = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+            ctrl.AddParameter("isMoving", AnimatorControllerParameterType.Bool);
+        }
 
         var rootSm = ctrl.layers[0].stateMachine;
 
+        // Bersihkan state lama agar tidak duplikat
+        var existingStates = rootSm.states;
+        foreach (var s in existingStates)
+        {
+            rootSm.RemoveState(s.state);
+        }
+
         var idleState = rootSm.AddState("Idle");
         idleState.motion = idleClip;
+        // Penting: Idle tidak menggunakan root motion
+        idleState.speedParameterActive = false;
+        idleState.speed = 1.0f;
         rootSm.defaultState = idleState;
 
         if (walkClip != null)
         {
             var walkState = rootSm.AddState("Walk");
             walkState.motion = walkClip;
+            walkState.speedParameterActive = false;
+            walkState.speed = 1.0f;
 
-            // Idle -> Walk
+            // Idle -> Walk (transisi cepat saat mulai jalan)
             var toWalk = idleState.AddTransition(walkState);
             toWalk.AddCondition(AnimatorConditionMode.If, 0, "isMoving");
-            toWalk.duration = 0.2f;
+            toWalk.duration = 0.15f;
             toWalk.hasExitTime = false;
+            toWalk.offset = 0f;
 
-            // Walk -> Idle
+            // Walk -> Idle (transisi wajar saat berhenti)
             var toIdle = walkState.AddTransition(idleState);
             toIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isMoving");
-            toIdle.duration = 0.25f;
+            toIdle.duration = 0.20f;
             toIdle.hasExitTime = false;
         }
 
         EditorUtility.SetDirty(ctrl);
+        AssetDatabase.SaveAssets();
         return ctrl;
     }
 
     public static RuntimeAnimatorController GetAnimatorController(string animalName)
     {
         return AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>($"{AnimsFolder}/AC_{animalName}.controller");
+    }
+
+    public static Avatar LoadAnimalAvatar(string animalName)
+    {
+        string fbxPath = $"{AnimalsFolder}/FBX/{animalName}.fbx";
+        foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(fbxPath))
+        {
+            if (asset is Avatar av) return av;
+        }
+        return null;
     }
 
     public static GameObject LoadAnimalModel(string animalName)
@@ -338,9 +376,12 @@ public static class AnimalAssetSetup
 
         ApplyAnimalMaterials(visual, "Dog");
 
-        // Hubungkan Animator Controller
+        // Hubungkan Animator Controller & Avatar
         var anim = visual.GetComponent<Animator>();
         if (!anim) anim = visual.AddComponent<Animator>();
+        anim.applyRootMotion = false;
+        var avatar = LoadAnimalAvatar("Dog");
+        if (avatar != null) anim.avatar = avatar;
         var ac = GetAnimatorController("Dog");
         if (ac != null) anim.runtimeAnimatorController = ac;
 
@@ -396,9 +437,12 @@ public static class AnimalAssetSetup
 
         ApplyAnimalMaterials(visual, "Cat", altColor);
 
-        // Hubungkan Animator Controller
+        // Hubungkan Animator Controller & Avatar
         var anim = visual.GetComponent<Animator>();
         if (!anim) anim = visual.AddComponent<Animator>();
+        anim.applyRootMotion = false;
+        var avatar = LoadAnimalAvatar("Cat");
+        if (avatar != null) anim.avatar = avatar;
         var ac = GetAnimatorController("Cat");
         if (ac != null) anim.runtimeAnimatorController = ac;
 
@@ -454,9 +498,12 @@ public static class AnimalAssetSetup
 
         ApplyAnimalMaterials(visual, "Wolf");
 
-        // Hubungkan Animator Controller
+        // Hubungkan Animator Controller & Avatar
         var anim = visual.GetComponent<Animator>();
         if (!anim) anim = visual.AddComponent<Animator>();
+        anim.applyRootMotion = false;
+        var avatar = LoadAnimalAvatar("Wolf");
+        if (avatar != null) anim.avatar = avatar;
         var ac = GetAnimatorController("Wolf");
         if (ac != null) anim.runtimeAnimatorController = ac;
 
@@ -513,6 +560,9 @@ public static class AnimalAssetSetup
 
         var anim = visual.GetComponent<Animator>();
         if (!anim) anim = visual.AddComponent<Animator>();
+        anim.applyRootMotion = false;
+        var avatar = LoadAnimalAvatar("Eagle");
+        if (avatar != null) anim.avatar = avatar;
         var ac = GetAnimatorController("Eagle");
         if (ac != null) anim.runtimeAnimatorController = ac;
 
