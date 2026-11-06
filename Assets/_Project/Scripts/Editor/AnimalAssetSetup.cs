@@ -115,10 +115,12 @@ public static class AnimalAssetSetup
                     foreach (var dc in defaultClips)
                     {
                         var clip = new ModelImporterClipAnimation();
-                        EditorUtility.CopySerialized(dc, clip);
                         clip.name = dc.name;
                         clip.takeName = dc.takeName;
+                        clip.firstFrame = dc.firstFrame;
+                        clip.lastFrame = dc.lastFrame;
                         clip.loopTime = true;
+                        clip.wrapMode = WrapMode.Loop;
                         customClips.Add(clip);
                     }
                     importer.clipAnimations = customClips.ToArray();
