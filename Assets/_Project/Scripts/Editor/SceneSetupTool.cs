@@ -973,10 +973,27 @@ public static class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
     static void SetupFaunaAndAnimals()
     {
-        // Bersihkan objek ikan & fauna lama jika ada
-        foreach (var strayFish in Object.FindObjectsByType<FishController>())
+        // Bersihkan objek ikan darat & fauna lama jika ada
+        var allTransforms = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var fishToDestroy = new System.Collections.Generic.HashSet<GameObject>();
+        foreach (var t in allTransforms)
         {
-            if (strayFish) Object.DestroyImmediate(strayFish.gameObject);
+            if (!t) continue;
+            string n = t.name.ToLower();
+            if (n.Contains("fish") || n.Contains("piranha") || t.GetComponent<FishController>())
+            {
+                Transform curr = t;
+                while (curr.parent != null && curr.parent.name != "--- FAUNA & ANIMALS ---" && 
+                      (curr.parent.name.ToLower().Contains("fish") || curr.parent.name.ToLower().Contains("piranha")))
+                {
+                    curr = curr.parent;
+                }
+                fishToDestroy.Add(curr.gameObject);
+            }
+        }
+        foreach (var go in fishToDestroy)
+        {
+            if (go) Object.DestroyImmediate(go);
         }
 
         GameObject faunaRoot = GameObject.Find("--- FAUNA & ANIMALS ---");

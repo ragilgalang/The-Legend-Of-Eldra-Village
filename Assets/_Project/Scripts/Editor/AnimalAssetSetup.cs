@@ -31,16 +31,38 @@ public static class AnimalAssetSetup
     public static void RemoveLandFishMenu()
     {
         int count = 0;
-        foreach (var t in Object.FindObjectsByType<Transform>())
+        var transforms = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var toDestroy = new System.Collections.Generic.HashSet<GameObject>();
+
+        foreach (var t in transforms)
         {
-            if (t && (t.name.Contains("Animal_RiverFish") || t.name.Contains("Piranha") || t.GetComponent<FishController>()))
+            if (!t) continue;
+            string n = t.name.ToLower();
+            if (n.Contains("fish") || n.Contains("piranha") || t.GetComponent<FishController>())
             {
-                Object.DestroyImmediate(t.gameObject);
+                // Ambil root object ikan
+                Transform curr = t;
+                while (curr.parent != null && curr.parent.name != "--- FAUNA & ANIMALS ---" && 
+                      (curr.parent.name.ToLower().Contains("fish") || curr.parent.name.ToLower().Contains("piranha")))
+                {
+                    curr = curr.parent;
+                }
+                toDestroy.Add(curr.gameObject);
+            }
+        }
+
+        foreach (var go in toDestroy)
+        {
+            if (go)
+            {
+                Object.DestroyImmediate(go);
                 count++;
             }
         }
+
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
-        EditorUtility.DisplayDialog("Ikan Berhasil Dihapus!", $"Berhasil membersihkan {count} objek ikan di darat dari scene.", "Mantap!");
+        UnityEditor.SceneManagement.EditorSceneManager.SaveOpenScenes();
+        EditorUtility.DisplayDialog("Ikan Berhasil Dihapus!", $"Berhasil membersihkan {count} objek ikan di darat dari scene.", "OK");
     }
 
     public static void PreflightSetup()
@@ -322,16 +344,18 @@ public static class AnimalAssetSetup
         var ac = GetAnimatorController("Dog");
         if (ac != null) anim.runtimeAnimatorController = ac;
 
-        // Collider proporsional
+        // Collider proporsional (horizontal sepanjang tubuh Z)
         var col = dogRoot.AddComponent<CapsuleCollider>();
-        col.center = new Vector3(0, 0.32f, 0);
-        col.radius = 0.26f;
-        col.height = 0.85f;
+        col.center = new Vector3(0, 0.28f, 0);
+        col.radius = 0.22f;
+        col.height = 0.75f;
+        col.direction = 2;
 
         // NavMeshAgent proporsional
         var agent = dogRoot.AddComponent<NavMeshAgent>();
-        agent.radius = 0.28f;
-        agent.height = 0.65f;
+        agent.baseOffset = 0f;
+        agent.radius = 0.25f;
+        agent.height = 0.60f;
         agent.speed = 2.0f;
         agent.acceleration = 7.0f;
         agent.angularSpeed = 240.0f;
@@ -376,16 +400,18 @@ public static class AnimalAssetSetup
         var ac = GetAnimatorController("Cat");
         if (ac != null) anim.runtimeAnimatorController = ac;
 
-        // Collider proporsional
+        // Collider proporsional (horizontal Z)
         var col = catRoot.AddComponent<CapsuleCollider>();
-        col.center = new Vector3(0, 0.16f, 0);
-        col.radius = 0.16f;
-        col.height = 0.45f;
+        col.center = new Vector3(0, 0.15f, 0);
+        col.radius = 0.14f;
+        col.height = 0.40f;
+        col.direction = 2;
 
         // NavMeshAgent proporsional
         var agent = catRoot.AddComponent<NavMeshAgent>();
-        agent.radius = 0.18f;
-        agent.height = 0.35f;
+        agent.baseOffset = 0f;
+        agent.radius = 0.16f;
+        agent.height = 0.30f;
         agent.speed = 1.35f;
         agent.acceleration = 6.0f;
         agent.angularSpeed = 280.0f;
@@ -430,16 +456,18 @@ public static class AnimalAssetSetup
         var ac = GetAnimatorController("Wolf");
         if (ac != null) anim.runtimeAnimatorController = ac;
 
-        // Collider proporsional
+        // Collider proporsional (horizontal Z sepanjang tubuh 4 kaki)
         var col = wolfRoot.AddComponent<CapsuleCollider>();
-        col.center = new Vector3(0, 0.40f, 0);
-        col.radius = 0.30f;
-        col.height = 1.0f;
+        col.center = new Vector3(0, 0.38f, 0);
+        col.radius = 0.28f;
+        col.height = 0.95f;
+        col.direction = 2;
 
-        // NavMeshAgent
+        // NavMeshAgent proporsional
         var agent = wolfRoot.AddComponent<NavMeshAgent>();
-        agent.radius = 0.32f;
-        agent.height = 0.80f;
+        agent.baseOffset = 0f;
+        agent.radius = 0.30f;
+        agent.height = 0.75f;
         agent.speed = 2.6f;
         agent.acceleration = 8.0f;
         agent.angularSpeed = 260.0f;
