@@ -95,6 +95,105 @@ public static class AssetMaterialSetup
         // Material Dedaunan Realistis dengan Alpha Cutout & Double-Sided
         SetupFoliageMaterial("M_Foliage_Oak", "T_RealisticLeaf_Oak");
         SetupFoliageMaterial("M_Foliage_Pine", "T_RealisticLeaf_Pine");
+
+        // Material Dedaunan & Kulit Kayu Prosedural (Algoritma Blender Realistic Tree)
+        SetupProceduralFoliageMaterial("SUMMER");
+        SetupProceduralFoliageMaterial("AUTUMN");
+        SetupProceduralFoliageMaterial("SPRING");
+        SetupProceduralBarkMaterial();
+    }
+
+    public static Material SetupProceduralFoliageMaterial(string season = "SUMMER")
+    {
+        string matFolder = $"{MedievalArtFolder}/Materials";
+        if (!AssetDatabase.IsValidFolder(matFolder))
+        {
+            if (!AssetDatabase.IsValidFolder(MedievalArtFolder))
+                AssetDatabase.CreateFolder("Assets/_Project/Art", "MedievalVillage");
+            AssetDatabase.CreateFolder(MedievalArtFolder, "Materials");
+        }
+
+        string matPath = $"{matFolder}/M_Foliage_Procedural_{season}.mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        var targetShader = Shader.Find("Eldara/RealisticFoliage") ?? 
+                           Shader.Find("Universal Render Pipeline/Particles/Lit") ??
+                           Shader.Find("Universal Render Pipeline/Lit");
+
+        if (!mat)
+        {
+            mat = new Material(targetShader);
+            AssetDatabase.CreateAsset(mat, matPath);
+        }
+        else if (targetShader != null && mat.shader != targetShader)
+        {
+            mat.shader = targetShader;
+        }
+
+        mat.SetColor("_BaseColor", Color.white);
+        mat.SetFloat("_Smoothness", 0.25f);
+        mat.SetFloat("_Translucency", 0.45f);
+        mat.enableInstancing = true;
+        EditorUtility.SetDirty(mat);
+        return mat;
+    }
+
+    public static Material SetupProceduralBarkMaterial(bool birch = false)
+    {
+        string matFolder = $"{MedievalArtFolder}/Materials";
+        if (!AssetDatabase.IsValidFolder(matFolder))
+        {
+            if (!AssetDatabase.IsValidFolder(MedievalArtFolder))
+                AssetDatabase.CreateFolder("Assets/_Project/Art", "MedievalVillage");
+            AssetDatabase.CreateFolder(MedievalArtFolder, "Materials");
+        }
+
+        string matName = birch ? "M_Procedural_Bark_Birch" : "M_Procedural_Bark";
+        string matPath = $"{matFolder}/{matName}.mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        if (!mat)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            mat = new Material(shader);
+            AssetDatabase.CreateAsset(mat, matPath);
+        }
+
+        string texDir = $"{MedievalArtFolder}/Textures";
+        var baseTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{texDir}/T_WoodTrim_BaseColor.png");
+        var normTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{texDir}/T_WoodTrim_Normal.png");
+
+        if (birch)
+        {
+            mat.SetColor("_BaseColor", new Color(0.85f, 0.84f, 0.78f)); // Putih gading birch
+            if (baseTex)
+            {
+                mat.SetTexture("_BaseMap", baseTex);
+                mat.SetTextureScale("_BaseMap", new Vector2(3f, 10f));
+            }
+        }
+        else
+        {
+            mat.SetColor("_BaseColor", new Color(0.35f, 0.24f, 0.16f)); // Cokelat tua kulit kayu
+            if (baseTex)
+            {
+                mat.SetTexture("_BaseMap", baseTex);
+                mat.SetTextureScale("_BaseMap", new Vector2(2f, 8f));
+            }
+        }
+
+        if (normTex)
+        {
+            FixTextureAsNormalMap(AssetDatabase.GetAssetPath(normTex));
+            mat.SetTexture("_BumpMap", normTex);
+            mat.SetTextureScale("_BumpMap", new Vector2(2f, 8f));
+            mat.EnableKeyword("_NORMALMAP");
+            mat.SetFloat("_BumpScale", 0.9f);
+        }
+
+        mat.SetFloat("_Smoothness", 0.10f); // Roughness 0.9 alami
+        mat.SetFloat("_Metallic", 0.0f);
+        mat.enableInstancing = true;
+        EditorUtility.SetDirty(mat);
+        return mat;
     }
 
     public static Material SetupFoliageMaterial(string matName, string texName)

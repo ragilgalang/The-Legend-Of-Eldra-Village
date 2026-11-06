@@ -36,6 +36,7 @@ public class TreeWindSway : MonoBehaviour
     private Quaternion[] initialChildRotations;
     private Transform canopyTransform;
     private Vector3 canopyBaseScale;
+    private bool isUnifiedTree;
 
     void Awake()
     {
@@ -45,7 +46,12 @@ public class TreeWindSway : MonoBehaviour
         spatialPhase = (transform.position.x * 0.173f + transform.position.z * 0.269f);
         gustPhase = Random.Range(0f, 100f);
 
-        // Cache child transforms untuk animasi sekunder dedaunan/cabang
+        // Cek apakah model pohon merupakan pohon terpadu (memiliki sub-mesh Trunk dan Canopy_Foliage)
+        Transform trunkT = transform.Find("Trunk");
+        Transform canopyT = transform.Find("Canopy_Foliage");
+        isUnifiedTree = (trunkT != null && canopyT != null);
+
+        // Cache child transforms untuk animasi sekunder dedaunan/cabang jika bukan unified tree
         int childCount = transform.childCount;
         if (childCount > 0)
         {
@@ -56,7 +62,7 @@ public class TreeWindSway : MonoBehaviour
                 childBranches[i] = transform.GetChild(i);
                 initialChildRotations[i] = childBranches[i].localRotation;
 
-                // Cache canopy untuk animasi skala "napas"
+                // Cache canopy untuk animasi skala jika bukan unified tree
                 if (childBranches[i] != null && childBranches[i].name == "Canopy_Foliage")
                 {
                     canopyTransform = childBranches[i];
@@ -89,9 +95,19 @@ public class TreeWindSway : MonoBehaviour
         Quaternion swayRotation = Quaternion.AngleAxis(currentAngle, tiltAxis) 
                                 * Quaternion.AngleAxis(torsionAngle, windNorm);
 
+        // Seluruh pohon (batang, dahan, dan dedaunan) berayun serempak di transform root
         transform.localRotation = baseRotation * swayRotation;
 
-        // 3. Animasi Riak Sekunder Tajuk / Dedaunan (Child Leaves Flutter)
+        // 3. Jika model pohon adalah Unified Tree (Trunk + Canopy_Foliage):
+        // JANGAN putar anak secara terpisah atau skala canopy!
+        // Batang dan dedaunan harus 100% sinkron dan terkunci menyatu.
+        // Riak dedaunan lembut ditangani langsung oleh GPU vertex shader di RealisticFoliage.shader.
+        if (isUnifiedTree)
+        {
+            return;
+        }
+
+        // 4. Animasi Riak Sekunder Tajuk / Dedaunan untuk model prop semak modular lama
         if (childBranches != null)
         {
             for (int i = 0; i < childBranches.Length; i++)
@@ -110,8 +126,7 @@ public class TreeWindSway : MonoBehaviour
             }
         }
 
-        // 4. Animasi "Napas" Canopy — scale pulsate saat hembusan angin kuat
-        // Efek ini menyimulasikan gerakan massa dedaunan yang membuka-menutup seperti bernapas
+        // 5. Animasi skala untuk semak prop modular
         if (canopyTransform != null)
         {
             float breathe = 1.0f + Mathf.Sin(time * 1.8f + spatialPhase * 0.7f) * 0.022f * (1f + gust);

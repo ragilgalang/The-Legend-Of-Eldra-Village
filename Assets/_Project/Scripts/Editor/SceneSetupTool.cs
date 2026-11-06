@@ -686,9 +686,13 @@ public static class SceneSetupTool
 
         natureRoot = new GameObject("--- WILDERNESS ---");
 
-        var barkMat     = GetMedievalMat("M_Medieval_WoodTrim") ?? slavicMat;
-        var oakLeafMat  = AssetMaterialSetup.SetupFoliageMaterial("M_Foliage_Oak", "T_RealisticLeaf_Oak");
-        var pineLeafMat = AssetMaterialSetup.SetupFoliageMaterial("M_Foliage_Pine", "T_RealisticLeaf_Pine");
+        RealisticTreeBuilder.ClearCache();
+
+        var barkMat       = AssetMaterialSetup.SetupProceduralBarkMaterial(birch: false);
+        var birchBarkMat  = AssetMaterialSetup.SetupProceduralBarkMaterial(birch: true);
+        var summerLeafMat = AssetMaterialSetup.SetupProceduralFoliageMaterial("SUMMER");
+        var springLeafMat = AssetMaterialSetup.SetupProceduralFoliageMaterial("SPRING");
+        var autumnLeafMat = AssetMaterialSetup.SetupProceduralFoliageMaterial("AUTUMN");
 
         string[] rockModels = {
             "EA03_Environment_Rock_CatHead_01a", "EA03_Environment_Rock_CatHead_01b",
@@ -717,14 +721,18 @@ public static class SceneSetupTool
             float scale = Random.Range(1.0f, 1.3f);
             GameObject treeObj;
 
-            // Variasi pohon desa: Pohon Ek Rimbun dan Pohon Birch Indah
-            if (innerIndex % 3 == 0)
+            // Variasi pohon desa: Pohon Ek Rimbun, Pohon Birch Indah, dan Pohon Ek Musim Gugur
+            if (innerIndex % 4 == 0)
             {
-                treeObj = RealisticTreeBuilder.BuildBirchTree(pos, scale, natureRoot.transform, barkMat, oakLeafMat);
+                treeObj = RealisticTreeBuilder.BuildAutumnOakTree(pos, scale, natureRoot.transform, barkMat, autumnLeafMat);
+            }
+            else if (innerIndex % 3 == 0)
+            {
+                treeObj = RealisticTreeBuilder.BuildBirchTree(pos, scale, natureRoot.transform, birchBarkMat, springLeafMat);
             }
             else
             {
-                treeObj = RealisticTreeBuilder.BuildOakTree(pos, scale, natureRoot.transform, barkMat, oakLeafMat);
+                treeObj = RealisticTreeBuilder.BuildOakTree(pos, scale, natureRoot.transform, barkMat, summerLeafMat);
             }
 
             if (treeObj)
@@ -766,14 +774,18 @@ public static class SceneSetupTool
             Vector3 pos = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
             float scale = Random.Range(0.95f, 1.45f);
 
-            // Kombinasi Pohon Pinus Pegunungan & Pohon Ek Lebat
-            if (i % 2 == 0)
+            // Kombinasi Pohon Pinus Pegunungan, Pohon Ek Lebat, & Ek Keemasan
+            if (i % 3 == 0)
             {
-                RealisticTreeBuilder.BuildPineTree(pos, scale, natureRoot.transform, barkMat, pineLeafMat);
+                RealisticTreeBuilder.BuildPineTree(pos, scale, natureRoot.transform, barkMat, summerLeafMat);
+            }
+            else if (i % 5 == 0)
+            {
+                RealisticTreeBuilder.BuildAutumnOakTree(pos, scale, natureRoot.transform, barkMat, autumnLeafMat);
             }
             else
             {
-                RealisticTreeBuilder.BuildOakTree(pos, scale, natureRoot.transform, barkMat, oakLeafMat);
+                RealisticTreeBuilder.BuildOakTree(pos, scale, natureRoot.transform, barkMat, summerLeafMat);
             }
 
             // Semak belukar di lantai hutan
