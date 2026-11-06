@@ -2,13 +2,14 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Kontroler AI Hewan untuk Desa Eldara (Anjing, Kucing, Serigala).
-/// Mendukung:
-/// - AI Patroli/Wandering organik di sekitar area asal
-/// - Animasi gerak (Animator / Animation clip jika tersedia, dengan procedural secondary motion)
-/// - Menengok ke arah pemain saat berada di dekatnya
-/// - Interaksi pemain [E] Elus Hewan dengan respon animasi ceria & pesan di layar
-/// - Mode Companion: Anjing akan mengikuti pemain setelah dielus!
+/// Kontroler AI Hewan untuk Desa Eldara (Anjing Milo, Kucing Luna/Oliver, Serigala).
+/// Menghadirkan pergerakan halus, alami, dan realistis:
+/// - Animasi skeletal mulus (Idle & Walking dengan peredaman gerak alami)
+/// - Akselerasi & deselerasi halus (tidak mendadak berhenti/mulai)
+/// - Rotasi berbelok halus (Smooth Rotation Damping tanpa patah-patah)
+/// - Penyesuaian kemiringan tanah (Terrain Normal Slope Alignment)
+/// - AI Wandering dengan micro-pause penasaran (sniffing, looking around)
+/// - Mode Companion: Anjing mengikuti pemain dengan kecepatan adaptif
 /// </summary>
 public class AnimalController : Interactable
 {
@@ -18,22 +19,24 @@ public class AnimalController : Interactable
     public AnimalType animalType = AnimalType.Dog;
     public string animalName = "Milo";
 
-    [Header("Parameter Gerak")]
-    public float wanderRadius = 6.0f;
-    public float moveSpeed = 1.8f;
+    [Header("Parameter Gerak Realistis")]
+    public float wanderRadius = 7.0f;
+    public float moveSpeed = 1.9f;
+    public float acceleration = 3.5f;
+    public float turnSpeed = 220.0f;
     public float idleTimeMin = 2.5f;
-    public float idleTimeMax = 5.5f;
+    public float idleTimeMax = 6.0f;
 
-    [Header("Interaksi")]
+    [Header("Interaksi & Companion")]
     [TextArea(2, 3)]
     public string petMessage = "Guk! Milo mengibaskan ekornya riang dan tampak sangat senang!";
     public bool canFollowPlayer = true;
-    public float companionDuration = 35.0f;
+    public float companionDuration = 40.0f;
 
     // Komponen
     private NavMeshAgent navAgent;
     private Animator animator;
-    private Animation legacyAnim;
+    private Transform visualTransform;
     private Transform playerTransform;
 
     // AI State
@@ -42,47 +45,58 @@ public class AnimalController : Interactable
 
     private Vector3 homePosition;
     private Vector3 currentTarget;
+    private float currentSpeed;
     private float stateTimer;
     private float companionTimer;
-    private Quaternion baseLocalRot;
-    private Vector3 baseLocalScale;
+    private float idleSubTimer;
+    private float idleHeadYaw;
 
-    // Procedural animation
+    // Ground slope alignment
+    private Vector3 groundNormal = Vector3.up;
+
+    // Procedural secondary motion
     private float stepCycle;
     private float breatheCycle;
 
     void Awake()
     {
         homePosition = transform.position;
-        baseLocalRot = transform.localRotation;
-        baseLocalScale = transform.localScale;
 
         navAgent = GetComponent<NavMeshAgent>();
-        animator = GetComponentInChildren<Animator>();
-        legacyAnim = GetComponentInChildren<Animation>();
+        if (navAgent)
+        {
+            navAgent.updateRotation = false; // Kita kendalikan rotasi secara manual agar jauh lebih halus!
+            navAgent.speed = moveSpeed;
+            navAgent.acceleration = acceleration * 2f;
+        }
 
-        // Set prompt interaksi default
+        // Cache visual child transform & animator
+        if (transform.childCount > 0)
+        {
+            visualTransform = transform.GetChild(0);
+            animator = visualTransform.GetComponent<Animator>();
+        }
+        if (!animator) animator = GetComponentInChildren<Animator>();
+
         prompt = $"Tekan E untuk mengelus {animalName}";
     }
 
     void Start()
     {
-        // Cari player
         var p = GameObject.FindWithTag("Player");
         if (p) playerTransform = p.transform;
 
-        stateTimer = Random.Range(1.0f, 3.0f);
-        TryPlayAnimation("idle");
+        stateTimer = Random.Range(1.0f, 2.5f);
+        SetAnimationMoving(false);
     }
 
     void Update()
     {
         breatheCycle += Time.deltaTime * 2.2f;
 
-        // Cek jarak ke player
         float distToPlayer = playerTransform ? Vector3.Distance(transform.position, playerTransform.position) : 999f;
 
-        // Update Companion Mode jika sedang aktif
+        // 1. Eksekusi state AI
         if (currentState == State.FollowingPlayer)
         {
             UpdateCompanionState(distToPlayer);
@@ -92,8 +106,14 @@ public class AnimalController : Interactable
             UpdateWanderState(distToPlayer);
         }
 
-        // Terapkan procedural motion lembut (napas & goyangan tubuh saat berjalan)
-        ApplyProceduralMotion();
+        // 2. Deteksi kemiringan tanah secara dinamis
+        AlignWithGroundSlope();
+
+        // 3. Sinkronisasi Animator
+        UpdateAnimator();
+
+        // 4. Procedural Secondary Animation (Napas halus & bobbing)
+        ApplyProceduralSecondaryMotion();
     }
 
     private void UpdateWanderState(float distToPlayer)
@@ -103,72 +123,105 @@ public class AnimalController : Interactable
         switch (currentState)
         {
             case State.Idle:
-                // Jika pemain sangat dekat (kurang dari 2.5m) dan hewan jinak, tengok ke arah pemain
-                if (distToPlayer < 2.5f && (animalType == AnimalType.Dog || animalType == AnimalType.Cat))
+                // Perlambat kecepatan sampai 0 secara halus
+                currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, acceleration * Time.deltaTime);
+
+                // Micro-behavior saat diam: tengok kiri-kanan santai atau tatap pemain jika dekat
+                idleSubTimer -= Time.deltaTime;
+                if (idleSubTimer <= 0f)
                 {
-                    LookTowards(playerTransform.position, 3.0f);
+                    idleSubTimer = Random.Range(2.0f, 4.0f);
+                    idleHeadYaw = Random.Range(-25f, 25f);
+                }
+
+                if (distToPlayer < 3.0f && (animalType == AnimalType.Dog || animalType == AnimalType.Cat))
+                {
+                    SmoothLookTowards(playerTransform.position, turnSpeed * 0.7f);
+                }
+                else
+                {
+                    // Goyangkan arah tatapan sedikit secara organik
+                    Vector3 lookDir = transform.forward + transform.right * (idleHeadYaw * 0.015f);
+                    SmoothLookTowards(transform.position + lookDir, turnSpeed * 0.4f);
                 }
 
                 if (stateTimer <= 0f)
                 {
-                    // Pilih tujuan baru
+                    // Pilih tujuan baru dalam radius
                     Vector2 randCircle = Random.insideUnitCircle * wanderRadius;
                     currentTarget = homePosition + new Vector3(randCircle.x, 0, randCircle.y);
 
-                    // Clamp ke tanah
-                    if (Physics.Raycast(currentTarget + Vector3.up * 5f, Vector3.down, out RaycastHit hit, 10f))
+                    if (Physics.Raycast(currentTarget + Vector3.up * 8f, Vector3.down, out RaycastHit hit, 15f))
                     {
                         currentTarget = hit.point;
                     }
 
                     if (navAgent && navAgent.isOnNavMesh)
                     {
-                        navAgent.speed = moveSpeed;
                         navAgent.SetDestination(currentTarget);
                     }
 
                     currentState = State.Wandering;
-                    stateTimer = Random.Range(4.0f, 8.0f);
-                    TryPlayAnimation("walk");
+                    stateTimer = Random.Range(4.5f, 9.0f);
                 }
                 break;
 
             case State.Wandering:
-                // Gerak manual jika NavMesh belum di-bake
-                if (!navAgent || !navAgent.isOnNavMesh)
+                // Navigasi menuju target
+                Vector3 moveDir = Vector3.zero;
+
+                if (navAgent && navAgent.isOnNavMesh)
                 {
-                    Vector3 dir = (currentTarget - transform.position);
-                    dir.y = 0;
-                    if (dir.sqrMagnitude > 0.2f)
+                    if (navAgent.hasPath)
                     {
-                        LookTowards(currentTarget, 5.0f);
-                        transform.position += transform.forward * (moveSpeed * Time.deltaTime);
-                        stepCycle += Time.deltaTime * 8.0f;
+                        moveDir = navAgent.desiredVelocity.normalized;
                     }
                     else
                     {
-                        // Sampai di tujuan
-                        currentState = State.Idle;
-                        stateTimer = Random.Range(idleTimeMin, idleTimeMax);
-                        TryPlayAnimation("idle");
+                        moveDir = (currentTarget - transform.position).normalized;
+                    }
+
+                    // Akselerasi halus
+                    float targetSpeed = (navAgent.remainingDistance > 0.8f) ? moveSpeed : (moveSpeed * 0.5f);
+                    currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, acceleration * Time.deltaTime);
+                    navAgent.speed = currentSpeed;
+
+                    if (!navAgent.pathPending && navAgent.remainingDistance <= 0.45f)
+                    {
+                        ArriveAtIdle();
+                        return;
                     }
                 }
                 else
                 {
-                    stepCycle += Time.deltaTime * (navAgent.velocity.magnitude * 4.0f);
-                    if (!navAgent.pathPending && navAgent.remainingDistance <= 0.4f)
+                    // Fallback navigasi tanpa NavMesh
+                    Vector3 toTarget = currentTarget - transform.position;
+                    toTarget.y = 0;
+                    float dist = toTarget.magnitude;
+
+                    if (dist > 0.4f)
                     {
-                        currentState = State.Idle;
-                        stateTimer = Random.Range(idleTimeMin, idleTimeMax);
-                        TryPlayAnimation("idle");
+                        moveDir = toTarget.normalized;
+                        currentSpeed = Mathf.MoveTowards(currentSpeed, moveSpeed, acceleration * Time.deltaTime);
+                        transform.position += transform.forward * (currentSpeed * Time.deltaTime);
                     }
+                    else
+                    {
+                        ArriveAtIdle();
+                        return;
+                    }
+                }
+
+                // Rotasi berbelok halus menghadap arah jalan
+                if (moveDir.sqrMagnitude > 0.001f)
+                {
+                    SmoothLookTowards(transform.position + moveDir, turnSpeed);
+                    stepCycle += Time.deltaTime * (currentSpeed * 4.5f);
                 }
 
                 if (stateTimer <= 0f)
                 {
-                    currentState = State.Idle;
-                    stateTimer = Random.Range(idleTimeMin, idleTimeMax);
-                    TryPlayAnimation("idle");
+                    ArriveAtIdle();
                 }
                 break;
         }
@@ -179,106 +232,152 @@ public class AnimalController : Interactable
         companionTimer -= Time.deltaTime;
         if (companionTimer <= 0f || !playerTransform)
         {
-            // Companion mode selesai, kembali pulang
             currentState = State.Idle;
             stateTimer = 2.0f;
-            TryPlayAnimation("idle");
+            prompt = $"Tekan E untuk mengelus {animalName}";
             return;
         }
 
-        // Ikuti pemain dengan jarak aman 2.2 - 3.2 meter
-        if (distToPlayer > 3.0f)
+        // Target companion: berada di samping kanan-belakang pemain
+        Vector3 companionSlot = playerTransform.position 
+                              - playerTransform.forward * 1.8f 
+                              + playerTransform.right * 1.2f;
+
+        float distToSlot = Vector3.Distance(transform.position, companionSlot);
+
+        if (distToSlot > 0.6f)
         {
-            Vector3 targetPos = playerTransform.position - playerTransform.forward * 2.0f;
+            // Kecepatan adaptif mengikuti pemain (trot santai saat pemain jalan, lari saat pemain lari)
+            float desiredSpeed = Mathf.Clamp(distToSlot * 1.25f, moveSpeed * 0.8f, moveSpeed * 1.8f);
+            currentSpeed = Mathf.MoveTowards(currentSpeed, desiredSpeed, acceleration * 1.5f * Time.deltaTime);
+
+            Vector3 moveDir = (companionSlot - transform.position).normalized;
+
             if (navAgent && navAgent.isOnNavMesh)
             {
-                navAgent.speed = moveSpeed * 1.45f;
-                navAgent.SetDestination(targetPos);
+                navAgent.speed = currentSpeed;
+                navAgent.SetDestination(companionSlot);
+                if (navAgent.desiredVelocity.sqrMagnitude > 0.01f)
+                    moveDir = navAgent.desiredVelocity.normalized;
             }
             else
             {
-                LookTowards(playerTransform.position, 6.0f);
-                transform.position += transform.forward * (moveSpeed * 1.4f * Time.deltaTime);
+                transform.position += transform.forward * (currentSpeed * Time.deltaTime);
             }
-            stepCycle += Time.deltaTime * 10.0f;
-            TryPlayAnimation("walk");
+
+            SmoothLookTowards(transform.position + moveDir, turnSpeed * 1.2f);
+            stepCycle += Time.deltaTime * (currentSpeed * 4.5f);
         }
         else
         {
             // Berhenti di samping pemain dan menatap pemain dengan senang
+            currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, acceleration * 2f * Time.deltaTime);
             if (navAgent && navAgent.isOnNavMesh) navAgent.ResetPath();
-            LookTowards(playerTransform.position, 4.0f);
-            TryPlayAnimation("idle");
+            SmoothLookTowards(playerTransform.position, turnSpeed * 0.9f);
         }
     }
 
-    private void LookTowards(Vector3 targetPos, float speed)
+    private void ArriveAtIdle()
     {
-        Vector3 dir = (targetPos - transform.position);
+        currentState = State.Idle;
+        stateTimer = Random.Range(idleTimeMin, idleTimeMax);
+        if (navAgent && navAgent.isOnNavMesh) navAgent.ResetPath();
+    }
+
+    private void SmoothLookTowards(Vector3 targetPos, float speed)
+    {
+        Vector3 dir = targetPos - transform.position;
         dir.y = 0;
         if (dir.sqrMagnitude > 0.001f)
         {
-            Quaternion targetRot = Quaternion.LookRotation(dir);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * speed);
+            Quaternion targetRot = Quaternion.LookRotation(dir, groundNormal);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, speed * Time.deltaTime);
         }
     }
 
-    private void ApplyProceduralMotion()
+    private void AlignWithGroundSlope()
     {
-        // 1. Napas lembut (subtle breathing scale)
-        float breathe = 1.0f + Mathf.Sin(breatheCycle) * 0.015f;
-        transform.localScale = new Vector3(baseLocalScale.x * breathe, baseLocalScale.y * (2f - breathe), baseLocalScale.z * breathe);
-
-        // 2. Sedikit goyangan saat berjalan (walking bob & roll)
-        if (currentState == State.Wandering || currentState == State.FollowingPlayer)
+        // Raycast ke bawah untuk mendeteksi kontur tanah & cobblestone
+        if (Physics.Raycast(transform.position + Vector3.up * 1.0f, Vector3.down, out RaycastHit hit, 2.5f))
         {
-            float roll = Mathf.Sin(stepCycle) * 2.2f;
-            float pitch = Mathf.Cos(stepCycle * 2f) * 1.2f;
-            transform.localRotation *= Quaternion.Euler(pitch * 0.3f, 0, roll * 0.3f);
+            groundNormal = Vector3.Slerp(groundNormal, hit.normal, Time.deltaTime * 6.0f);
+            // Ketinggian kaki pas menyentuh tanah
+            Vector3 pos = transform.position;
+            pos.y = Mathf.MoveTowards(pos.y, hit.point.y, Time.deltaTime * 5.0f);
+            transform.position = pos;
+        }
+        else
+        {
+            groundNormal = Vector3.Slerp(groundNormal, Vector3.up, Time.deltaTime * 3.0f);
+        }
+    }
+
+    private void UpdateAnimator()
+    {
+        bool isMoving = currentSpeed > 0.15f;
+        SetAnimationMoving(isMoving);
+
+        if (animator != null)
+        {
+            // Skala kecepatan playback animasi agar langkah kaki sinkron dengan kecepatan jalan
+            float animSpeedRatio = isMoving ? Mathf.Clamp(currentSpeed / moveSpeed, 0.7f, 1.4f) : 1.0f;
+            animator.speed = animSpeedRatio;
+        }
+    }
+
+    private void SetAnimationMoving(bool moving)
+    {
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            animator.SetBool("isMoving", moving);
+        }
+    }
+
+    private void ApplyProceduralSecondaryMotion()
+    {
+        if (!visualTransform) return;
+
+        // 1. Napas lembut (subtle breathing cycle)
+        float breathe = 1.0f + Mathf.Sin(breatheCycle) * 0.012f;
+        visualTransform.localScale = new Vector3(
+            visualTransform.localScale.x * breathe,
+            visualTransform.localScale.y * (2f - breathe),
+            visualTransform.localScale.z * breathe
+        );
+
+        // 2. Micro-roll saat melangkah agar tubuh tampak organik
+        if (currentSpeed > 0.2f)
+        {
+            float roll = Mathf.Sin(stepCycle) * 1.2f;
+            visualTransform.localRotation = Quaternion.Euler(0, 0, roll);
+        }
+        else
+        {
+            visualTransform.localRotation = Quaternion.Slerp(visualTransform.localRotation, Quaternion.identity, Time.deltaTime * 5f);
         }
     }
 
     public override void Interact(PlayerController player)
     {
-        // Tampilkan feedback teks interaksi
         if (HintManager.Instance != null)
         {
             HintManager.Instance.Show($"pet_{animalName}", petMessage);
         }
 
-        // Efek lompat kecil ceria
-        transform.position += Vector3.up * 0.25f;
+        // Lompat kecil ceria
+        transform.position += Vector3.up * 0.18f;
 
         if (animalType == AnimalType.Dog && canFollowPlayer)
         {
             currentState = State.FollowingPlayer;
             companionTimer = companionDuration;
-            prompt = $"{animalName} sedang menemanimu!";
+            prompt = $"{animalName} sedang menemanimu berjalan-jalan!";
         }
         else if (animalType == AnimalType.Cat)
         {
-            // Kucing mengeong riang
             currentState = State.Idle;
-            stateTimer = 4.0f;
-        }
-    }
-
-    private void TryPlayAnimation(string clipKeyword)
-    {
-        if (animator != null && animator.runtimeAnimatorController != null)
-        {
-            animator.SetBool("isMoving", clipKeyword == "walk");
-        }
-        else if (legacyAnim != null)
-        {
-            foreach (AnimationState state in legacyAnim)
-            {
-                if (state.name.ToLower().Contains(clipKeyword))
-                {
-                    legacyAnim.CrossFade(state.name, 0.25f);
-                    return;
-                }
-            }
+            stateTimer = 4.5f;
+            currentSpeed = 0f;
         }
     }
 }

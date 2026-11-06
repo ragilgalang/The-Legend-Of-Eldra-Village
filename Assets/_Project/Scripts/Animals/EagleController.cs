@@ -12,9 +12,9 @@ public class EagleController : MonoBehaviour
 {
     [Header("Parameter Terbang")]
     public Vector3 flightCenter = new Vector3(0f, 24f, 5f);
-    public float orbitRadius = 40.0f;
+    public float orbitRadius = 42.0f;
     public float flightSpeed = 12.0f;
-    public float bankAngle = 24.0f;
+    public float bankAngle = 20.0f;
 
     [Header("Variasi Ketinggian")]
     public float altitudeVariation = 3.5f;
@@ -28,7 +28,7 @@ public class EagleController : MonoBehaviour
 
     void Awake()
     {
-        modelTransform = transform.GetChild(0) != null ? transform.GetChild(0) : transform;
+        modelTransform = transform.childCount > 0 ? transform.GetChild(0) : transform;
         baseModelRot = modelTransform.localRotation;
         currentAngle = Random.Range(0f, 360f);
     }
@@ -50,36 +50,36 @@ public class EagleController : MonoBehaviour
             flightCenter.z + Mathf.Sin(rad) * orbitRadius
         );
 
-        transform.position = newPos;
+        transform.position = Vector3.Lerp(transform.position, newPos, Time.deltaTime * 8f);
 
         // 3. Arah terbang elang (tangen lingkaran)
         Vector3 tangent = new Vector3(-Mathf.Sin(rad), 0, Mathf.Cos(rad)).normalized;
 
         // Sedikit pitch naik/turun sesuai variasi ketinggian
-        float pitchAngle = Mathf.Cos(Time.time * altitudeSpeed) * -6.0f;
+        float pitchAngle = Mathf.Cos(Time.time * altitudeSpeed) * -5.0f;
 
-        Quaternion flightRotation = Quaternion.LookRotation(tangent, Vector3.up)
-                                  * Quaternion.Euler(pitchAngle, 0, bankAngle);
+        Quaternion targetFlightRot = Quaternion.LookRotation(tangent, Vector3.up)
+                                   * Quaternion.Euler(pitchAngle, 0, -bankAngle);
 
-        transform.rotation = flightRotation;
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetFlightRot, Time.deltaTime * 4.0f);
 
         // 4. Siklus kepakan sayap elang (Gliding vs Flapping)
         flapCycleTimer += Time.deltaTime;
-        if (!isFlapping && flapCycleTimer > 6.0f)
+        if (!isFlapping && flapCycleTimer > 6.5f)
         {
             isFlapping = true;
             flapCycleTimer = 0f;
         }
-        else if (isFlapping && flapCycleTimer > 2.2f)
+        else if (isFlapping && flapCycleTimer > 2.5f)
         {
             isFlapping = false;
             flapCycleTimer = 0f;
         }
 
         // Animasi procedural kepakan elang
-        if (isFlapping && modelTransform != null)
+        if (modelTransform != null)
         {
-            float flap = Mathf.Sin(Time.time * 9.0f) * 0.08f;
+            float flap = isFlapping ? Mathf.Sin(Time.time * 8.5f) * 0.08f : 0f;
             modelTransform.localPosition = new Vector3(0, flap, 0);
         }
     }

@@ -1,12 +1,13 @@
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.Animations;
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
 
 /// <summary>
 /// Tool penyiapan dan penempatan aset fauna/hewan untuk Desa Eldara.
-/// Mengonfigurasi model 3D, material URP, collider, dan AI Controller untuk:
+/// Mengonfigurasi model 3D, material URP, Animator Controller otomatis, collider, dan AI Controller untuk:
 /// - Dog (Milo - Anjing Penjaga Desa)
 /// - Cat (Luna & Oliver - Kucing Desa)
 /// - Wolf (Kawanan Serigala Rimba)
@@ -17,15 +18,30 @@ public static class AnimalAssetSetup
 {
     private const string AnimalsFolder = "Assets/_Project/Art/Animals";
     private const string MatsFolder = "Assets/_Project/Art/Animals/Materials";
+    private const string AnimsFolder = "Assets/_Project/Art/Animals/Animations";
+
+    public static void PreflightSetup()
+    {
+        EnsureFolders();
+        EnsureMaterials();
+        ConfigureModelImporters();
+        EnsureAnimatorControllers();
+        AssetDatabase.SaveAssets();
+    }
+
+    private static void EnsureFolders()
+    {
+        if (!AssetDatabase.IsValidFolder(AnimalsFolder))
+            AssetDatabase.CreateFolder("Assets/_Project/Art", "Animals");
+        if (!AssetDatabase.IsValidFolder(MatsFolder))
+            AssetDatabase.CreateFolder(AnimalsFolder, "Materials");
+        if (!AssetDatabase.IsValidFolder(AnimsFolder))
+            AssetDatabase.CreateFolder(AnimalsFolder, "Animations");
+    }
 
     public static void EnsureMaterials()
     {
-        if (!AssetDatabase.IsValidFolder(MatsFolder))
-        {
-            if (!AssetDatabase.IsValidFolder(AnimalsFolder))
-                AssetDatabase.CreateFolder("Assets/_Project/Art", "Animals");
-            AssetDatabase.CreateFolder(AnimalsFolder, "Materials");
-        }
+        EnsureFolders();
 
         // 1. Dog (Anjing Desa) - Bulu keemasan hangat
         GetOrCreateMat("M_Animal_Dog", new Color(0.76f, 0.48f, 0.22f), 0.25f);
@@ -49,8 +65,6 @@ public static class AnimalAssetSetup
         GetOrCreateMat("M_Animal_Fish_Belly", new Color(0.95f, 0.88f, 0.55f), 0.55f);
         GetOrCreateMat("M_Animal_Fish_Black", new Color(0.1f, 0.1f, 0.1f), 0.85f);
         GetOrCreateMat("M_Animal_Fish_White", new Color(0.95f, 0.95f, 0.95f), 0.4f);
-
-        AssetDatabase.SaveAssets();
     }
 
     private static Material GetOrCreateMat(string matName, Color color, float smoothness)
@@ -73,6 +87,121 @@ public static class AnimalAssetSetup
     public static Material GetMaterial(string matName)
     {
         return AssetDatabase.LoadAssetAtPath<Material>($"{MatsFolder}/{matName}.mat");
+    }
+
+    /// <summary>
+    /// Mengonfigurasi ModelImporter untuk FBX hewan agar animasi di-set LoopTime = true
+    /// </summary>
+    public static void ConfigureModelImporters()
+    {
+        string[] animals = { "Dog", "Cat", "Wolf", "Eagle" };
+        foreach (var a in animals)
+        {
+            string path = $"{AnimalsFolder}/FBX/{a}.fbx";
+            var importer = AssetImporter.GetAtPath(path) as ModelImporter;
+            if (importer != null)
+            {
+                bool reimport = false;
+                if (importer.animationType != ModelImporterAnimationType.Generic)
+                {
+                    importer.animationType = ModelImporterAnimationType.Generic;
+                    reimport = true;
+                }
+
+                var defaultClips = importer.defaultClipAnimations;
+                if (defaultClips != null && defaultClips.Length > 0)
+                {
+                    var customClips = new List<ModelImporterClipAnimation>();
+                    foreach (var dc in defaultClips)
+                    {
+                        var clip = new ModelImporterClipAnimation();
+                        EditorUtility.CopySerialized(dc, clip);
+                        clip.name = dc.name;
+                        clip.takeName = dc.takeName;
+                        clip.loopTime = true;
+                        customClips.Add(clip);
+                    }
+                    importer.clipAnimations = customClips.ToArray();
+                    reimport = true;
+                }
+
+                if (reimport)
+                {
+                    importer.SaveAndReimport();
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Membuat Runtime Animator Controller otomatis untuk setiap hewan
+    /// </summary>
+    public static void EnsureAnimatorControllers()
+    {
+        EnsureAnimalController("Dog");
+        EnsureAnimalController("Cat");
+        EnsureAnimalController("Wolf");
+        EnsureAnimalController("Eagle");
+    }
+
+    private static RuntimeAnimatorController EnsureAnimalController(string animalName)
+    {
+        string controllerPath = $"{AnimsFolder}/AC_{animalName}.controller";
+        var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+        if (ctrl != null) return ctrl;
+
+        string fbxPath = $"{AnimalsFolder}/FBX/{animalName}.fbx";
+        AnimationClip idleClip = null;
+        AnimationClip walkClip = null;
+
+        foreach (var obj in AssetDatabase.LoadAllAssetsAtPath(fbxPath))
+        {
+            if (obj is AnimationClip clip && !clip.name.StartsWith("__preview__"))
+            {
+                string lower = clip.name.ToLowerInvariant();
+                if (lower.Contains("walk") || lower.Contains("run"))
+                    walkClip = clip;
+                else if (lower.Contains("idle"))
+                    idleClip = clip;
+            }
+        }
+
+        if (idleClip == null) return null;
+
+        ctrl = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+        ctrl.AddParameter("isMoving", AnimatorControllerParameterType.Bool);
+
+        var rootSm = ctrl.layers[0].stateMachine;
+
+        var idleState = rootSm.AddState("Idle");
+        idleState.motion = idleClip;
+        rootSm.defaultState = idleState;
+
+        if (walkClip != null)
+        {
+            var walkState = rootSm.AddState("Walk");
+            walkState.motion = walkClip;
+
+            // Idle -> Walk
+            var toWalk = idleState.AddTransition(walkState);
+            toWalk.AddCondition(AnimatorConditionMode.If, 0, "isMoving");
+            toWalk.duration = 0.2f;
+            toWalk.hasExitTime = false;
+
+            // Walk -> Idle
+            var toIdle = walkState.AddTransition(idleState);
+            toIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isMoving");
+            toIdle.duration = 0.25f;
+            toIdle.hasExitTime = false;
+        }
+
+        EditorUtility.SetDirty(ctrl);
+        return ctrl;
+    }
+
+    public static RuntimeAnimatorController GetAnimatorController(string animalName)
+    {
+        return AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>($"{AnimsFolder}/AC_{animalName}.controller");
     }
 
     public static GameObject LoadAnimalModel(string animalName)
@@ -138,11 +267,13 @@ public static class AnimalAssetSetup
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  SPAWNERS HEWAN DESA ELDARA
+    //  SPAWNERS HEWAN DESA ELDARA (SKALA REALISTIS)
     // ─────────────────────────────────────────────────────────────────────
 
     public static GameObject SpawnDog(Vector3 position, Quaternion rotation, Transform parent)
     {
+        PreflightSetup();
+
         var modelPrefab = LoadAnimalModel("Dog");
         if (!modelPrefab) return null;
 
@@ -155,30 +286,37 @@ public static class AnimalAssetSetup
         visual.name = "Visual";
         visual.transform.localPosition = Vector3.zero;
         visual.transform.localRotation = Quaternion.identity;
-        visual.transform.localScale = Vector3.one * 0.9f;
+        // Skala realistis: panjang ~0.85m, tinggi punggung ~0.60m
+        visual.transform.localScale = Vector3.one * 0.15f;
 
         ApplyAnimalMaterials(visual, "Dog");
 
-        // Collider
-        var col = dogRoot.AddComponent<CapsuleCollider>();
-        col.center = new Vector3(0, 0.45f, 0);
-        col.radius = 0.38f;
-        col.height = 1.0f;
+        // Hubungkan Animator Controller
+        var anim = visual.GetComponent<Animator>() ?? visual.AddComponent<Animator>();
+        var ac = GetAnimatorController("Dog");
+        if (ac != null) anim.runtimeAnimatorController = ac;
 
-        // NavMeshAgent
+        // Collider proporsional
+        var col = dogRoot.AddComponent<CapsuleCollider>();
+        col.center = new Vector3(0, 0.32f, 0);
+        col.radius = 0.26f;
+        col.height = 0.85f;
+
+        // NavMeshAgent proporsional
         var agent = dogRoot.AddComponent<NavMeshAgent>();
-        agent.radius = 0.35f;
-        agent.height = 0.8f;
-        agent.speed = 1.9f;
-        agent.acceleration = 6.0f;
-        agent.stoppingDistance = 0.3f;
+        agent.radius = 0.28f;
+        agent.height = 0.65f;
+        agent.speed = 2.0f;
+        agent.acceleration = 7.0f;
+        agent.angularSpeed = 240.0f;
+        agent.stoppingDistance = 0.35f;
 
         // AI Controller
         var ctrl = dogRoot.AddComponent<AnimalController>();
         ctrl.animalType = AnimalController.AnimalType.Dog;
         ctrl.animalName = "Milo";
         ctrl.wanderRadius = 8.0f;
-        ctrl.moveSpeed = 1.9f;
+        ctrl.moveSpeed = 2.0f;
         ctrl.petMessage = "Guk! Milo si anjing desa mengibaskan ekornya riang dan kini menemanimu berjalan-jalan!";
         ctrl.canFollowPlayer = true;
 
@@ -187,6 +325,8 @@ public static class AnimalAssetSetup
 
     public static GameObject SpawnCat(Vector3 position, Quaternion rotation, Transform parent, string catName, string petMsg, bool altColor = false)
     {
+        PreflightSetup();
+
         var modelPrefab = LoadAnimalModel("Cat");
         if (!modelPrefab) return null;
 
@@ -199,30 +339,37 @@ public static class AnimalAssetSetup
         visual.name = "Visual";
         visual.transform.localPosition = Vector3.zero;
         visual.transform.localRotation = Quaternion.identity;
-        visual.transform.localScale = Vector3.one * 0.72f;
+        // Skala realistis: panjang ~0.45m, tinggi punggung ~0.30m
+        visual.transform.localScale = Vector3.one * 0.075f;
 
         ApplyAnimalMaterials(visual, "Cat", altColor);
 
-        // Collider
-        var col = catRoot.AddComponent<CapsuleCollider>();
-        col.center = new Vector3(0, 0.3f, 0);
-        col.radius = 0.28f;
-        col.height = 0.7f;
+        // Hubungkan Animator Controller
+        var anim = visual.GetComponent<Animator>() ?? visual.AddComponent<Animator>();
+        var ac = GetAnimatorController("Cat");
+        if (ac != null) anim.runtimeAnimatorController = ac;
 
-        // NavMeshAgent
+        // Collider proporsional
+        var col = catRoot.AddComponent<CapsuleCollider>();
+        col.center = new Vector3(0, 0.16f, 0);
+        col.radius = 0.16f;
+        col.height = 0.45f;
+
+        // NavMeshAgent proporsional
         var agent = catRoot.AddComponent<NavMeshAgent>();
-        agent.radius = 0.25f;
-        agent.height = 0.6f;
-        agent.speed = 1.4f;
-        agent.acceleration = 5.0f;
-        agent.stoppingDistance = 0.3f;
+        agent.radius = 0.18f;
+        agent.height = 0.35f;
+        agent.speed = 1.35f;
+        agent.acceleration = 6.0f;
+        agent.angularSpeed = 280.0f;
+        agent.stoppingDistance = 0.25f;
 
         // AI Controller
         var ctrl = catRoot.AddComponent<AnimalController>();
         ctrl.animalType = AnimalController.AnimalType.Cat;
         ctrl.animalName = catName;
         ctrl.wanderRadius = 5.0f;
-        ctrl.moveSpeed = 1.4f;
+        ctrl.moveSpeed = 1.35f;
         ctrl.petMessage = petMsg;
         ctrl.canFollowPlayer = false;
 
@@ -231,6 +378,8 @@ public static class AnimalAssetSetup
 
     public static GameObject SpawnWolf(Vector3 position, Quaternion rotation, Transform parent, string wolfName = "Serigala Rimba")
     {
+        PreflightSetup();
+
         var modelPrefab = LoadAnimalModel("Wolf");
         if (!modelPrefab) return null;
 
@@ -243,30 +392,37 @@ public static class AnimalAssetSetup
         visual.name = "Visual";
         visual.transform.localPosition = Vector3.zero;
         visual.transform.localRotation = Quaternion.identity;
-        visual.transform.localScale = Vector3.one * 1.05f;
+        // Skala realistis serigala: panjang ~1.2m, tinggi ~0.80m
+        visual.transform.localScale = Vector3.one * 0.165f;
 
         ApplyAnimalMaterials(visual, "Wolf");
 
-        // Collider
+        // Hubungkan Animator Controller
+        var anim = visual.GetComponent<Animator>() ?? visual.AddComponent<Animator>();
+        var ac = GetAnimatorController("Wolf");
+        if (ac != null) anim.runtimeAnimatorController = ac;
+
+        // Collider proporsional
         var col = wolfRoot.AddComponent<CapsuleCollider>();
-        col.center = new Vector3(0, 0.5f, 0);
-        col.radius = 0.42f;
-        col.height = 1.25f;
+        col.center = new Vector3(0, 0.40f, 0);
+        col.radius = 0.30f;
+        col.height = 1.0f;
 
         // NavMeshAgent
         var agent = wolfRoot.AddComponent<NavMeshAgent>();
-        agent.radius = 0.4f;
-        agent.height = 1.0f;
-        agent.speed = 2.4f;
-        agent.acceleration = 7.0f;
-        agent.stoppingDistance = 0.5f;
+        agent.radius = 0.32f;
+        agent.height = 0.80f;
+        agent.speed = 2.6f;
+        agent.acceleration = 8.0f;
+        agent.angularSpeed = 260.0f;
+        agent.stoppingDistance = 0.45f;
 
         // AI Controller
         var ctrl = wolfRoot.AddComponent<AnimalController>();
         ctrl.animalType = AnimalController.AnimalType.Wolf;
         ctrl.animalName = wolfName;
-        ctrl.wanderRadius = 15.0f;
-        ctrl.moveSpeed = 2.4f;
+        ctrl.wanderRadius = 16.0f;
+        ctrl.moveSpeed = 2.6f;
         ctrl.petMessage = "Auuu! Serigala rimba menatapmu tajam dari sela rimbunnya pepohonan.";
         ctrl.canFollowPlayer = false;
 
@@ -275,6 +431,8 @@ public static class AnimalAssetSetup
 
     public static GameObject SpawnEagle(Vector3 flightCenter, Transform parent)
     {
+        PreflightSetup();
+
         var modelPrefab = LoadAnimalModel("Eagle");
         if (!modelPrefab) return null;
 
@@ -286,9 +444,14 @@ public static class AnimalAssetSetup
         visual.name = "Visual";
         visual.transform.localPosition = Vector3.zero;
         visual.transform.localRotation = Quaternion.identity;
-        visual.transform.localScale = Vector3.one * 1.35f;
+        // Skala rentang sayap elang perkasa ~2.0m
+        visual.transform.localScale = Vector3.one * 0.45f;
 
         ApplyAnimalMaterials(visual, "Eagle");
+
+        var anim = visual.GetComponent<Animator>() ?? visual.AddComponent<Animator>();
+        var ac = GetAnimatorController("Eagle");
+        if (ac != null) anim.runtimeAnimatorController = ac;
 
         var ctrl = eagleRoot.AddComponent<EagleController>();
         ctrl.flightCenter = flightCenter;
@@ -301,6 +464,8 @@ public static class AnimalAssetSetup
 
     public static GameObject SpawnFish(Vector3 position, Quaternion rotation, Transform parent)
     {
+        PreflightSetup();
+
         var modelPrefab = LoadAnimalModel("Piranha");
         if (!modelPrefab) return null;
 
@@ -313,7 +478,8 @@ public static class AnimalAssetSetup
         visual.name = "Visual";
         visual.transform.localPosition = Vector3.zero;
         visual.transform.localRotation = Quaternion.identity;
-        visual.transform.localScale = Vector3.one * 0.85f;
+        // Skala ikan air tawar ~0.45m
+        visual.transform.localScale = Vector3.one * 0.05f;
 
         ApplyAnimalMaterials(visual, "Piranha");
 
