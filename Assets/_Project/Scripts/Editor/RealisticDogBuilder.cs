@@ -499,8 +499,49 @@ public static class RealisticDogBuilder
         }
     }
 
+    // Warna per ras untuk material Dog.fbx
+    private static readonly System.Collections.Generic.Dictionary<DogBreed, Color> BreedColors =
+        new System.Collections.Generic.Dictionary<DogBreed, Color>
+    {
+        [DogBreed.Kintamani]       = new Color(0.88f, 0.84f, 0.76f),  // Putih krem Kintamani
+        [DogBreed.GoldenRetriever] = new Color(0.85f, 0.52f, 0.14f),  // Emas keemasan
+        [DogBreed.GermanShepherd]  = new Color(0.32f, 0.18f, 0.06f),  // Hitam cokelat sadel
+        [DogBreed.Dachshund]       = new Color(0.46f, 0.26f, 0.08f),  // Cokelat kopi
+        [DogBreed.FrenchBulldog]   = new Color(0.52f, 0.30f, 0.14f),  // Brindle tan
+        [DogBreed.SingingDog]      = new Color(0.82f, 0.74f, 0.58f),  // Kuning tawny
+    };
+
+    // Skala visual per ras agar proporsional tubuh berbeda-beda
+    private static readonly System.Collections.Generic.Dictionary<DogBreed, float> BreedScales =
+        new System.Collections.Generic.Dictionary<DogBreed, float>
+    {
+        [DogBreed.Kintamani]       = 0.145f,  // ~50 cm tinggi punggung
+        [DogBreed.GoldenRetriever] = 0.165f,  // ~58 cm
+        [DogBreed.GermanShepherd]  = 0.175f,  // ~62 cm
+        [DogBreed.Dachshund]       = 0.085f,  // ~23 cm (pendek, panjang)
+        [DogBreed.FrenchBulldog]   = 0.100f,  // ~30 cm (gempal)
+        [DogBreed.SingingDog]      = 0.135f,  // ~45 cm
+    };
+
+    // Kecepatan berjalan per ras
+    private static readonly System.Collections.Generic.Dictionary<DogBreed, float> BreedSpeeds =
+        new System.Collections.Generic.Dictionary<DogBreed, float>
+    {
+        [DogBreed.Kintamani]       = 2.0f,
+        [DogBreed.GoldenRetriever] = 1.95f,
+        [DogBreed.GermanShepherd]  = 2.3f,
+        [DogBreed.Dachshund]       = 1.4f,
+        [DogBreed.FrenchBulldog]   = 1.3f,
+        [DogBreed.SingingDog]      = 2.1f,
+    };
+
+    private const string FbxFolder = "Assets/_Project/Art/Animals";
+    private const string MatsFolder = "Assets/_Project/Art/Animals/Materials";
+    private const string AnimsFolder = "Assets/_Project/Art/Animals/Animations";
+
     // ─────────────────────────────────────────────────────────────────────
-    //  SPAWNER ANJING DESA 100% ANTI-MELAYANG
+    //  SPAWNER ANJING DESA — MENGGUNAKAN Dog.fbx BERANIMASIKAN PENUH
+    //  Kaki benar-benar melangkah, 100% anti-melayang, tanpa sliding
     // ─────────────────────────────────────────────────────────────────────
 
     public static GameObject SpawnDogBreed(
@@ -510,40 +551,87 @@ public static class RealisticDogBuilder
         var sp = BreedSpecs[breed];
         string dogName = customName ?? sp.name;
 
+        // ── 1. Root GameObject ──────────────────────────────────────────
         var dogRoot = new GameObject($"Animal_Dog_{dogName.Replace(" ", "_")}");
         dogRoot.transform.SetParent(parent);
-        // Tepatkan posisi awal di tanah
-        position.y = 0f;
+        position.y = 0f;  // Tepatkan ke tanah
         dogRoot.transform.position = position;
         dogRoot.transform.rotation = rotation;
 
-        var visualGo = new GameObject("Visual");
-        visualGo.transform.SetParent(dogRoot.transform, false);
-        visualGo.transform.localPosition = Vector3.zero;
-        visualGo.transform.localRotation = Quaternion.identity;
-        visualGo.transform.localScale = Vector3.one;
+        // ── 2. Load Dog.fbx (rigged, beranimasikan) ─────────────────────
+        string fbxPath = $"{FbxFolder}/FBX/Dog.fbx";
+        var dogPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(fbxPath);
 
-        var mf = visualGo.AddComponent<MeshFilter>();
-        mf.sharedMesh = GetOrCreateDogMesh(breed);
+        GameObject visual;
+        if (dogPrefab != null)
+        {
+            visual = UnityEngine.Object.Instantiate(dogPrefab, dogRoot.transform);
+            visual.name = "Visual";
+            visual.transform.localPosition = Vector3.zero;
+            visual.transform.localRotation = Quaternion.identity;
 
-        var mr = visualGo.AddComponent<MeshRenderer>();
-        mr.sharedMaterial = GetOrCreateDogMaterial(breed);
-        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-        mr.receiveShadows = true;
+            float scale = BreedScales.ContainsKey(breed) ? BreedScales[breed] : 0.145f;
+            visual.transform.localScale = Vector3.one * scale;
 
-        // Collider proporsional horizontal Z (sepanjang tubuh 4 kaki)
+            // Terapkan material warna ras ke semua renderer di dalam Visual
+            ApplyBreedColor(visual, breed);
+
+            // ── 3. Animator — sambungkan ke AC_Dog.controller + Avatar ──
+            var anim = visual.GetComponent<Animator>();
+            if (!anim) anim = visual.AddComponent<Animator>();
+
+            // Muat Avatar dari Dog.fbx
+            Avatar dogAvatar = null;
+            foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(fbxPath))
+            {
+                if (asset is Avatar av) { dogAvatar = av; break; }
+            }
+            if (dogAvatar != null) anim.avatar = dogAvatar;
+
+            // Muat AC_Dog.controller
+            var ac = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(
+                $"{AnimsFolder}/AC_Dog.controller");
+            if (ac != null) anim.runtimeAnimatorController = ac;
+
+            // WAJIB: matikan root motion agar posisi dikontrol AnimalController
+            anim.applyRootMotion = false;
+            // AlwaysAnimate agar animasi tetap jalan meski kamera menjauh (di luar frustum)
+            anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+
+            // Pastikan Animator mulai di state Idle
+            anim.SetBool("isMoving", false);
+        }
+        else
+        {
+            // Fallback: gunakan mesh prosedural (tanpa animasi) jika FBX tidak ada
+            Debug.LogWarning($"[DogSpawner] Dog.fbx tidak ditemukan di {fbxPath}. Menggunakan mesh statis.");
+            visual = new GameObject("Visual");
+            visual.transform.SetParent(dogRoot.transform, false);
+            visual.transform.localPosition = Vector3.zero;
+            visual.transform.localRotation = Quaternion.identity;
+            visual.transform.localScale = Vector3.one;
+            var mf = visual.AddComponent<MeshFilter>();
+            mf.sharedMesh = GetOrCreateDogMesh(breed);
+            var mr = visual.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = GetOrCreateDogMaterial(breed);
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+            mr.receiveShadows = true;
+        }
+
+        // ── 4. Collider proporsional (horizontal Z sepanjang tubuh 4 kaki) ──
         var col = dogRoot.AddComponent<CapsuleCollider>();
         col.center = new Vector3(0, sp.H * 0.5f, 0);
         col.radius = Mathf.Max(sp.mid_r, sp.leg_r * 2.5f);
         col.height = sp.L * 1.1f;
         col.direction = 2; // Sumbu Z (arah hadap)
 
-        // AI Controller dengan Double Ground Lock [0, 0.25m]
+        // ── 5. AI Controller: Double Ground Lock [0, 0.25m], kaki tidak nyeret ──
+        float dogSpeed = BreedSpeeds.ContainsKey(breed) ? BreedSpeeds[breed] : 1.85f;
         var ctrl = dogRoot.AddComponent<AnimalController>();
         ctrl.animalType = AnimalController.AnimalType.Dog;
         ctrl.animalName = dogName;
-        ctrl.wanderRadius = breed == DogBreed.Kintamani ? 8.0f : 6.0f;
-        ctrl.moveSpeed = 1.85f;
+        ctrl.wanderRadius = breed == DogBreed.Kintamani || breed == DogBreed.GermanShepherd ? 8.0f : 6.0f;
+        ctrl.moveSpeed = dogSpeed;
         ctrl.acceleration = 3.5f;
         ctrl.turnSmoothness = 5.2f;
         ctrl.petMessage = petMsg ?? $"Guk! {dogName} mengibaskan ekornya riang dan kini menemanimu!";
@@ -551,5 +639,38 @@ public static class RealisticDogBuilder
 
         return dogRoot;
     }
+
+    /// <summary>
+    /// Menerapkan warna khas ras ke seluruh SkinnedMeshRenderer di dalam Visual (Dog.fbx).
+    /// </summary>
+    private static void ApplyBreedColor(GameObject visual, DogBreed breed)
+    {
+        if (!BreedColors.ContainsKey(breed)) return;
+        Color breedColor = BreedColors[breed];
+
+        // Pastikan material warna ras sudah ada
+        string matName = $"M_Dog_{breed}";
+        string matPath = $"{MatsFolder}/{matName}.mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        if (!mat)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            mat = new Material(shader);
+            AssetDatabase.CreateAsset(mat, matPath);
+        }
+        mat.SetColor("_BaseColor", breedColor);
+        mat.SetFloat("_Smoothness", 0.22f);
+        mat.SetFloat("_Metallic", 0.0f);
+        EditorUtility.SetDirty(mat);
+
+        // Terapkan ke semua renderer (SkinnedMeshRenderer maupun MeshRenderer)
+        foreach (var rend in visual.GetComponentsInChildren<Renderer>(true))
+        {
+            var mats = new Material[rend.sharedMaterials.Length];
+            for (int i = 0; i < mats.Length; i++) mats[i] = mat;
+            rend.sharedMaterials = mats;
+        }
+    }
 }
 #endif
+

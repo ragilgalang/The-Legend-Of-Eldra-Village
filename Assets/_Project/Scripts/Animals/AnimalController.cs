@@ -81,13 +81,25 @@ public class AnimalController : Interactable
         }
 
         // Cache visual child transform & scale dasar
+        // GetChild(0) = "Visual" (langsung di bawah root)
         if (transform.childCount > 0)
         {
             visualTransform = transform.GetChild(0);
             visualBaseScale = visualTransform.localScale;
+
+            // Coba ambil Animator dari Visual langsung dulu (Dog.fbx menaruh Animator di root)
             animator = visualTransform.GetComponent<Animator>();
         }
-        if (!animator) animator = GetComponentInChildren<Animator>();
+
+        // Jika belum ketemu (misalnya armature di sub-child), cari di seluruh hierarchy
+        if (!animator) animator = GetComponentInChildren<Animator>(true);
+
+        // Pastikan applyRootMotion = false sejak Awake agar tidak ada sliding dari frame pertama
+        if (animator)
+        {
+            animator.applyRootMotion = false;
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        }
 
         prompt = $"Tekan E untuk mengelus {animalName}";
     }
@@ -144,10 +156,15 @@ public class AnimalController : Interactable
         p.y = Mathf.Clamp(currentGroundY, 0f, 0.25f);
         transform.position = p;
 
+        // Untuk rigged FBX: jangan clamp visualTransform.localPosition terlalu ketat
+        // agar kaki-kaki yang diturunkan animasi bone bisa menapak natural.
+        // Cukup pastikan root object (dogRoot) tidak melayang — sudah dikunci di atas.
         if (visualTransform)
         {
             Vector3 vPos = visualTransform.localPosition;
+            // Izinkan bounce kecil (maks 0.12) tapi jangan pernah turun ke bawah root
             vPos.y = Mathf.Clamp(vPos.y, 0f, 0.12f);
+            vPos.x = 0f; // Pastikan tidak ada drift horizontal dari procedural
             visualTransform.localPosition = vPos;
         }
     }
@@ -450,20 +467,27 @@ public class AnimalController : Interactable
 
     private void UpdateAnimator()
     {
-        bool isMoving = currentSpeed > 0.10f;
+        // Threshold rendah (0.05) agar transisi Idle→Walk terjadi segera tanpa delay
+        bool isMoving = currentSpeed > 0.05f;
         SetAnimationMoving(isMoving);
 
         if (animator != null)
         {
-            // Sinkronisasi kecepatan playback: animasi kaki sesuai laju gerak tubuh
-            // Pastikan applyRootMotion=false agar animasi TIDAK menggerakkan posisi karakter
+            // WAJIB: matikan root motion agar posisi HANYA dikontrol AnimalController,
+            // tidak ada pergeseran dobel dari clip animasi (penyebab utama sliding/melayang)
             if (animator.applyRootMotion)
-            {
                 animator.applyRootMotion = false;
-            }
 
-            // Skala kecepatan animasi agar langkah kaki sinkron dengan kecepatan berjalan
-            float animSpeedRatio = isMoving ? Mathf.Clamp(currentSpeed / moveSpeed, 0.7f, 1.4f) : 1.0f;
+            if (animator.cullingMode != AnimatorCullingMode.AlwaysAnimate)
+                animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+
+            // Sinkronisasi kecepatan playback agar langkah kaki pas dengan laju jalan.
+            // Rumus: animSpeed = currentSpeed / moveSpeed
+            // → Ketika anjing jalan lambat, animasi melambat → kaki tidak meluncur (nyeret)
+            // → Ketika anjing jalan cepat, animasi dipercepat → langkah mengikuti badan
+            float animSpeedRatio = isMoving
+                ? Mathf.Clamp(currentSpeed / Mathf.Max(moveSpeed, 0.01f), 0.6f, 1.6f)
+                : 1.0f;
             animator.speed = animSpeedRatio;
         }
     }
@@ -480,26 +504,53 @@ public class AnimalController : Interactable
     {
         if (!visualTransform) return;
 
-        // 1. Napas lembut (berbasis visualBaseScale yang tersimpan statis, BUKAN compounding)
-        float breathe = 1.0f + Mathf.Sin(breatheCycle) * 0.012f;
-        visualTransform.localScale = new Vector3(
-            visualBaseScale.x * breathe,
-            visualBaseScale.y * (2f - breathe),
-            visualBaseScale.z * breathe
-        );
+        // Deteksi apakah Visual menggunakan SkinnedMeshRenderer (artinya rigged FBX seperti Dog.fbx)
+        bool isRiggedFbx = visualTransform.GetComponentInChildren<SkinnedMeshRenderer>(true) != null;
 
-        // 2. Efek lompat ceria saat dielus
-        float bounceY = 0f;
-        if (petBounceTimer > 0f)
+        if (isRiggedFbx)
         {
-            petBounceTimer -= Time.deltaTime;
-            bounceY = Mathf.Sin((0.35f - petBounceTimer) / 0.35f * Mathf.PI) * 0.15f;
+            // Untuk model FBX beranimasikan (Dog.fbx, Cat.fbx, Wolf.fbx):
+            // Jangan sentuh localRotation sama sekali — bone rotation dikelola Animator.
+            // Hanya izinkan sedikit naik-turun saat dielus (bounceY kecil tidak mengganggu kaki).
+            float bounceY = 0f;
+            if (petBounceTimer > 0f)
+            {
+                petBounceTimer -= Time.deltaTime;
+                // Bounce kecil (0.06) agar tidak tampak melayang, hanya efek senang
+                bounceY = Mathf.Sin((0.35f - petBounceTimer) / 0.35f * Mathf.PI) * 0.06f;
+            }
+            // Hanya ubah posisi Y visual; X dan Z tetap nol agar tidak drift dari root
+            visualTransform.localPosition = new Vector3(0, bounceY, 0);
+            // localRotation dibiarkan: Animator yang mengelola bone pose
+            // localScale: napas sedikit (skala uniform agar mesh tidak terdistorsi)
+            float breathe = 1.0f + Mathf.Sin(breatheCycle) * 0.008f;
+            visualTransform.localScale = new Vector3(
+                visualBaseScale.x * breathe,
+                visualBaseScale.y * breathe,  // uniform Y (bukan terbalik) agar tidak squash mesh
+                visualBaseScale.z * breathe
+            );
         }
+        else
+        {
+            // Untuk mesh prosedural statis (fallback): procedural secondary motion penuh
+            float breathe = 1.0f + Mathf.Sin(breatheCycle) * 0.012f;
+            visualTransform.localScale = new Vector3(
+                visualBaseScale.x * breathe,
+                visualBaseScale.y * (2f - breathe),
+                visualBaseScale.z * breathe
+            );
 
-        // 3. Micro-roll saat melangkah agar gerak tubuh organik
-        float roll = (currentSpeed > 0.15f) ? Mathf.Sin(stepCycle) * 1.0f : 0f;
-        visualTransform.localPosition = new Vector3(0, bounceY, 0);
-        visualTransform.localRotation = Quaternion.Euler(0, 0, roll);
+            float bounceY = 0f;
+            if (petBounceTimer > 0f)
+            {
+                petBounceTimer -= Time.deltaTime;
+                bounceY = Mathf.Sin((0.35f - petBounceTimer) / 0.35f * Mathf.PI) * 0.15f;
+            }
+
+            float roll = (currentSpeed > 0.15f) ? Mathf.Sin(stepCycle) * 1.0f : 0f;
+            visualTransform.localPosition = new Vector3(0, bounceY, 0);
+            visualTransform.localRotation = Quaternion.Euler(0, 0, roll);
+        }
     }
 
     public override void Interact(PlayerController player)
