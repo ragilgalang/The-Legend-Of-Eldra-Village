@@ -8,22 +8,6 @@ public static class AssetMaterialSetup
     private const string SlavicArtFolder = "Assets/_Project/Art/SlavicWorld";
     private const string MedievalArtFolder = "Assets/_Project/Art/MedievalVillage";
 
-    [MenuItem("Eldara/1. Setup Asset Materials")]
-    public static void SetupAllMaterials()
-    {
-        SetupSlavicMaterial();
-        SetupMedievalMaterials();
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
-
-        EditorUtility.DisplayDialog(
-            "Material Setup Selesai!",
-            "Material URP untuk SlavicWorld dan MedievalVillage berhasil dibuat dan dihubungkan ke texture!\n\n" +
-            "Sekarang kamu bisa jalankan:\nEldara > Setup Prototype Scene\nuntuk melihat desa dengan model 3D nyata!",
-            "Mantap!"
-        );
-    }
-
     public static Material SetupSlavicMaterial()
     {
         string matFolder = $"{SlavicArtFolder}/Materials";

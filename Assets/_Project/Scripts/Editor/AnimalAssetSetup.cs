@@ -20,51 +20,6 @@ public static class AnimalAssetSetup
     private const string MatsFolder = "Assets/_Project/Art/Animals/Materials";
     private const string AnimsFolder = "Assets/_Project/Art/Animals/Animations";
 
-    [MenuItem("Eldara/Setup Animal Assets & Controllers")]
-    public static void SetupAllAnimalsMenu()
-    {
-        PreflightSetup();
-        EditorUtility.DisplayDialog("Sukses!", "Aset hewan (Material URP, Animasi Looping, Animator Controller) berhasil disiapkan!", "OK");
-    }
-
-    [MenuItem("Eldara/Hapus Ikan di Darat")]
-    public static void RemoveLandFishMenu()
-    {
-        int count = 0;
-        var transforms = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        var toDestroy = new System.Collections.Generic.HashSet<GameObject>();
-
-        foreach (var t in transforms)
-        {
-            if (!t) continue;
-            string n = t.name.ToLower();
-            if (n.Contains("fish") || n.Contains("piranha") || t.GetComponent<FishController>())
-            {
-                // Ambil root object ikan
-                Transform curr = t;
-                while (curr.parent != null && curr.parent.name != "--- FAUNA & ANIMALS ---" && 
-                      (curr.parent.name.ToLower().Contains("fish") || curr.parent.name.ToLower().Contains("piranha")))
-                {
-                    curr = curr.parent;
-                }
-                toDestroy.Add(curr.gameObject);
-            }
-        }
-
-        foreach (var go in toDestroy)
-        {
-            if (go)
-            {
-                Object.DestroyImmediate(go);
-                count++;
-            }
-        }
-
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
-        UnityEditor.SceneManagement.EditorSceneManager.SaveOpenScenes();
-        EditorUtility.DisplayDialog("Ikan Berhasil Dihapus!", $"Berhasil membersihkan {count} objek ikan di darat dari scene.", "OK");
-    }
-
     public static void PreflightSetup()
     {
         EnsureFolders();
