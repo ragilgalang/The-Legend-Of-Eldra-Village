@@ -27,6 +27,22 @@ public static class AnimalAssetSetup
         EditorUtility.DisplayDialog("Sukses!", "Aset hewan (Material URP, Animasi Looping, Animator Controller) berhasil disiapkan!", "OK");
     }
 
+    [MenuItem("Eldara/Hapus Ikan di Darat")]
+    public static void RemoveLandFishMenu()
+    {
+        int count = 0;
+        foreach (var go in Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
+        {
+            if (go && (go.name.Contains("Animal_RiverFish") || go.name.Contains("Piranha") || go.GetComponent<FishController>()))
+            {
+                Object.DestroyImmediate(go);
+                count++;
+            }
+        }
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+        EditorUtility.DisplayDialog("Ikan Berhasil Dihapus!", $"Berhasil membersihkan {count} objek ikan di darat dari scene.", "Mantap!");
+    }
+
     public static void PreflightSetup()
     {
         EnsureFolders();

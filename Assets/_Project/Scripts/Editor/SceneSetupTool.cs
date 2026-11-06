@@ -86,7 +86,7 @@ public static class SceneSetupTool
             "🔮 Kompleks Altar Mistis: Formasi 12 pilar batu kuno di utara desa\n" +
             "🛡️ 8 Menara Pengawas Benteng + Pagar Kayu Melingkar Skala 80 Meter\n" +
             "🌲 Hutan Rimba Keliling: 90+ Pohon cemara & ek bervariasi mengitari desa\n" +
-            "🐾 Ekosistem Fauna: Anjing Penjaga (Milo), Kucing Desa (Luna & Oliver), Serigala Rimba, Elang di Langit, & Ikan!\n" +
+            "🐾 Ekosistem Fauna: Anjing Penjaga (Milo), Kucing Desa (Luna & Oliver), Serigala Rimba, & Elang Perkasa di Langit!\n" +
             "🏮 Lentera Malam: Lampu lentera hangat di tiap rumah & menara\n\n" +
             "Tekan ▶ Play untuk mulai menjelajahi dunia barumu!",
             "Bagus Sekali, Mainkan!"
@@ -973,6 +973,19 @@ public static class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
     static void SetupFaunaAndAnimals()
     {
+        // Bersihkan objek ikan & fauna lama jika ada
+        foreach (var strayFish in Object.FindObjectsByType<FishController>(FindObjectsSortMode.None))
+        {
+            Object.DestroyImmediate(strayFish.gameObject);
+        }
+        foreach (var go in GameObject.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
+        {
+            if (go.name.Contains("Animal_RiverFish") || go.name.Contains("Piranha"))
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         GameObject faunaRoot = GameObject.Find("--- FAUNA & ANIMALS ---");
         if (faunaRoot) Object.DestroyImmediate(faunaRoot);
 
@@ -999,10 +1012,6 @@ public static class SceneSetupTool
 
         // 5. Aquila - Elang Perkasa Penjaga Langit (Melayang tinggi melingkar di angkasa desa)
         AnimalAssetSetup.SpawnEagle(new Vector3(0f, 24f, 5f), faunaRoot.transform);
-
-        // 6. Ikan Air Tawar / Piranha (Di kolam/parit air dekat kebun desa)
-        AnimalAssetSetup.SpawnFish(new Vector3(14f, 0.2f, 24f), Quaternion.identity, faunaRoot.transform);
-        AnimalAssetSetup.SpawnFish(new Vector3(15f, 0.2f, 23f), Quaternion.Euler(0, 45f, 0), faunaRoot.transform);
     }
 
     // ─────────────────────────────────────────────────────────────────────
