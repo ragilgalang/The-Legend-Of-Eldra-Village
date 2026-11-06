@@ -1014,8 +1014,25 @@ public static class SceneSetupTool
 
         faunaRoot = new GameObject("--- FAUNA & ANIMALS ---");
 
-        // 1. Milo - Anjing Penjaga Desa (Di dekat Balai Desa & Pandai Besi)
-        AnimalAssetSetup.SpawnDog(new Vector3(4.5f, 0f, 6.5f), Quaternion.Euler(0, 190f, 0), faunaRoot.transform);
+        // 1. Milo - Anjing Kintamani Asli Penjaga Desa (Di dekat Balai Desa & Pandai Besi)
+        AnimalAssetSetup.SpawnDog(new Vector3(4.5f, 0f, 6.5f), Quaternion.Euler(0, 190f, 0), faunaRoot.transform,
+            RealisticDogBuilder.DogBreed.Kintamani, "Milo",
+            "Guk! Milo si Anjing Kintamani mengibaskan ekor melengkungnya riang dan menemanimu berjalan-jalan!");
+
+        // 1b. Bobi - Anjing Golden Retriever Ramah (Di pelataran kebun gandum petani)
+        AnimalAssetSetup.SpawnDog(new Vector3(-19.5f, 0f, 8.5f), Quaternion.Euler(0, 75f, 0), faunaRoot.transform,
+            RealisticDogBuilder.DogBreed.GoldenRetriever, "Bobi",
+            "Guk guk! Bobi si Golden Retriever menyapa ramah dengan telinga turun dan bulu emas berkilau!");
+
+        // 1c. Bruno - Anjing German Shepherd Penjaga Benteng (Di pos gerbang selatan)
+        AnimalAssetSetup.SpawnDog(new Vector3(-4.0f, 0f, -20.5f), Quaternion.Euler(0, 20f, 0), faunaRoot.transform,
+            RealisticDogBuilder.DogBreed.GermanShepherd, "Bruno",
+            "Guk! Bruno si German Shepherd berdiri tegap dan waspada menjaga gerbang utama desa!");
+
+        // 1d. Kiko - Anjing Dachshund Lincah (Di teras rumah warga)
+        AnimalAssetSetup.SpawnDog(new Vector3(15.5f, 0f, 16.5f), Quaternion.Euler(0, -110f, 0), faunaRoot.transform,
+            RealisticDogBuilder.DogBreed.Dachshund, "Kiko",
+            "Guk! Kiko si Dachshund bertubuh panjang berlari-lari kecil menyambutmu!");
 
         // 2. Luna - Kucing Abu-Abu Desa (Di teras Rumah Warga 1)
         AnimalAssetSetup.SpawnCat(new Vector3(-13.5f, 0f, 14.5f), Quaternion.Euler(0, 45f, 0), faunaRoot.transform,

@@ -139,6 +139,17 @@ public class AnimalController : Interactable
     {
         // Penguncian ganda di LateUpdate memastikan hewan 100% mustahil melayang ke angkasa
         SnapToGround();
+
+        Vector3 p = transform.position;
+        p.y = Mathf.Clamp(currentGroundY, 0f, 0.25f);
+        transform.position = p;
+
+        if (visualTransform)
+        {
+            Vector3 vPos = visualTransform.localPosition;
+            vPos.y = Mathf.Clamp(vPos.y, 0f, 0.12f);
+            visualTransform.localPosition = vPos;
+        }
     }
 
     private void UpdateWanderState(float distToPlayer)
@@ -392,7 +403,7 @@ public class AnimalController : Interactable
 
     /// <summary>
     /// Menyesuaikan ketinggian kaki dengan tanah atau undakan batu (Cobblestone).
-    /// DENGAN BATASAN KETAT (CLAMP [0, 0.35m]) AGAR 100% MUSTAHIL MELAYANG KE LANGIT!
+    /// DENGAN BATASAN KETAT (CLAMP [0, 0.25m]) AGAR 100% MUTLAK MUSTAHIL MELAYANG KE LANGIT!
     /// </summary>
     private void SnapToGround()
     {
@@ -407,9 +418,11 @@ public class AnimalController : Interactable
         {
             if (h.transform.root == transform) continue;
             if (h.collider.isTrigger) continue;
+            if (h.transform.CompareTag("Player") || h.transform.CompareTag("NPC")) continue;
 
-            // Hanya anggap sebagai lantai jika ketinggiannya wajar di dekat kaki (maks 0.35m)
-            if (h.point.y <= transform.position.y + 0.35f && h.point.y >= -0.15f)
+            // Hanya anggap sebagai lantai jika ketinggian tanah absolut wajar (antara -0.15m s/d 0.25m)
+            // Mengabaikan dinding, atap, gerobak, pagar, peti, atau objek tinggi lain
+            if (h.point.y <= 0.25f && h.point.y >= -0.15f)
             {
                 if (h.point.y > highestGround)
                 {
@@ -423,12 +436,12 @@ public class AnimalController : Interactable
             targetY = highestGround;
         }
 
-        // KUNCI MATEMATIS ANTI-MELAYANG:
-        // Permukaan tanah Desa Eldara di Y = 0 dan undakan batu tertinggi di Y = 0.25m.
-        // Dengan clamp [0f, 0.35f], hewan TIDAK PERNAH BISA melayang ke langit dalam kondisi apapun!
-        targetY = Mathf.Clamp(targetY, 0f, 0.35f);
+        // KUNCI MATEMATIS ANTI-MELAYANG MUTLAK:
+        // Permukaan tanah Desa Eldara di Y = 0 dan undakan batu tertinggi di Y = 0.20m.
+        // Dengan clamp ketat [0f, 0.25f], hewan 100% MUSTAHIL melayang ke langit dalam kondisi apapun!
+        targetY = Mathf.Clamp(targetY, 0f, 0.25f);
 
-        currentGroundY = Mathf.MoveTowards(currentGroundY, targetY, Time.deltaTime * 6.0f);
+        currentGroundY = Mathf.MoveTowards(currentGroundY, targetY, Time.deltaTime * 8.0f);
 
         Vector3 pos = transform.position;
         pos.y = currentGroundY;

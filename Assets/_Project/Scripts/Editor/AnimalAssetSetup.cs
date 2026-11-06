@@ -310,65 +310,14 @@ public static class AnimalAssetSetup
     //  SPAWNERS HEWAN DESA ELDARA (SKALA REALISTIS)
     // ─────────────────────────────────────────────────────────────────────
 
-    public static GameObject SpawnDog(Vector3 position, Quaternion rotation, Transform parent)
+    public static GameObject SpawnDog(
+        Vector3 position, Quaternion rotation, Transform parent,
+        RealisticDogBuilder.DogBreed breed = RealisticDogBuilder.DogBreed.Kintamani,
+        string customName = "Milo", string petMsg = null)
     {
-        PreflightSetup();
-
-        var modelPrefab = LoadAnimalModel("Dog");
-        if (!modelPrefab) return null;
-
-        var dogRoot = new GameObject("Animal_Dog_Milo");
-        dogRoot.transform.SetParent(parent);
-        dogRoot.transform.position = position;
-        dogRoot.transform.rotation = rotation;
-
-        var visual = Object.Instantiate(modelPrefab, dogRoot.transform);
-        visual.name = "Visual";
-        visual.transform.localPosition = Vector3.zero;
-        visual.transform.localRotation = Quaternion.identity;
-        // Skala realistis: panjang ~0.85m, tinggi punggung ~0.60m
-        visual.transform.localScale = Vector3.one * 0.15f;
-
-        ApplyAnimalMaterials(visual, "Dog");
-
-        // Hubungkan Animator Controller & Avatar
-        var anim = visual.GetComponent<Animator>();
-        if (!anim) anim = visual.AddComponent<Animator>();
-        anim.applyRootMotion = false;
-        var avatar = LoadAnimalAvatar("Dog");
-        if (avatar != null) anim.avatar = avatar;
-        var ac = GetAnimatorController("Dog");
-        if (ac != null) anim.runtimeAnimatorController = ac;
-
-        // Collider proporsional (horizontal sepanjang tubuh Z)
-        var col = dogRoot.AddComponent<CapsuleCollider>();
-        col.center = new Vector3(0, 0.28f, 0);
-        col.radius = 0.22f;
-        col.height = 0.75f;
-        col.direction = 2;
-
-        // NavMeshAgent proporsional
-        var agent = dogRoot.AddComponent<NavMeshAgent>();
-        agent.baseOffset = 0f;
-        agent.radius = 0.25f;
-        agent.height = 0.60f;
-        agent.speed = 2.0f;
-        agent.acceleration = 7.0f;
-        agent.angularSpeed = 240.0f;
-        agent.stoppingDistance = 0.35f;
-
-        // AI Controller
-        var ctrl = dogRoot.AddComponent<AnimalController>();
-        ctrl.animalType = AnimalController.AnimalType.Dog;
-        ctrl.animalName = "Milo";
-        ctrl.wanderRadius = 7.0f;
-        ctrl.moveSpeed = 1.9f;
-        ctrl.acceleration = 3.2f;
-        ctrl.turnSmoothness = 5.0f;
-        ctrl.petMessage = "Guk! Milo si anjing desa mengibaskan ekornya riang dan kini menemanimu berjalan-jalan!";
-        ctrl.canFollowPlayer = true;
-
-        return dogRoot;
+        return RealisticDogBuilder.SpawnDogBreed(
+            breed, position, rotation, parent, customName, petMsg, canFollow: true
+        );
     }
 
     public static GameObject SpawnCat(Vector3 position, Quaternion rotation, Transform parent, string catName, string petMsg, bool altColor = false)
