@@ -365,8 +365,10 @@ public static class AnimalAssetSetup
         var ctrl = dogRoot.AddComponent<AnimalController>();
         ctrl.animalType = AnimalController.AnimalType.Dog;
         ctrl.animalName = "Milo";
-        ctrl.wanderRadius = 8.0f;
-        ctrl.moveSpeed = 2.0f;
+        ctrl.wanderRadius = 7.0f;
+        ctrl.moveSpeed = 1.9f;
+        ctrl.acceleration = 3.2f;
+        ctrl.turnSmoothness = 5.0f;
         ctrl.petMessage = "Guk! Milo si anjing desa mengibaskan ekornya riang dan kini menemanimu berjalan-jalan!";
         ctrl.canFollowPlayer = true;
 
@@ -421,8 +423,10 @@ public static class AnimalAssetSetup
         var ctrl = catRoot.AddComponent<AnimalController>();
         ctrl.animalType = AnimalController.AnimalType.Cat;
         ctrl.animalName = catName;
-        ctrl.wanderRadius = 5.0f;
-        ctrl.moveSpeed = 1.35f;
+        ctrl.wanderRadius = 4.5f;
+        ctrl.moveSpeed = 1.3f;
+        ctrl.acceleration = 3.0f;
+        ctrl.turnSmoothness = 4.8f;
         ctrl.petMessage = petMsg;
         ctrl.canFollowPlayer = false;
 
@@ -477,8 +481,10 @@ public static class AnimalAssetSetup
         var ctrl = wolfRoot.AddComponent<AnimalController>();
         ctrl.animalType = AnimalController.AnimalType.Wolf;
         ctrl.animalName = wolfName;
-        ctrl.wanderRadius = 16.0f;
-        ctrl.moveSpeed = 2.6f;
+        ctrl.wanderRadius = 14.0f;
+        ctrl.moveSpeed = 2.4f;
+        ctrl.acceleration = 3.6f;
+        ctrl.turnSmoothness = 4.5f;
         ctrl.petMessage = "Auuu! Serigala rimba menatapmu tajam dari sela rimbunnya pepohonan.";
         ctrl.canFollowPlayer = false;
 
