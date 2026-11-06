@@ -31,11 +31,11 @@ public static class AnimalAssetSetup
     public static void RemoveLandFishMenu()
     {
         int count = 0;
-        foreach (var go in Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
+        foreach (var t in Object.FindObjectsByType<Transform>())
         {
-            if (go && (go.name.Contains("Animal_RiverFish") || go.name.Contains("Piranha") || go.GetComponent<FishController>()))
+            if (t && (t.name.Contains("Animal_RiverFish") || t.name.Contains("Piranha") || t.GetComponent<FishController>()))
             {
-                Object.DestroyImmediate(go);
+                Object.DestroyImmediate(t.gameObject);
                 count++;
             }
         }
@@ -317,7 +317,8 @@ public static class AnimalAssetSetup
         ApplyAnimalMaterials(visual, "Dog");
 
         // Hubungkan Animator Controller
-        var anim = visual.GetComponent<Animator>() ?? visual.AddComponent<Animator>();
+        var anim = visual.GetComponent<Animator>();
+        if (!anim) anim = visual.AddComponent<Animator>();
         var ac = GetAnimatorController("Dog");
         if (ac != null) anim.runtimeAnimatorController = ac;
 
@@ -370,7 +371,8 @@ public static class AnimalAssetSetup
         ApplyAnimalMaterials(visual, "Cat", altColor);
 
         // Hubungkan Animator Controller
-        var anim = visual.GetComponent<Animator>() ?? visual.AddComponent<Animator>();
+        var anim = visual.GetComponent<Animator>();
+        if (!anim) anim = visual.AddComponent<Animator>();
         var ac = GetAnimatorController("Cat");
         if (ac != null) anim.runtimeAnimatorController = ac;
 
@@ -423,7 +425,8 @@ public static class AnimalAssetSetup
         ApplyAnimalMaterials(visual, "Wolf");
 
         // Hubungkan Animator Controller
-        var anim = visual.GetComponent<Animator>() ?? visual.AddComponent<Animator>();
+        var anim = visual.GetComponent<Animator>();
+        if (!anim) anim = visual.AddComponent<Animator>();
         var ac = GetAnimatorController("Wolf");
         if (ac != null) anim.runtimeAnimatorController = ac;
 
@@ -474,7 +477,8 @@ public static class AnimalAssetSetup
 
         ApplyAnimalMaterials(visual, "Eagle");
 
-        var anim = visual.GetComponent<Animator>() ?? visual.AddComponent<Animator>();
+        var anim = visual.GetComponent<Animator>();
+        if (!anim) anim = visual.AddComponent<Animator>();
         var ac = GetAnimatorController("Eagle");
         if (ac != null) anim.runtimeAnimatorController = ac;
 

@@ -974,16 +974,9 @@ public static class SceneSetupTool
     static void SetupFaunaAndAnimals()
     {
         // Bersihkan objek ikan & fauna lama jika ada
-        foreach (var strayFish in Object.FindObjectsByType<FishController>(FindObjectsSortMode.None))
+        foreach (var strayFish in Object.FindObjectsByType<FishController>())
         {
-            Object.DestroyImmediate(strayFish.gameObject);
-        }
-        foreach (var go in GameObject.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
-        {
-            if (go.name.Contains("Animal_RiverFish") || go.name.Contains("Piranha"))
-            {
-                Object.DestroyImmediate(go);
-            }
+            if (strayFish) Object.DestroyImmediate(strayFish.gameObject);
         }
 
         GameObject faunaRoot = GameObject.Find("--- FAUNA & ANIMALS ---");
