@@ -172,6 +172,9 @@ public class AnimalController : Interactable
 
         // Pre-multiply: yaw terjadi pada sumbu atas root, lalu rotasi asli FBX tetap berlaku.
         visualTransform.localRotation = extra * visualTransform.localRotation;
+
+        // Pastikan kepala berada di depan (+Z). Jika terbalik, putar 180 derajat.
+        if (autoDetectFacing) CorrectFacingByHead();
     }
 
     /// <summary>
@@ -208,6 +211,49 @@ public class AnimalController : Interactable
     // ------------------------------------------------------------------
     // LOOP UTAMA
     // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Mencari tulang/objek kepala, lalu memastikan posisinya berada di depan pusat tubuh (+Z root).
+    /// Jika kepala ada di belakang, model diputar 180 derajat.
+    /// </summary>
+    private void CorrectFacingByHead()
+    {
+        Transform head = null;
+        foreach (var t in visualTransform.GetComponentsInChildren<Transform>(true))
+        {
+            string n = t.name.ToLowerInvariant();
+            if (n.Contains("head") || n.Contains("kepala") || n.Contains("skull"))
+            {
+                head = t;
+                break;
+            }
+        }
+        if (head == null) return;
+
+        Renderer[] rends = visualTransform.GetComponentsInChildren<Renderer>(true);
+        if (rends.Length == 0) return;
+
+        Bounds b = rends[0].bounds;
+        for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+
+        Vector3 local = transform.InverseTransformDirection(head.position - b.center);
+        if (local.z < -0.02f)
+        {
+            FlipFacingNow();
+        }
+    }
+
+    /// <summary>
+    /// Memutar model visual 180 derajat. Bisa dipanggil dari menu titik tiga komponen saat Play Mode
+    /// (klik kanan komponen -> "Balik Arah Hadap") untuk mencoba cepat.
+    /// </summary>
+    [ContextMenu("Balik Arah Hadap")]
+    public void FlipFacingNow()
+    {
+        if (!visualTransform) return;
+        visualTransform.localRotation = Quaternion.Euler(0f, 180f, 0f) * visualTransform.localRotation;
+        visualBaseRotation = visualTransform.localRotation;
+    }
 
     void Update()
     {
