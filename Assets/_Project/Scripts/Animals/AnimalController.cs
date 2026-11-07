@@ -155,6 +155,11 @@ public class AnimalController : Interactable
     /// </summary>
     private void ApplyVisualFacing()
     {
+        // RESET ke identity terlebih dahulu untuk mencegah akumulasi rotasi ganda.
+        // Data scene (.unity) mungkin sudah menyimpan rotasi lama dari patch sebelumnya,
+        // sehingga perkalian di bawah akan menggandakan sudut dan hewan berjalan mundur.
+        visualTransform.localRotation = Quaternion.identity;
+
         float yaw = visualRotationOffset.y;
         Quaternion extra = Quaternion.Euler(visualRotationOffset);
 
@@ -170,8 +175,8 @@ public class AnimalController : Interactable
             extra = Quaternion.Euler(0f, yaw + 180f, 0f) * Quaternion.Euler(visualRotationOffset.x, 0f, visualRotationOffset.z);
         }
 
-        // Pre-multiply: yaw terjadi pada sumbu atas root, lalu rotasi asli FBX tetap berlaku.
-        visualTransform.localRotation = extra * visualTransform.localRotation;
+        // Terapkan rotasi orientasi (identity * extra = extra), bersih tanpa akumulasi.
+        visualTransform.localRotation = extra;
 
         // Pastikan kepala berada di depan (+Z). Jika terbalik, putar 180 derajat.
         if (autoDetectFacing) CorrectFacingByHead();
