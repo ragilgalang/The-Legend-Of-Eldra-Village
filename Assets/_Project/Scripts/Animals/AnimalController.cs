@@ -3,14 +3,16 @@ using UnityEngine.AI;
 
 /// <summary>
 /// Kontroler AI Hewan untuk Desa Eldara (Anjing Milo, Kucing Luna/Oliver, Serigala Rimba).
-/// Menghadirkan pergerakan yang sangat halus (smooth), alami, dan 100% anti-terbang:
-/// - Anti-Melayang Mutlak (Double Ground Lock Y clamped [0, 0.35m] di Update & LateUpdate)
-/// - Anti-Tenggelam (Menapak sempurna di atas batu cobblestone tanpa tenggelam ke dalam batu)
-/// - Menghindar Rintangan Cerdas (Raycast Whiskers: tidak menabrak gerobak, peti, atau pagar)
-/// - Belokan Halus Alami (Slerp Ease-in/out dengan modulasi kecepatan saat berbelok)
-/// - Target Terbuka (Validasi titik wander agar tidak memilih titik di dalam bangunan/objek)
-/// - Animasi Tersinkronisasi (Kecepatan playback kaki selaras dengan laju gerak tubuh)
-/// - Mode Sahabat (Anjing Milo menemani pemain berjalan dengan akselerasi adaptif)
+///
+/// Perbaikan utama (jalan menyamping / seperti kepiting):
+/// 1. Gerak SELALU maju searah badan (transform.forward). Badan berputar dulu menuju arah tujuan,
+///    tubuh tidak pernah "strafing" ke samping. NavMeshAgent hanya dipakai untuk menentukan arah (updatePosition = false).
+/// 2. Orientasi model visual dideteksi otomatis (sumbu terpanjang tubuh) dan DIKALIKAN dengan rotasi asli FBX,
+///    bukan menimpanya. Bisa di-flip manual lewat "flipFacing" atau dimatikan dan diatur manual lewat "visualRotationOffset".
+/// 3. Belok memakai kecepatan sudut (derajat/detik) dengan ease-out, kecepatan jalan turun saat belokan tajam.
+/// 4. Kecepatan animasi kaki disinkronkan dengan kecepatan nyata (clipWalkSpeed) agar kaki tidak meluncur.
+/// 5. Mode Sahabat memakai hysteresis (mulai jalan jika jauh, berhenti jika dekat) sehingga tidak bergetar.
+/// 6. Tetap anti-melayang (Y di-clamp 0 .. 0.25 m) dan menghindari rintangan dengan sensor whisker.
 /// </summary>
 public class AnimalController : Interactable
 {
@@ -22,17 +24,33 @@ public class AnimalController : Interactable
 
     [Header("Parameter Gerak Realistis")]
     public float wanderRadius = 6.0f;
+    [Tooltip("Kecepatan jalan maksimum (m/s).")]
     public float moveSpeed = 1.8f;
     public float acceleration = 3.2f;
+    [Tooltip("Kecepatan putar maksimum badan (derajat/detik).")]
+    public float turnSpeed = 140f;
+    [Tooltip("Kompatibilitas legacy smoothness (RealisticDogBuilder / AnimalAssetSetup).")]
     public float turnSmoothness = 5.0f;
     public float idleTimeMin = 3.0f;
     public float idleTimeMax = 6.5f;
+
+    [Header("Sinkronisasi Animasi Kaki")]
+    [Tooltip("Kecepatan gerak (m/s) yang cocok dengan clip jalan pada animator.speed = 1. Naikkan jika kaki terlihat meluncur/terlalu lambat, turunkan jika kaki terlalu cepat.")]
+    public float clipWalkSpeed = 1.8f;
 
     [Header("Interaksi & Companion")]
     [TextArea(2, 3)]
     public string petMessage = "Guk! Milo mengibaskan ekornya riang dan kini menemanimu berjalan-jalan!";
     public bool canFollowPlayer = true;
     public float companionDuration = 45.0f;
+
+    [Header("Orientasi Model Visual")]
+    [Tooltip("Deteksi otomatis arah hadap model (sumbu tubuh terpanjang). Matikan jika hasilnya salah dan atur manual di bawah.")]
+    public bool autoDetectFacing = true;
+    [Tooltip("Centang jika hewan berjalan mundur (kepala di belakang arah jalan).")]
+    public bool flipFacing = false;
+    [Tooltip("Dipakai jika autoDetectFacing dimatikan. Model menghadap +X -> Y = -90, menghadap -X -> Y = 90, menghadap +Z -> 0, menghadap -Z -> 180.")]
+    public Vector3 visualRotationOffset = new Vector3(0f, -90f, 0f);
 
     // Komponen
     private NavMeshAgent navAgent;
@@ -49,67 +67,65 @@ public class AnimalController : Interactable
     private float currentSpeed;
     private float stateTimer;
     private float companionTimer;
-    private float idleSubTimer;
-    private float idleHeadYaw;
+    private bool companionMoving;
+    private float repathTimer;
+    private bool animMoving;
 
-    // Secondary & Procedural
-    [Header("Orientasi Model Visual")]
-    [Tooltip("Offset rotasi model visual (Euler). Model FBX berkaki empat (Dog, Cat, Wolf) dibuat menghadap sumbu +X, sehingga memerlukan offset Y = -90 agar berjalan lurus ke depan, bukan menyamping seperti kepiting.")]
-    public Vector3 visualRotationOffset = new Vector3(0f, -90f, 0f);
-
+    // Visual
     private Vector3 visualBaseScale = Vector3.one;
+    private Vector3 visualBasePosition = Vector3.zero;
     private Quaternion visualBaseRotation = Quaternion.identity;
     private float stepCycle;
     private float breatheCycle;
     private float petBounceTimer;
 
-    // Ground & Obstacle
+    // Ground
     private float currentGroundY = 0f;
+
+    private bool AgentReady
+    {
+        get { return navAgent != null && navAgent.enabled && navAgent.isOnNavMesh; }
+    }
 
     void Awake()
     {
         homePosition = transform.position;
         homePosition.y = 0f;
 
+        if (turnSmoothness > 0f && turnSpeed == 140f)
+        {
+            turnSpeed = turnSmoothness * 28f;
+        }
+
         navAgent = GetComponent<NavMeshAgent>();
         if (navAgent)
         {
+            // Script yang menggerakkan badan (selalu maju searah hadap). Agent hanya "navigator".
             navAgent.updateRotation = false;
             navAgent.updateUpAxis = false;
+            navAgent.updatePosition = false;
             navAgent.speed = moveSpeed;
-            navAgent.acceleration = acceleration * 2f;
-            // Jika NavMesh belum dibake, nonaktifkan navAgent agar tidak ada interferensi
-            if (!navAgent.isOnNavMesh)
-            {
-                navAgent.enabled = false;
-            }
+            navAgent.acceleration = acceleration * 4f;
+            if (!navAgent.isOnNavMesh) navAgent.enabled = false;
         }
 
-        // Cache visual child transform & scale dasar
-        // GetChild(0) = "Visual" (langsung di bawah root)
         if (transform.childCount > 0)
         {
             visualTransform = transform.GetChild(0);
             visualBaseScale = visualTransform.localScale;
+            visualBasePosition = visualTransform.localPosition;
 
-            // Pastikan orientasi model Visual selaras dengan arah gerak:
-            // FBX Dog, Cat, dan Wolf aslinya dimodelkan menghadap sumbu X,
-            // sehingga perlu offset Y = -90 derajat agar menghadap ke depan (+Z) dan tidak jalan menyamping
             if (animalType == AnimalType.Dog || animalType == AnimalType.Cat || animalType == AnimalType.Wolf)
             {
-                visualTransform.localRotation = Quaternion.Euler(visualRotationOffset);
+                ApplyVisualFacing();
             }
 
             visualBaseRotation = visualTransform.localRotation;
-
-            // Coba ambil Animator dari Visual langsung dulu (Dog.fbx menaruh Animator di root)
             animator = visualTransform.GetComponent<Animator>();
         }
 
-        // Jika belum ketemu (misalnya armature di sub-child), cari di seluruh hierarchy
         if (!animator) animator = GetComponentInChildren<Animator>(true);
 
-        // Pastikan applyRootMotion = false sejak Awake agar tidak ada sliding dari frame pertama
         if (animator)
         {
             animator.applyRootMotion = false;
@@ -126,15 +142,72 @@ public class AnimalController : Interactable
 
         stateTimer = Random.Range(1.5f, 3.0f);
         SetAnimationMoving(false);
-
-        if (visualTransform != null && visualBaseScale == Vector3.one && visualTransform.localScale != Vector3.one)
-        {
-            visualBaseScale = visualTransform.localScale;
-        }
-
-        // Pijakkan kaki awal di tanah
         SnapToGround();
     }
+
+    // ------------------------------------------------------------------
+    // ORIENTASI MODEL
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Memutar model visual agar "hidung" menghadap +Z root. Rotasi asli FBX dipertahankan
+    /// (dikalikan), tidak ditimpa, sehingga FBX dengan rotasi impor bawaan tidak rusak.
+    /// </summary>
+    private void ApplyVisualFacing()
+    {
+        float yaw = visualRotationOffset.y;
+        Quaternion extra = Quaternion.Euler(visualRotationOffset);
+
+        if (autoDetectFacing && TryDetectBodyAxis(out bool alongX))
+        {
+            // Tubuh memanjang di sumbu X -> perlu -90 agar menghadap +Z. Sudah di Z -> 0.
+            yaw = alongX ? -90f : 0f;
+            if (flipFacing) yaw += 180f;
+            extra = Quaternion.Euler(0f, yaw, 0f);
+        }
+        else if (flipFacing)
+        {
+            extra = Quaternion.Euler(0f, yaw + 180f, 0f) * Quaternion.Euler(visualRotationOffset.x, 0f, visualRotationOffset.z);
+        }
+
+        // Pre-multiply: yaw terjadi pada sumbu atas root, lalu rotasi asli FBX tetap berlaku.
+        visualTransform.localRotation = extra * visualTransform.localRotation;
+    }
+
+    /// <summary>
+    /// Mengukur panjang tubuh pada sumbu X dan Z dunia (root diputar sementara ke identitas).
+    /// Badan hewan berkaki empat selalu lebih panjang daripada lebar.
+    /// </summary>
+    private bool TryDetectBodyAxis(out bool alongX)
+    {
+        alongX = false;
+        Renderer[] rends = visualTransform.GetComponentsInChildren<Renderer>(true);
+        if (rends == null || rends.Length == 0) return false;
+
+        Quaternion savedRot = transform.rotation;
+        transform.rotation = Quaternion.identity;
+
+        Bounds b = new Bounds();
+        bool has = false;
+        foreach (var r in rends)
+        {
+            if (r is ParticleSystemRenderer) continue;
+            if (!has) { b = r.bounds; has = true; }
+            else b.Encapsulate(r.bounds);
+        }
+
+        transform.rotation = savedRot;
+
+        if (!has || (b.size.x < 0.01f && b.size.z < 0.01f)) return false;
+        if (Mathf.Abs(b.size.x - b.size.z) < 0.02f) return false; // ambigu -> pakai offset manual
+
+        alongX = b.size.x > b.size.z;
+        return true;
+    }
+
+    // ------------------------------------------------------------------
+    // LOOP UTAMA
+    // ------------------------------------------------------------------
 
     void Update()
     {
@@ -142,47 +215,94 @@ public class AnimalController : Interactable
 
         float distToPlayer = playerTransform ? Vector3.Distance(transform.position, playerTransform.position) : 999f;
 
-        // 1. Eksekusi state AI
-        if (currentState == State.FollowingPlayer)
-        {
-            UpdateCompanionState(distToPlayer);
-        }
-        else
-        {
-            UpdateWanderState(distToPlayer);
-        }
+        if (currentState == State.FollowingPlayer) UpdateCompanionState(distToPlayer);
+        else UpdateWanderState(distToPlayer);
 
-        // 2. Kunci tanah adaptif (Ground & Cobblestone Lock: Y clamped [0, 0.35m])
         SnapToGround();
-
-        // 3. Sinkronisasi Animator
         UpdateAnimator();
-
-        // 4. Procedural Secondary Animation (Napas & micro-roll visual)
         ApplyProceduralSecondaryMotion();
     }
 
     void LateUpdate()
     {
-        // Penguncian ganda di LateUpdate memastikan hewan 100% mustahil melayang ke angkasa
-        SnapToGround();
-
         Vector3 p = transform.position;
         p.y = Mathf.Clamp(currentGroundY, 0f, 0.25f);
         transform.position = p;
-
-        // Untuk rigged FBX: jangan clamp visualTransform.localPosition terlalu ketat
-        // agar kaki-kaki yang diturunkan animasi bone bisa menapak natural.
-        // Cukup pastikan root object (dogRoot) tidak melayang — sudah dikunci di atas.
-        if (visualTransform)
-        {
-            Vector3 vPos = visualTransform.localPosition;
-            // Izinkan bounce kecil (maks 0.12) tapi jangan pernah turun ke bawah root
-            vPos.y = Mathf.Clamp(vPos.y, 0f, 0.12f);
-            vPos.x = 0f; // Pastikan tidak ada drift horizontal dari procedural
-            visualTransform.localPosition = vPos;
-        }
     }
+
+    // ------------------------------------------------------------------
+    // LOCOMOTION INTI: selalu maju searah badan, putar dulu baru melaju
+    // ------------------------------------------------------------------
+
+    private static Vector3 Flat(Vector3 v)
+    {
+        v.y = 0f;
+        return v;
+    }
+
+    /// <summary>
+    /// Menggerakkan hewan menuju arah yang diinginkan secara natural:
+    /// badan berputar dengan ease-out, kecepatan turun saat belokan tajam,
+    /// dan perpindahan SELALU sepanjang transform.forward (tidak pernah menyamping).
+    /// </summary>
+    private void Locomote(Vector3 desiredDir, float targetSpeed, float turnMul = 1f)
+    {
+        desiredDir = Flat(desiredDir);
+        if (desiredDir.sqrMagnitude < 0.0001f)
+        {
+            Decelerate(1.5f);
+            return;
+        }
+        desiredDir.Normalize();
+
+        Vector3 fwd = Flat(transform.forward).normalized;
+        float angle = Vector3.Angle(fwd, desiredDir);
+
+        // Putar badan: makin kecil sudut, makin halus (ease-out), dibatasi turnSpeed
+        float maxStep = turnSpeed * turnMul * Time.deltaTime;
+        float easedStep = Mathf.Max(angle * 4f * Time.deltaTime, 25f * Time.deltaTime);
+        float step = Mathf.Min(maxStep, easedStep);
+        Quaternion targetRot = Quaternion.LookRotation(desiredDir, Vector3.up);
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, step);
+
+        // Selaraskan kecepatan dengan sudut: lurus = penuh, belok tajam = pelan tapi kaki tetap melangkah
+        float alignment = Mathf.InverseLerp(100f, 20f, angle);
+        float desiredSpeed = targetSpeed * Mathf.Lerp(0.2f, 1f, alignment);
+        currentSpeed = Mathf.MoveTowards(currentSpeed, desiredSpeed, acceleration * Time.deltaTime);
+
+        MoveForward(currentSpeed);
+        stepCycle += Time.deltaTime * (currentSpeed * 4.5f);
+    }
+
+    private void Decelerate(float rateMultiplier)
+    {
+        currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, acceleration * rateMultiplier * Time.deltaTime);
+        if (currentSpeed > 0.001f) MoveForward(currentSpeed);
+    }
+
+    private void MoveForward(float speed)
+    {
+        Vector3 fwd = Flat(transform.forward).normalized;
+        transform.position += fwd * (speed * Time.deltaTime);
+
+        // Sinkronkan "otak" NavMeshAgent dengan posisi badan sebenarnya
+        if (AgentReady) navAgent.nextPosition = transform.position;
+    }
+
+    /// <summary>
+    /// Memutar badan di tempat dengan halus (hanya yaw).
+    /// </summary>
+    private void TurnTowards(Vector3 targetPos, float speedMul)
+    {
+        Vector3 dir = Flat(targetPos - transform.position);
+        if (dir.sqrMagnitude < 0.001f) return;
+        Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, turnSpeed * speedMul * Time.deltaTime);
+    }
+
+    // ------------------------------------------------------------------
+    // STATE: IDLE & WANDER
+    // ------------------------------------------------------------------
 
     private void UpdateWanderState(float distToPlayer)
     {
@@ -191,112 +311,75 @@ public class AnimalController : Interactable
         switch (currentState)
         {
             case State.Idle:
-                // Deselerasi lembut hingga berhenti sempurna
-                currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, acceleration * 1.5f * Time.deltaTime);
+                Decelerate(1.5f);
 
-                // Perilaku saat diam: santai menoleh atau tatap pemain jika dekat
-                idleSubTimer -= Time.deltaTime;
-                if (idleSubTimer <= 0f)
+                // Menoleh ke pemain jika dekat (anjing & kucing), selain itu diam tenang
+                if (distToPlayer < 3.2f && playerTransform &&
+                    (animalType == AnimalType.Dog || animalType == AnimalType.Cat))
                 {
-                    idleSubTimer = Random.Range(2.0f, 4.5f);
-                    idleHeadYaw = Random.Range(-22f, 22f);
-                }
-
-                if (distToPlayer < 3.2f && (animalType == AnimalType.Dog || animalType == AnimalType.Cat))
-                {
-                    SmoothLookTowards(playerTransform.position, turnSmoothness * 0.8f);
-                }
-                else
-                {
-                    Vector3 idleLookDir = transform.forward + transform.right * (idleHeadYaw * 0.015f);
-                    SmoothLookTowards(transform.position + idleLookDir, turnSmoothness * 0.4f);
+                    TurnTowards(playerTransform.position, 0.35f);
                 }
 
                 if (stateTimer <= 0f)
                 {
-                    // Pilih tujuan baru di area terbuka (menghindari bangunan & gerobak)
                     currentTarget = PickValidWanderTarget();
-
-                    if (navAgent && navAgent.enabled && navAgent.isOnNavMesh)
-                    {
-                        navAgent.SetDestination(currentTarget);
-                    }
+                    if (AgentReady) navAgent.SetDestination(currentTarget);
 
                     currentState = State.Wandering;
-                    stateTimer = Random.Range(5.0f, 9.0f);
+                    stateTimer = Random.Range(6.0f, 10.0f);
                 }
                 break;
 
             case State.Wandering:
-                Vector3 moveDir = Vector3.zero;
+            {
+                Vector3 toTarget = Flat(currentTarget - transform.position);
+                float remaining = toTarget.magnitude;
 
-                if (navAgent && navAgent.enabled && navAgent.isOnNavMesh)
-                {
-                    if (navAgent.hasPath)
-                    {
-                        moveDir = navAgent.desiredVelocity;
-                        moveDir.y = 0f;
-                        moveDir.Normalize();
-                    }
-                    else
-                    {
-                        moveDir = currentTarget - transform.position;
-                        moveDir.y = 0f;
-                        moveDir.Normalize();
-                    }
-
-                    float targetSpeed = (navAgent.remainingDistance > 0.8f) ? moveSpeed : (moveSpeed * 0.45f);
-                    currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, acceleration * Time.deltaTime);
-                    navAgent.speed = currentSpeed;
-
-                    if (!navAgent.pathPending && navAgent.remainingDistance <= 0.5f)
-                    {
-                        ArriveAtIdle();
-                        return;
-                    }
-                }
-                else
-                {
-                    // Navigasi darat langsung dengan Whisker Obstacle Avoidance
-                    Vector3 toTarget = currentTarget - transform.position;
-                    toTarget.y = 0f;
-                    float dist = toTarget.magnitude;
-
-                    if (dist <= 0.5f)
-                    {
-                        ArriveAtIdle();
-                        return;
-                    }
-
-                    moveDir = toTarget.normalized;
-
-                    // Sensor Whisker: Deteksi rintangan di depan (Gerobak, Kotak, Pagar, Rumah)
-                    moveDir = AvoidObstacles(moveDir);
-
-                    // Belokan halus: Perlambat langkah jika sudut belok tajam
-                    Vector3 forwardFlat = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
-                    float angleToTarget = Vector3.Angle(forwardFlat, moveDir);
-                    float turnEase = Mathf.Clamp01((180f - angleToTarget) / 100f);
-
-                    float desiredSpeed = moveSpeed * turnEase;
-                    currentSpeed = Mathf.MoveTowards(currentSpeed, desiredSpeed, acceleration * Time.deltaTime);
-
-                    transform.position += forwardFlat * (currentSpeed * Time.deltaTime);
-                }
-
-                if (moveDir.sqrMagnitude > 0.001f)
-                {
-                    SmoothLookTowards(transform.position + moveDir, turnSmoothness);
-                    stepCycle += Time.deltaTime * (currentSpeed * 4.5f);
-                }
-
-                if (stateTimer <= 0f)
+                if (remaining <= 0.5f || stateTimer <= 0f)
                 {
                     ArriveAtIdle();
+                    return;
                 }
+
+                Vector3 dir = toTarget;
+
+                if (AgentReady)
+                {
+                    if (navAgent.pathPending)
+                    {
+                        Decelerate(1.0f);
+                        return;
+                    }
+                    if (navAgent.pathStatus == NavMeshPathStatus.PathInvalid)
+                    {
+                        ArriveAtIdle();
+                        return;
+                    }
+                    if (navAgent.hasPath)
+                    {
+                        Vector3 steer = Flat(navAgent.steeringTarget - transform.position);
+                        if (steer.sqrMagnitude > 0.01f) dir = steer;
+                    }
+                }
+
+                dir = AvoidObstacles(dir, out bool blocked);
+                if (blocked)
+                {
+                    ArriveAtIdle();
+                    return;
+                }
+
+                // Melambat halus saat mendekati tujuan
+                float targetSpeed = moveSpeed * Mathf.Clamp(remaining / 1.2f, 0.4f, 1f);
+                Locomote(dir, targetSpeed);
                 break;
+            }
         }
     }
+
+    // ------------------------------------------------------------------
+    // STATE: COMPANION
+    // ------------------------------------------------------------------
 
     private void UpdateCompanionState(float distToPlayer)
     {
@@ -305,97 +388,98 @@ public class AnimalController : Interactable
         {
             currentState = State.Idle;
             stateTimer = 2.5f;
+            companionMoving = false;
             prompt = $"Tekan E untuk mengelus {animalName}";
+            if (AgentReady) navAgent.ResetPath();
             return;
         }
 
-        // Posisi target companion: 1.5m di belakang-samping pemain
-        Vector3 companionSlot = playerTransform.position 
-                              - playerTransform.forward * 1.5f 
+        // Titik pendamping: di belakang-samping pemain
+        Vector3 companionSlot = playerTransform.position
+                              - playerTransform.forward * 1.5f
                               + playerTransform.right * 1.0f;
         companionSlot.y = 0f;
 
-        float distToSlot = Vector3.Distance(transform.position, companionSlot);
+        float distToSlot = Vector3.Distance(Flat(transform.position), companionSlot);
 
-        if (distToSlot > 0.65f)
+        // Hysteresis: mulai jalan jika > 1.0 m, berhenti jika < 0.5 m (mencegah bergetar)
+        if (!companionMoving && distToSlot > 1.0f) companionMoving = true;
+        else if (companionMoving && distToSlot < 0.5f) companionMoving = false;
+
+        if (companionMoving)
         {
-            Vector3 moveDir = companionSlot - transform.position;
-            moveDir.y = 0f;
-            moveDir.Normalize();
+            Vector3 dir = companionSlot - transform.position;
 
-            // Hindari rintangan saat mengikuti pemain
-            moveDir = AvoidObstacles(moveDir);
-
-            Vector3 forwardFlat = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
-            float angleToSlot = Vector3.Angle(forwardFlat, moveDir);
-            float turnEase = Mathf.Clamp01((180f - angleToSlot) / 90f);
-
-            // Kecepatan adaptif: lari jika pemain jauh, santai jika dekat
-            float desiredSpeed = Mathf.Clamp(distToSlot * 1.3f, moveSpeed * 0.8f, moveSpeed * 1.9f) * turnEase;
-            currentSpeed = Mathf.MoveTowards(currentSpeed, desiredSpeed, acceleration * 1.6f * Time.deltaTime);
-
-            if (navAgent && navAgent.enabled && navAgent.isOnNavMesh)
+            if (AgentReady)
             {
-                navAgent.speed = currentSpeed;
-                navAgent.SetDestination(companionSlot);
-                if (navAgent.desiredVelocity.sqrMagnitude > 0.01f)
+                repathTimer -= Time.deltaTime;
+                if (repathTimer <= 0f)
                 {
-                    moveDir = navAgent.desiredVelocity;
-                    moveDir.y = 0f;
-                    moveDir.Normalize();
+                    repathTimer = 0.25f;
+                    navAgent.SetDestination(companionSlot);
+                }
+
+                if (!navAgent.pathPending && navAgent.hasPath)
+                {
+                    Vector3 steer = Flat(navAgent.steeringTarget - transform.position);
+                    if (steer.sqrMagnitude > 0.01f) dir = steer;
                 }
             }
-            else
-            {
-                transform.position += forwardFlat * (currentSpeed * Time.deltaTime);
-            }
 
-            SmoothLookTowards(transform.position + moveDir, turnSmoothness * 1.25f);
-            stepCycle += Time.deltaTime * (currentSpeed * 4.5f);
+            dir = AvoidObstacles(dir, out bool blocked);
+
+            // Cepat jika pemain jauh, santai jika dekat
+            float desired = Mathf.Clamp(distToSlot * 1.1f, moveSpeed * 0.7f, moveSpeed * 1.9f);
+            Locomote(dir, blocked ? 0f : desired, 1.3f);
         }
         else
         {
-            // Berhenti santai di samping pemain
-            currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, acceleration * 2.2f * Time.deltaTime);
-            if (navAgent && navAgent.enabled && navAgent.isOnNavMesh) navAgent.ResetPath();
-            SmoothLookTowards(playerTransform.position, turnSmoothness * 0.9f);
+            Decelerate(2.0f);
+            if (AgentReady && navAgent.hasPath) navAgent.ResetPath();
+            if (playerTransform) TurnTowards(playerTransform.position, 0.5f);
         }
     }
 
+    // ------------------------------------------------------------------
+    // RINTANGAN & TARGET
+    // ------------------------------------------------------------------
+
     /// <summary>
-    /// Sensor Whisker Raycast: Mengarahkan hewan membelok menjauhi gerobak, pagar, atau tembok.
+    /// Sensor whisker: jika ada rintangan tinggi di depan, belok ke sisi (kiri/kanan 45 derajat) yang kosong.
+    /// blocked = true jika kedua sisi buntu.
     /// </summary>
-    private Vector3 AvoidObstacles(Vector3 desiredDir)
+    private Vector3 AvoidObstacles(Vector3 desiredDir, out bool blocked)
     {
+        blocked = false;
+
+        Vector3 fwd = Flat(transform.forward).normalized;
         Vector3 origin = transform.position + Vector3.up * 0.35f;
         float checkDistance = 1.15f;
 
-        // Cek rintangan langsung di depan
-        if (Physics.SphereCast(origin, 0.22f, transform.forward, out RaycastHit hitFront, checkDistance, ~0, QueryTriggerInteraction.Ignore))
+        if (Physics.SphereCast(origin, 0.22f, fwd, out RaycastHit hitFront, checkDistance, ~0, QueryTriggerInteraction.Ignore))
         {
-            if (hitFront.transform.root != transform && hitFront.point.y > 0.35f)
+            bool isSelf = hitFront.transform.IsChildOf(transform);
+            bool isLivingThing = hitFront.transform.CompareTag("Player") || hitFront.transform.CompareTag("NPC");
+            bool isTall = hitFront.collider.bounds.max.y > 0.4f;
+
+            if (!isSelf && !isLivingThing && isTall)
             {
-                // Rintangan tinggi terdeteksi (gerobak/rumah/pagar)!
-                Vector3 leftWhisker = Quaternion.Euler(0, -45f, 0) * transform.forward;
-                Vector3 rightWhisker = Quaternion.Euler(0, 45f, 0) * transform.forward;
+                Vector3 leftWhisker = Quaternion.Euler(0, -45f, 0) * fwd;
+                Vector3 rightWhisker = Quaternion.Euler(0, 45f, 0) * fwd;
 
                 bool leftHit = Physics.Raycast(origin, leftWhisker, checkDistance * 1.2f, ~0, QueryTriggerInteraction.Ignore);
                 bool rightHit = Physics.Raycast(origin, rightWhisker, checkDistance * 1.2f, ~0, QueryTriggerInteraction.Ignore);
 
-                if (!leftHit) return leftWhisker.normalized;
-                if (!rightHit) return rightWhisker.normalized;
+                if (!leftHit) return leftWhisker;
+                if (!rightHit) return rightWhisker;
 
-                // Jika kedua sisi buntu, berhenti santai dan pilih tujuan baru
-                ArriveAtIdle();
+                blocked = true;
             }
         }
 
         return desiredDir;
     }
 
-    /// <summary>
-    /// Memilih titik tujuan wander yang berada di area terbuka (bebas rintangan).
-    /// </summary>
     private Vector3 PickValidWanderTarget()
     {
         for (int i = 0; i < 8; i++)
@@ -403,76 +487,52 @@ public class AnimalController : Interactable
             Vector2 circle = Random.insideUnitCircle * wanderRadius;
             Vector3 candidate = new Vector3(homePosition.x + circle.x, 0f, homePosition.z + circle.y);
 
-            // Periksa apakah titik ini tertabrak bangunan atau prop
+            // Hindari titik yang terlalu dekat (jalan pendek terlihat canggung)
+            if (Vector3.Distance(Flat(transform.position), candidate) < 1.5f) continue;
+
             if (!Physics.CheckSphere(candidate + Vector3.up * 0.5f, 0.45f, ~0, QueryTriggerInteraction.Ignore))
             {
                 return candidate;
             }
         }
-
-        // Fallback ke posisi asal jika semua titik padat rintangan
         return homePosition;
     }
 
     private void ArriveAtIdle()
     {
         currentState = State.Idle;
-        currentSpeed = 0f;
         stateTimer = Random.Range(idleTimeMin, idleTimeMax);
-        if (navAgent && navAgent.enabled && navAgent.isOnNavMesh) navAgent.ResetPath();
+        if (AgentReady) navAgent.ResetPath();
+        // currentSpeed tidak di-nol-kan paksa: Idle akan mengerem halus
     }
 
-    private void SmoothLookTowards(Vector3 targetPos, float smoothness)
-    {
-        Vector3 dir = targetPos - transform.position;
-        dir.y = 0f; // Rotasi horizontal murni (Yaw-only), TIDAK PERNAH PITCH KE LANGIT
-        if (dir.sqrMagnitude > 0.001f)
-        {
-            Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * smoothness);
-        }
-    }
+    // ------------------------------------------------------------------
+    // GROUND
+    // ------------------------------------------------------------------
 
-    /// <summary>
-    /// Menyesuaikan ketinggian kaki dengan tanah atau undakan batu (Cobblestone).
-    /// DENGAN BATASAN KETAT (CLAMP [0, 0.25m]) AGAR 100% MUTLAK MUSTAHIL MELAYANG KE LANGIT!
-    /// </summary>
     private void SnapToGround()
     {
         float targetY = 0f;
 
-        // Raycast ke bawah dari ketinggian 0.6m untuk mendeteksi tanah atau permukaan batu
         Vector3 origin = transform.position + Vector3.up * 0.6f;
         RaycastHit[] hits = Physics.RaycastAll(origin, Vector3.down, 1.4f, ~0, QueryTriggerInteraction.Ignore);
 
         float highestGround = -999f;
         foreach (var h in hits)
         {
-            if (h.transform.root == transform) continue;
+            if (h.transform.IsChildOf(transform)) continue;
             if (h.collider.isTrigger) continue;
             if (h.transform.CompareTag("Player") || h.transform.CompareTag("NPC")) continue;
 
-            // Hanya anggap sebagai lantai jika ketinggian tanah absolut wajar (antara -0.15m s/d 0.25m)
-            // Mengabaikan dinding, atap, gerobak, pagar, peti, atau objek tinggi lain
             if (h.point.y <= 0.25f && h.point.y >= -0.15f)
             {
-                if (h.point.y > highestGround)
-                {
-                    highestGround = h.point.y;
-                }
+                if (h.point.y > highestGround) highestGround = h.point.y;
             }
         }
 
-        if (highestGround > -900f)
-        {
-            targetY = highestGround;
-        }
+        if (highestGround > -900f) targetY = highestGround;
 
-        // KUNCI MATEMATIS ANTI-MELAYANG MUTLAK:
-        // Permukaan tanah Desa Eldara di Y = 0 dan undakan batu tertinggi di Y = 0.20m.
-        // Dengan clamp ketat [0f, 0.25f], hewan 100% MUSTAHIL melayang ke langit dalam kondisi apapun!
         targetY = Mathf.Clamp(targetY, 0f, 0.25f);
-
         currentGroundY = Mathf.MoveTowards(currentGroundY, targetY, Time.deltaTime * 8.0f);
 
         Vector3 pos = transform.position;
@@ -480,30 +540,29 @@ public class AnimalController : Interactable
         transform.position = pos;
     }
 
+    // ------------------------------------------------------------------
+    // ANIMASI
+    // ------------------------------------------------------------------
+
     private void UpdateAnimator()
     {
-        // Threshold rendah (0.05) agar transisi Idle→Walk terjadi segera tanpa delay
-        bool isMoving = currentSpeed > 0.05f;
-        SetAnimationMoving(isMoving);
+        // Hysteresis agar animasi tidak berkedip antara Idle <-> Walk
+        if (!animMoving && currentSpeed > 0.08f) animMoving = true;
+        else if (animMoving && currentSpeed < 0.03f) animMoving = false;
+
+        SetAnimationMoving(animMoving);
 
         if (animator != null)
         {
-            // WAJIB: matikan root motion agar posisi HANYA dikontrol AnimalController,
-            // tidak ada pergeseran dobel dari clip animasi (penyebab utama sliding/melayang)
-            if (animator.applyRootMotion)
-                animator.applyRootMotion = false;
-
+            if (animator.applyRootMotion) animator.applyRootMotion = false;
             if (animator.cullingMode != AnimatorCullingMode.AlwaysAnimate)
                 animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
 
-            // Sinkronisasi kecepatan playback agar langkah kaki pas dengan laju jalan.
-            // Rumus: animSpeed = currentSpeed / moveSpeed
-            // → Ketika anjing jalan lambat, animasi melambat → kaki tidak meluncur (nyeret)
-            // → Ketika anjing jalan cepat, animasi dipercepat → langkah mengikuti badan
-            float animSpeedRatio = isMoving
-                ? Mathf.Clamp(currentSpeed / Mathf.Max(moveSpeed, 0.01f), 0.6f, 1.6f)
+            // Kecepatan playback = kecepatan nyata / kecepatan clip -> kaki tidak meluncur
+            float ratio = animMoving
+                ? Mathf.Clamp(currentSpeed / Mathf.Max(clipWalkSpeed, 0.01f), 0.5f, 1.8f)
                 : 1.0f;
-            animator.speed = animSpeedRatio;
+            animator.speed = Mathf.Lerp(animator.speed, ratio, Time.deltaTime * 8f);
         }
     }
 
@@ -519,54 +578,40 @@ public class AnimalController : Interactable
     {
         if (!visualTransform) return;
 
-        // Deteksi apakah Visual menggunakan SkinnedMeshRenderer (artinya rigged FBX seperti Dog.fbx)
         bool isRiggedFbx = visualTransform.GetComponentInChildren<SkinnedMeshRenderer>(true) != null;
+
+        float bounceY = 0f;
+        if (petBounceTimer > 0f)
+        {
+            petBounceTimer -= Time.deltaTime;
+            float amp = isRiggedFbx ? 0.06f : 0.15f;
+            bounceY = Mathf.Sin((0.35f - petBounceTimer) / 0.35f * Mathf.PI) * amp;
+        }
+
+        visualTransform.localPosition = visualBasePosition + new Vector3(0f, bounceY, 0f);
 
         if (isRiggedFbx)
         {
-            // Untuk model FBX beranimasikan (Dog.fbx, Cat.fbx, Wolf.fbx):
-            // Jangan sentuh localRotation sama sekali — bone rotation dikelola Animator.
-            // Hanya izinkan sedikit naik-turun saat dielus (bounceY kecil tidak mengganggu kaki).
-            float bounceY = 0f;
-            if (petBounceTimer > 0f)
-            {
-                petBounceTimer -= Time.deltaTime;
-                // Bounce kecil (0.06) agar tidak tampak melayang, hanya efek senang
-                bounceY = Mathf.Sin((0.35f - petBounceTimer) / 0.35f * Mathf.PI) * 0.06f;
-            }
-            // Hanya ubah posisi Y visual; X dan Z tetap nol agar tidak drift dari root
-            visualTransform.localPosition = new Vector3(0, bounceY, 0);
-            // localRotation dibiarkan: Animator yang mengelola bone pose
-            // localScale: napas sedikit (skala uniform agar mesh tidak terdistorsi)
+            // Rotasi bone dikelola Animator; cukup napas halus (skala uniform)
             float breathe = 1.0f + Mathf.Sin(breatheCycle) * 0.008f;
-            visualTransform.localScale = new Vector3(
-                visualBaseScale.x * breathe,
-                visualBaseScale.y * breathe,  // uniform Y (bukan terbalik) agar tidak squash mesh
-                visualBaseScale.z * breathe
-            );
+            visualTransform.localScale = visualBaseScale * breathe;
         }
         else
         {
-            // Untuk mesh prosedural statis (fallback): procedural secondary motion penuh
             float breathe = 1.0f + Mathf.Sin(breatheCycle) * 0.012f;
             visualTransform.localScale = new Vector3(
                 visualBaseScale.x * breathe,
                 visualBaseScale.y * (2f - breathe),
-                visualBaseScale.z * breathe
-            );
-
-            float bounceY = 0f;
-            if (petBounceTimer > 0f)
-            {
-                petBounceTimer -= Time.deltaTime;
-                bounceY = Mathf.Sin((0.35f - petBounceTimer) / 0.35f * Mathf.PI) * 0.15f;
-            }
+                visualBaseScale.z * breathe);
 
             float roll = (currentSpeed > 0.15f) ? Mathf.Sin(stepCycle) * 1.0f : 0f;
-            visualTransform.localPosition = new Vector3(0, bounceY, 0);
             visualTransform.localRotation = visualBaseRotation * Quaternion.Euler(0, 0, roll);
         }
     }
+
+    // ------------------------------------------------------------------
+    // INTERAKSI
+    // ------------------------------------------------------------------
 
     public override void Interact(PlayerController player)
     {
@@ -575,20 +620,19 @@ public class AnimalController : Interactable
             HintManager.Instance.Show($"pet_{animalName}", petMessage);
         }
 
-        // Efek lompat ceria pada visual child (tidak mengubah ketinggian root)
         petBounceTimer = 0.35f;
 
         if (animalType == AnimalType.Dog && canFollowPlayer)
         {
             currentState = State.FollowingPlayer;
             companionTimer = companionDuration;
+            companionMoving = false;
             prompt = $"{animalName} sedang menemanimu berjalan-jalan!";
         }
         else if (animalType == AnimalType.Cat)
         {
             currentState = State.Idle;
             stateTimer = 5.0f;
-            currentSpeed = 0f;
         }
     }
 }
