@@ -84,6 +84,7 @@ public static class SceneSetupTool
                 "🌙 Bulan perak terbit di sisi seberang saat malam tiba\n" +
                 "☁️ 22+ Awan 3D melayang dinamis ditiup angin & berubah warna fajar-siang-senja\n" +
                 "🏡 11 Gaya Rumah Kayu Realistis: Rumah Gadang, Joglo, Minka Jepang, Log Cabin, Chalet Alpen, A-Frame, Rumah Panggung, Barn, Treehouse, Pondok Danau, & Villa Modern\n" +
+                "👥 5 Karakter NPC 3D Stylized (Porting Blender): Kepala Desa (Merchant), Petani (Farmer), Pandai Besi & Penjaga Benteng (Guard), Dukun (Wizard), & Gadis Desa (Woman) — Lengkap dengan rute patroli mandiri & animasi berjalan prosedural!\n" +
                 "🎪 Alun-Alun Pasar: Gerobak pedagang, peti, tong kayu, bangku, & rambu desa\n" +
                 "🌾 Kawasan Pertanian: Lumbung gandum, kandang ternak, & pagar kebun\n" +
                 "⚒️ Kawasan Pandai Besi: Bengkel tempa, tumpukan balok kayu, & area tambang bijih\n" +
@@ -376,9 +377,9 @@ public static class SceneSetupTool
         ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Danau,
             new Vector3(-54f, 0f, -44f), Quaternion.Euler(0, 45f, 0), village.transform, "House_PondokDanau");
 
-        // 7. Chalet Salju Pegunungan — CHALET (Kawasan Selatan Gunung, X=-24, Z=-42, berjarak 30m dari Danau)
+        // 7. Rumah Panggung Nusantara — CHALET (Kawasan Selatan, X=-24, Z=-42)
         ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Chalet,
-            new Vector3(-24f, 0f, -42f), Quaternion.Euler(0, 20f, 0), village.transform, "House_WargaSelatan_Chalet");
+            new Vector3(-24f, 0f, -42f), Quaternion.Euler(0, 20f, 0), village.transform, "House_WargaSelatan_Panggung");
 
         // 8. Pondok Singgah Pengelana — AFRAME (Kawasan Selatan Timur, X=24, Z=-42, berjarak 48m dari Chalet)
         ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.AFrame,
@@ -569,7 +570,7 @@ public static class SceneSetupTool
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  6. NPC POPULATION
+    //  6. NPC POPULATION (STYLIZED 3D CHIBI GAME-ART DENGAN PERGERAKAN MANDIRI)
     // ─────────────────────────────────────────────────────────────────────
     static void SetupNPCs()
     {
@@ -577,47 +578,111 @@ public static class SceneSetupTool
         if (npcRoot) Object.DestroyImmediate(npcRoot);
         npcRoot = new GameObject("--- NPCs ---");
 
-        var npcData = new (string npcName, Vector3 pos, Color col, string greeting)[]
+        var npcConfigs = new (
+            string npcName,
+            ProceduralNpcBuilder.NpcStyle style,
+            Vector3 startPos,
+            float yRot,
+            string greeting,
+            Vector3[] route
+        )[]
         {
-            ("NPC_KepalaDesa",  new Vector3(-36f, 1.05f, 28f),
-             new Color(1f, 0.85f, 0.35f),
-             "Selamat datang, petualang! Desa Eldara dalam bahaya besar. Saat matahari terbenam, pasukan goblin akan menyerbu dari kegelapan hutan. Persiapkan menara dan senjatamu!"),
+            // 1. Kepala Desa / Saudagar Terkemuka (Merchant: Baret beludru, jubah merah emas, ransel ekspedisi)
+            ("NPC_KepalaDesa",
+             ProceduralNpcBuilder.NpcStyle.Merchant,
+             new Vector3(-38f, 0f, 26f), 135f,
+             "Selamat datang, petualang! Desa Eldara dalam bahaya besar. Saat matahari terbenam, pasukan monster akan menyerbu dari rimba kegelapan hutan. Persiapkan persenjataan dan dirikan menara panah!",
+             new Vector3[] {
+                 new Vector3(-38f, 0f, 26f), // Halaman Rumah Gadang
+                 new Vector3(-12f, 0f, 16f), // Jalur Cabang Barat Laut
+                 new Vector3(  0f, 0f, 22f), // Halaman Balai Desa
+                 new Vector3(  6f, 0f,  4f), // Alun-Alun Pasar Timur
+                 new Vector3( -5f, 0f,  5f)  // Bangku Alun-Alun
+             }),
 
-            ("NPC_PandaiBesi",  new Vector3( 32f, 1.05f, -2f),
-             new Color(0.7f, 0.35f, 0.2f),
-             "Salam, ksatria! Aku butuh bijih besi dan batu keras dari area tambang timur. Bawakan padaku, dan aku akan merakit menara panah yang kokoh!"),
+            // 2. Petani Ladang (Farmer: Caping jerami lebar, rompi kerja, kumis melengkung, & garpu rumput)
+            ("NPC_Petani",
+             ProceduralNpcBuilder.NpcStyle.Farmer,
+             new Vector3(-34f, 0f, -8f), 75f,
+             "Aduh gawat, kawanan serigala buas kemarin malam merusak pagar gandumku! Tolong tebang balok kayu di tepi hutan rimba untuk memperbaiki lumbung kami.",
+             new Vector3[] {
+                 new Vector3(-34f, 0f, -8f), // Depan Rumah Panggung
+                 new Vector3(-48f, 0f, -16f), // Ladang Gandum
+                 new Vector3(-62f, 0f, -22f), // Depan Lumbung Barn Gandum
+                 new Vector3(-36f, 0f, -4f)  // Pinggir Jalan Setapak Barat
+             }),
 
-            ("NPC_Petani",      new Vector3(-32f, 1.05f, -7f),
-             new Color(0.35f, 0.75f, 0.3f),
-             "Aduh gawat, gerombolan serigala malam kemarin merusak pagar gandumku! Tolong tebang balok kayu di pinggir hutan untuk memperbaiki lumbung kami."),
+            // 3. Pandai Besi & Ahli Senjata (Guard/Smith: Zirah baja tempa, sabuk kulit, & pedang baja)
+            ("NPC_PandaiBesi",
+             ProceduralNpcBuilder.NpcStyle.Guard,
+             new Vector3(32f, 0f, -2f), -90f,
+             "Salam, ksatria! Aku butuh bijih besi murni dan batu keras dari area tambang timur. Bawakan padaku, dan aku akan merakit menara panah yang kokoh!",
+             new Vector3[] {
+                 new Vector3(32f, 0f, -2f), // Depan Paron Tempa Bengkel
+                 new Vector3(40f, 0f,  8f), // Gudang Logistik Besi
+                 new Vector3(30f, 0f,  6f), // Tumpukan Balok Kayu & Bijih
+                 new Vector3(34f, 0f, -6f)  // Pinggir Jalan Setapak Timur
+             }),
 
-            ("NPC_Dukun",       new Vector3( 46f, 1.05f,-36f),
-             new Color(0.65f, 0.35f, 0.95f),
-             "Altar Segel Kuno di utara berdenyut dengan energi gelap... Jika kamu berani mengaktifkannya saat malam, Raja Goblin akan terpanggil. Pastikan menara desamu sudah siap!"),
+            // 4. Dukun Mistis Pelindung Segel (Wizard: Topi kerucut sihir melengkung, janggut putih panjang, & tongkat kristal cyan berpendar)
+            ("NPC_Dukun",
+             ProceduralNpcBuilder.NpcStyle.Wizard,
+             new Vector3(50f, 0f, -32f), -45f,
+             "Altar Segel Kuno di utara berdenyut dengan energi gelap... Jika kamu berani mengaktifkannya saat malam tiba, Raja Monster akan terpanggil. Pastikan menara bentengmu sudah siap!",
+             new Vector3[] {
+                 new Vector3(50f, 0f, -32f), // Teras Minka Jepang
+                 new Vector3(40f, 0f, -24f), // Lembah Zen Meditasi
+                 new Vector3(25f, 0f, -20f), // Jalur Cabang Tenggara
+                 new Vector3(52f, 0f, -38f)  // Lentera Mistis Minka
+             }),
+
+            // 5. Gadis Desa Ramah (Woman: Gaun zamrud, kepang rambut panjang di dada, celemek putih, & tas selempang)
+            ("NPC_GadisDesa",
+             ProceduralNpcBuilder.NpcStyle.Woman,
+             new Vector3(-20f, 0f, -38f), 20f,
+             "Halo petualang! Udara di desa Eldara hari ini begitu sejuk dan damai. Berhati-hatilah saat senja menjelang ya, kabut hutan sering membawa bahaya tak terduga!",
+             new Vector3[] {
+                 new Vector3(-20f, 0f, -38f), // Halaman Depan Chalet
+                 new Vector3(-40f, 0f, -42f), // Tepi Kolam Danau
+                 new Vector3( -2f, 0f, -26f), // Jalan Setapak Selatan
+                 new Vector3( 18f, 0f, -36f)  // Halaman Depan A-Frame
+             }),
+
+            // 6. Kapten Penjaga Benteng (Guard: Helm baja bermahkota bulu merah, jubah perang, & pedang ksatria)
+            ("NPC_PenjagaBenteng",
+             ProceduralNpcBuilder.NpcStyle.Guard,
+             new Vector3(-4f, 0f, -48f), 0f,
+             "Berhenti! Aku kapten regu pengawal benteng Eldara. Kami bertugas mengawasi gerbang selatan ini dari serbuan kawanan monster malam hari!",
+             new Vector3[] {
+                 new Vector3(-4f, 0f, -48f), // Pos Menara Barat Gerbang
+                 new Vector3( 4f, 0f, -48f), // Pos Menara Timur Gerbang
+                 new Vector3( 0f, 0f, -42f), // Tengah Jalan Masuk Selatan
+                 new Vector3( 0f, 0f, -52f)  // Pemeriksaan Pintu Benteng Luar
+             })
         };
 
-        foreach (var (npcName, pos, col, greeting) in npcData)
+        foreach (var (npcName, style, startPos, yRot, greeting, route) in npcConfigs)
         {
-            var npcGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            npcGo.name = npcName;
-            npcGo.tag = "NPC";
-            npcGo.transform.SetParent(npcRoot.transform);
-            npcGo.transform.position = pos;
-            ApplyColor(npcGo, col);
+            var npcGo = ProceduralNpcBuilder.BuildNpc(
+                style,
+                startPos,
+                Quaternion.Euler(0, yRot, 0),
+                npcRoot.transform,
+                npcName
+            );
 
-            // Topi/Kepala penanda profesi
-            var head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            head.name = "Head";
-            head.transform.SetParent(npcGo.transform);
-            head.transform.localPosition = new Vector3(0, 0.6f, 0);
-            head.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-            ApplyColor(head, col * 0.75f);
-            Object.DestroyImmediate(head.GetComponent<Collider>());
-
-            npcGo.AddComponent<NpcBrain>();
-            npcGo.AddComponent<NpcBehaviourTree>();
-            var npcDlg = npcGo.AddComponent<NpcDialogue>();
+            // Dialogue
+            var npcDlg = npcGo.GetComponent<NpcDialogue>() ?? npcGo.AddComponent<NpcDialogue>();
             CreateSimpleDialogue(npcName, greeting, npcDlg);
+
+            // Mover & Route
+            var mover = npcGo.GetComponent<NpcMover>();
+            if (mover)
+            {
+                mover.SetWaypoints(new System.Collections.Generic.List<Vector3>(route));
+                mover.moveSpeed = 1.35f;
+                mover.waitTimeAtWaypoint = Random.Range(3.5f, 5.5f);
+            }
         }
     }
 
@@ -742,12 +807,26 @@ public static class SceneSetupTool
         // 1. Pohon-pohon alami di dalam desa (taman, pinggir jalan, halaman rumah)
         var innerTrees = new Vector3[]
         {
+            // Baris asli — pojok & tengah desa
             new Vector3( 10f, 0f, 12f), new Vector3(-12f, 0f, 10f),
             new Vector3( 12f, 0f, -8f), new Vector3(-10f, 0f, -8f),
             new Vector3(-4f, 0f, 12f),  new Vector3( 4f, 0f, 12f),
             new Vector3(-14f, 0f, -2f), new Vector3( 14f, 0f, -2f),
             new Vector3( 0f, 0f, -14f), new Vector3( 24f, 0f, 22f),
             new Vector3(-26f, 0f, 20f), new Vector3(-14f, 0f, -12f),
+            // Tambahan: pinggir jalan utara-selatan
+            new Vector3( 6f, 0f, 20f),  new Vector3(-6f, 0f, 20f),
+            new Vector3( 6f, 0f,-20f),  new Vector3(-6f, 0f,-20f),
+            // Tambahan: sisi timur-barat
+            new Vector3( 22f, 0f,  4f), new Vector3(-22f, 0f,  4f),
+            new Vector3( 22f, 0f,-14f), new Vector3(-22f, 0f,-14f),
+            // Tambahan: sudut-sudut taman desa
+            new Vector3( 18f, 0f, 14f), new Vector3(-18f, 0f, 14f),
+            new Vector3( 20f, 0f,-20f), new Vector3(-20f, 0f,-20f),
+            // Tambahan: pohon hias di alun-alun & jalur masuk
+            new Vector3(  0f, 0f, 26f), new Vector3(  0f, 0f,-26f),
+            new Vector3( 28f, 0f,  0f), new Vector3(-28f, 0f,  0f),
+            new Vector3(-10f, 0f, 30f), new Vector3( 10f, 0f, 30f),
         };
 
         int innerIndex = 0;
@@ -801,37 +880,63 @@ public static class SceneSetupTool
         // Dikelompokkan di 4 zona alam eksterior: Rimba Utara (Altar), Lembah Selatan, Hutan Barat, & Tambang Timur
         var outerTreeZones = new System.Collections.Generic.List<Vector3>();
 
-        // Zona Rimba Utara (Z = 56 s/d 115, X = -110 s/d 110, sisakan celah jalan altar |X| < 6)
-        for (int i = 0; i < 30; i++)
+        // Zona Rimba Utara (Z = 56 s/d 130, X = -120 s/d 120, sisakan celah jalan altar |X| < 6)
+        for (int i = 0; i < 65; i++)
         {
-            float x = Random.Range(-110f, 110f);
+            float x = Random.Range(-120f, 120f);
             if (Mathf.Abs(x) < 7f) continue;
-            float z = Random.Range(56f, 115f);
+            float z = Random.Range(56f, 130f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
 
-        // Zona Rimba Selatan (Z = -115 s/d -58, X = -110 s/d 110, sisakan celah gerbang selatan |X| < 7)
-        for (int i = 0; i < 28; i++)
+        // Zona Rimba Selatan (Z = -130 s/d -58, X = -120 s/d 120, sisakan celah gerbang selatan |X| < 7)
+        for (int i = 0; i < 60; i++)
         {
-            float x = Random.Range(-110f, 110f);
+            float x = Random.Range(-120f, 120f);
             if (Mathf.Abs(x) < 7f) continue;
-            float z = Random.Range(-115f, -58f);
+            float z = Random.Range(-130f, -58f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
 
-        // Zona Hutan Barat (X = -115 s/d -85, Z = -52 s/d 50)
-        for (int i = 0; i < 22; i++)
+        // Zona Hutan Barat (X = -130 s/d -56, Z = -60 s/d 60) — lebih tebal
+        for (int i = 0; i < 50; i++)
         {
-            float x = Random.Range(-115f, -85f);
-            float z = Random.Range(-52f, 50f);
+            float x = Random.Range(-130f, -56f);
+            float z = Random.Range(-60f, 60f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
 
-        // Zona Hutan Timur & Tebing Tambang (X = 85 s/d 115, Z = -52 s/d 50)
-        for (int i = 0; i < 22; i++)
+        // Zona Hutan Timur & Tebing Tambang (X = 56 s/d 130, Z = -60 s/d 60) — lebih tebal
+        for (int i = 0; i < 50; i++)
         {
-            float x = Random.Range(85f, 115f);
-            float z = Random.Range(-52f, 50f);
+            float x = Random.Range(56f, 130f);
+            float z = Random.Range(-60f, 60f);
+            outerTreeZones.Add(new Vector3(x, 0f, z));
+        }
+
+        // Zona Peralihan Utara-Barat & Utara-Timur (pojok sudut yang lebih lebat)
+        for (int i = 0; i < 20; i++)
+        {
+            float x = Random.Range(-130f, -60f);
+            float z = Random.Range(56f, 130f);
+            outerTreeZones.Add(new Vector3(x, 0f, z));
+        }
+        for (int i = 0; i < 20; i++)
+        {
+            float x = Random.Range(60f, 130f);
+            float z = Random.Range(56f, 130f);
+            outerTreeZones.Add(new Vector3(x, 0f, z));
+        }
+        for (int i = 0; i < 20; i++)
+        {
+            float x = Random.Range(-130f, -60f);
+            float z = Random.Range(-130f, -56f);
+            outerTreeZones.Add(new Vector3(x, 0f, z));
+        }
+        for (int i = 0; i < 20; i++)
+        {
+            float x = Random.Range(60f, 130f);
+            float z = Random.Range(-130f, -56f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
 
@@ -901,28 +1006,35 @@ public static class SceneSetupTool
             new Vector3( 2.2f, 0f, -6.0f), new Vector3(-2.2f, 0f, -6.0f),
             new Vector3( 2.2f, 0f,-12.0f), new Vector3(-2.2f, 0f,-12.0f),
             new Vector3( 0.0f, 0f,  0.5f), new Vector3( 0.0f, 0f, -0.5f),
+            // Tambahan: sisi kanan-kiri jalan utama
+            new Vector3( 4.5f, 0f, 18f), new Vector3(-4.5f, 0f, 18f),
+            new Vector3( 4.5f, 0f,-18f), new Vector3(-4.5f, 0f,-18f),
+            new Vector3( 15f,  0f,  4f), new Vector3( 20f,  0f,  4f),
+            new Vector3(-15f,  0f,  4f), new Vector3(-20f,  0f,  4f),
         };
         foreach (var pt in pathwayPoints)
         {
-            RealisticGrassBuilder.BuildGrassClump(pt, 7, 1.8f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(pt, 8, 2.0f, grassRoot.transform, grassMat);
         }
 
-        // 2. Pekarangan & Halaman Sekitar Bangunan Desa
+        // 2. Pekarangan & Halaman Sekitar Bangunan Desa — lebih rapat
         Vector3[] yardCenters = {
-            new Vector3(-16f, 0f,  16f), // Halaman Rumah Warga 1
-            new Vector3( 16f, 0f,  18f), // Halaman Rumah Warga 2
-            new Vector3(-16f, 0f,  -4f), // Halaman Pandai Besi
-            new Vector3( 18f, 0f,  -4f), // Halaman Rumah Pedagang
-            new Vector3(  0f, 0f, -16f), // Halaman Selatan Dekat Gerbang
-            new Vector3(-12f, 0f,  24f), // Halaman Utara Balai Desa
-            new Vector3( 14f, 0f,  25f), // Halaman Kebun Desa
+            new Vector3(-16f, 0f,  16f), new Vector3(-20f, 0f,  12f), // Halaman Rumah Warga 1
+            new Vector3( 16f, 0f,  18f), new Vector3( 20f, 0f,  12f), // Halaman Rumah Warga 2
+            new Vector3(-16f, 0f,  -4f), new Vector3(-22f, 0f,  -8f), // Halaman Pandai Besi
+            new Vector3( 18f, 0f,  -4f), new Vector3( 22f, 0f,  -8f), // Halaman Rumah Pedagang
+            new Vector3(  0f, 0f, -16f), new Vector3(  4f, 0f, -22f), // Halaman Selatan Dekat Gerbang
+            new Vector3(-12f, 0f,  24f), new Vector3( -8f, 0f,  28f), // Halaman Utara Balai Desa
+            new Vector3( 14f, 0f,  25f), new Vector3(  8f, 0f,  28f), // Halaman Kebun Desa
+            new Vector3( 26f, 0f, -16f), new Vector3(-26f, 0f, -16f), // Sudut luar tenggara & barat daya
+            new Vector3( 26f, 0f,  26f), new Vector3(-26f, 0f,  26f), // Sudut luar timur laut & barat laut
         };
         foreach (var yc in yardCenters)
         {
-            RealisticGrassBuilder.BuildGrassClump(yc, 18, 5.5f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(yc, 20, 6.0f, grassRoot.transform, grassMat);
         }
 
-        // 3. Pangkal Pohon-Pohon Desa & Semak Alami
+        // 3. Pangkal Pohon-Pohon Desa & Semak Alami — sinkron dengan innerTrees di WILDERNESS
         var innerTrees = new Vector3[]
         {
             new Vector3( 10f, 0f, 12f), new Vector3(-12f, 0f, 10f),
@@ -931,33 +1043,63 @@ public static class SceneSetupTool
             new Vector3(-14f, 0f, -2f), new Vector3( 14f, 0f, -2f),
             new Vector3( 0f, 0f, -14f), new Vector3( 24f, 0f, 22f),
             new Vector3(-26f, 0f, 20f), new Vector3(-14f, 0f, -12f),
+            // Tambahan sesuai pohon baru yang ditanam
+            new Vector3( 6f, 0f, 20f),  new Vector3(-6f, 0f, 20f),
+            new Vector3( 6f, 0f,-20f),  new Vector3(-6f, 0f,-20f),
+            new Vector3( 22f, 0f,  4f), new Vector3(-22f, 0f,  4f),
+            new Vector3( 22f, 0f,-14f), new Vector3(-22f, 0f,-14f),
+            new Vector3( 18f, 0f, 14f), new Vector3(-18f, 0f, 14f),
+            new Vector3( 20f, 0f,-20f), new Vector3(-20f, 0f,-20f),
+            new Vector3(  0f, 0f, 26f), new Vector3(  0f, 0f,-26f),
+            new Vector3( 28f, 0f,  0f), new Vector3(-28f, 0f,  0f),
         };
         foreach (var tp in innerTrees)
         {
-            RealisticGrassBuilder.BuildGrassClump(tp, 10, 3.0f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(tp, 12, 3.5f, grassRoot.transform, grassMat);
         }
 
-        // 4. Sepanjang Garis Perimeter Pagar Kayu & Menara Pertahanan (Radius ~32m)
-        int fenceClumps = 36;
+        // 4. Sepanjang Garis Perimeter Pagar Kayu & Menara Pertahanan (Radius ~32-36m)
+        int fenceClumps = 56; // jauh lebih rapat dari sebelumnya (36 → 56)
         for (int i = 0; i < fenceClumps; i++)
         {
             float ang = (i / (float)fenceClumps) * 360f * Mathf.Deg2Rad;
             float deg = ang * Mathf.Rad2Deg;
             if (deg > 255f && deg < 285f) continue; // Celah gerbang masuk selatan
 
-            float r = Random.Range(30f, 34f);
+            float r = Random.Range(29f, 36f);
             Vector3 pos = new Vector3(Mathf.Cos(ang) * r, 0f, Mathf.Sin(ang) * r);
-            RealisticGrassBuilder.BuildGrassClump(pos, 6, 2.5f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(pos, 8, 3.0f, grassRoot.transform, grassMat);
         }
 
-        // 5. Hamparan Padang Rumput Liar Luar Desa (Wild Meadows, Radius 36m - 75m)
-        int meadowClumps = 48;
-        for (int i = 0; i < meadowClumps; i++)
+        // 5. Hamparan Padang Rumput Liar Luar Desa — lebah rapat, cincin ganda
+        // Cincin dalam (36-60m)
+        int meadowInner = 72;
+        for (int i = 0; i < meadowInner; i++)
         {
-            float ang = (i / (float)meadowClumps) * 360f * Mathf.Deg2Rad;
-            float r = Random.Range(36f, 75f);
+            float ang = (i / (float)meadowInner) * 360f * Mathf.Deg2Rad;
+            float r = Random.Range(36f, 60f);
             Vector3 pos = new Vector3(Mathf.Cos(ang) * r, 0f, Mathf.Sin(ang) * r);
-            RealisticGrassBuilder.BuildGrassClump(pos, 8, 4.0f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(pos, 10, 4.5f, grassRoot.transform, grassMat);
+        }
+        // Cincin luar (60-100m) — semakin lebat di dekat hutan
+        int meadowOuter = 90;
+        for (int i = 0; i < meadowOuter; i++)
+        {
+            float ang = (i / (float)meadowOuter) * 360f * Mathf.Deg2Rad;
+            float r = Random.Range(60f, 105f);
+            Vector3 pos = new Vector3(Mathf.Cos(ang) * r, 0f, Mathf.Sin(ang) * r);
+            RealisticGrassBuilder.BuildGrassClump(pos, 12, 5.5f, grassRoot.transform, grassMat);
+        }
+
+        // 6. Tambalan Rumput Acak di Dalam Desa (mengisi area kosong antar bangunan)
+        for (int i = 0; i < 50; i++)
+        {
+            float x = Random.Range(-28f, 28f);
+            float z = Random.Range(-28f, 28f);
+            // Jangan taruh di tengah alun-alun (radius 5m)
+            if (Mathf.Sqrt(x * x + z * z) < 5f) continue;
+            Vector3 pos = new Vector3(x, 0f, z);
+            RealisticGrassBuilder.BuildGrassClump(pos, 6, 2.0f, grassRoot.transform, grassMat);
         }
     }
 
@@ -1096,7 +1238,7 @@ public static class SceneSetupTool
             RealisticDogBuilder.DogBreed.GermanShepherd, "Bruno",
             "Guk! Bruno si German Shepherd berdiri tegap dan waspada menjaga gerbang utama desa!");
 
-        // 1d. Kiko - Anjing Dachshund Lincah (Di halaman depan Chalet Salju)
+        // 1d. Kiko - Anjing Dachshund Lincah (Di teras Rumah Panggung Selatan)
         AnimalAssetSetup.SpawnDog(new Vector3(-20f, 0f, -46f), Quaternion.Euler(0, -110f, 0), faunaRoot.transform,
             RealisticDogBuilder.DogBreed.Dachshund, "Kiko",
             "Guk! Kiko si Dachshund bertubuh panjang berlari-lari kecil menyambutmu!");
