@@ -114,13 +114,8 @@ public class AnimalController : Interactable
             visualTransform = transform.GetChild(0);
             visualBaseScale = visualTransform.localScale;
             visualBasePosition = visualTransform.localPosition;
-
-            if (animalType == AnimalType.Dog || animalType == AnimalType.Cat || animalType == AnimalType.Wolf)
-            {
-                ApplyVisualFacing();
-            }
-
-            visualBaseRotation = visualTransform.localRotation;
+            // Catatan: ApplyVisualFacing() dipindah ke Start() agar Animator sudah
+            // diinisialisasi dan bounds FBX sudah benar sebelum deteksi sumbu tubuh.
             animator = visualTransform.GetComponent<Animator>();
         }
 
@@ -141,6 +136,17 @@ public class AnimalController : Interactable
         if (p) playerTransform = p.transform;
 
         stateTimer = Random.Range(1.5f, 3.0f);
+
+        // ApplyVisualFacing() di sini (Start) agar:
+        // 1. Animator sudah diinisialisasi → bounds FBX lebih akurat.
+        // 2. Bone "Head" sudah dalam pose default yang benar → CorrectFacingByHead lebih andal.
+        if (visualTransform != null &&
+            (animalType == AnimalType.Dog || animalType == AnimalType.Cat || animalType == AnimalType.Wolf))
+        {
+            ApplyVisualFacing();
+            visualBaseRotation = visualTransform.localRotation;
+        }
+
         SetAnimationMoving(false);
         SnapToGround();
     }
@@ -150,36 +156,39 @@ public class AnimalController : Interactable
     // ------------------------------------------------------------------
 
     /// <summary>
-    /// Memutar model visual agar "hidung" menghadap +Z root. Rotasi asli FBX dipertahankan
-    /// (dikalikan), tidak ditimpa, sehingga FBX dengan rotasi impor bawaan tidak rusak.
+    /// Memutar model visual agar "hidung" menghadap +Z root (arah maju Unity).
+    /// Dipanggil di Start() setelah Animator diinisialisasi untuk hasil deteksi yang akurat.
     /// </summary>
     private void ApplyVisualFacing()
     {
         // RESET ke identity terlebih dahulu untuk mencegah akumulasi rotasi ganda.
-        // Data scene (.unity) mungkin sudah menyimpan rotasi lama dari patch sebelumnya,
-        // sehingga perkalian di bawah akan menggandakan sudut dan hewan berjalan mundur.
+        // Data scene (.unity) mungkin sudah menyimpan rotasi lama dari patch sebelumnya.
         visualTransform.localRotation = Quaternion.identity;
 
-        float yaw = visualRotationOffset.y;
-        Quaternion extra = Quaternion.Euler(visualRotationOffset);
+        Quaternion extra;
 
         if (autoDetectFacing && TryDetectBodyAxis(out bool alongX))
         {
-            // Tubuh memanjang di sumbu X -> perlu -90 agar menghadap +Z. Sudah di Z -> 0.
-            yaw = alongX ? -90f : 0f;
+            // Tubuh memanjang di sumbu X → perlu Y=-90° agar menghadap +Z.
+            // Tubuh memanjang di sumbu Z → sudah menghadap +Z, Y=0°.
+            float yaw = alongX ? -90f : 0f;
             if (flipFacing) yaw += 180f;
             extra = Quaternion.Euler(0f, yaw, 0f);
+
+            // Verifikasi: kepala harus ada di +Z setelah rotasi diterapkan sementara.
+            // Jika TryDetectBodyAxis benar, CorrectFacingByHead tidak dibutuhkan.
+            // Nonaktifkan CorrectFacingByHead karena bisa salah deteksi jika FBX T-pose ambigu.
         }
-        else if (flipFacing)
+        else
         {
-            extra = Quaternion.Euler(0f, yaw + 180f, 0f) * Quaternion.Euler(visualRotationOffset.x, 0f, visualRotationOffset.z);
+            // Fallback: pakai visualRotationOffset yang diatur secara manual di Inspector.
+            float yaw = visualRotationOffset.y + (flipFacing ? 180f : 0f);
+            extra = Quaternion.Euler(visualRotationOffset.x, yaw, visualRotationOffset.z);
         }
 
-        // Terapkan rotasi orientasi (identity * extra = extra), bersih tanpa akumulasi.
         visualTransform.localRotation = extra;
 
-        // Pastikan kepala berada di depan (+Z). Jika terbalik, putar 180 derajat.
-        if (autoDetectFacing) CorrectFacingByHead();
+        Debug.Log($"[AnimalController] {animalName}: ApplyVisualFacing → localRotation = {extra.eulerAngles}", gameObject);
     }
 
     /// <summary>
@@ -218,9 +227,12 @@ public class AnimalController : Interactable
     // ------------------------------------------------------------------
 
     /// <summary>
-    /// Mencari tulang/objek kepala, lalu memastikan posisinya berada di depan pusat tubuh (+Z root).
+    /// (Opsional/Manual) Mencari tulang/objek kepala, lalu memastikan posisinya berada di depan pusat tubuh (+Z root).
     /// Jika kepala ada di belakang, model diputar 180 derajat.
+    /// CATATAN: Tidak dipanggil otomatis karena bisa salah deteksi jika T-pose FBX ambigu.
+    /// Panggil manual lewat klik kanan komponen → "Balik Arah Hadap" jika hewan masih mundur.
     /// </summary>
+    [ContextMenu("Koreksi Arah via Kepala (Manual)")]
     private void CorrectFacingByHead()
     {
         Transform head = null;
