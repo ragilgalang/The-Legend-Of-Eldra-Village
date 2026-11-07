@@ -568,7 +568,8 @@ public static class RealisticDogBuilder
             visual = UnityEngine.Object.Instantiate(dogPrefab, dogRoot.transform);
             visual.name = "Visual";
             visual.transform.localPosition = Vector3.zero;
-            visual.transform.localRotation = Quaternion.identity;
+            // Rotasi Y = -90 derajat agar model anjing menghadap lurus ke Z-forward (tidak jalan menyamping seperti kepiting)
+            visual.transform.localRotation = Quaternion.Euler(0, -90f, 0);
 
             float scale = BreedScales.ContainsKey(breed) ? BreedScales[breed] : 0.145f;
             visual.transform.localScale = Vector3.one * scale;

@@ -53,7 +53,12 @@ public class AnimalController : Interactable
     private float idleHeadYaw;
 
     // Secondary & Procedural
+    [Header("Orientasi Model Visual")]
+    [Tooltip("Offset rotasi model visual (Euler). Model FBX berkaki empat (Dog, Cat, Wolf) dibuat menghadap sumbu +X, sehingga memerlukan offset Y = -90 agar berjalan lurus ke depan, bukan menyamping seperti kepiting.")]
+    public Vector3 visualRotationOffset = new Vector3(0f, -90f, 0f);
+
     private Vector3 visualBaseScale = Vector3.one;
+    private Quaternion visualBaseRotation = Quaternion.identity;
     private float stepCycle;
     private float breatheCycle;
     private float petBounceTimer;
@@ -86,6 +91,16 @@ public class AnimalController : Interactable
         {
             visualTransform = transform.GetChild(0);
             visualBaseScale = visualTransform.localScale;
+
+            // Pastikan orientasi model Visual selaras dengan arah gerak:
+            // FBX Dog, Cat, dan Wolf aslinya dimodelkan menghadap sumbu X,
+            // sehingga perlu offset Y = -90 derajat agar menghadap ke depan (+Z) dan tidak jalan menyamping
+            if (animalType == AnimalType.Dog || animalType == AnimalType.Cat || animalType == AnimalType.Wolf)
+            {
+                visualTransform.localRotation = Quaternion.Euler(visualRotationOffset);
+            }
+
+            visualBaseRotation = visualTransform.localRotation;
 
             // Coba ambil Animator dari Visual langsung dulu (Dog.fbx menaruh Animator di root)
             animator = visualTransform.GetComponent<Animator>();
@@ -549,7 +564,7 @@ public class AnimalController : Interactable
 
             float roll = (currentSpeed > 0.15f) ? Mathf.Sin(stepCycle) * 1.0f : 0f;
             visualTransform.localPosition = new Vector3(0, bounceY, 0);
-            visualTransform.localRotation = Quaternion.Euler(0, 0, roll);
+            visualTransform.localRotation = visualBaseRotation * Quaternion.Euler(0, 0, roll);
         }
     }
 

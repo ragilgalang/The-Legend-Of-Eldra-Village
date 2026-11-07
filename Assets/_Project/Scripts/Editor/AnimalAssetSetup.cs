@@ -335,7 +335,8 @@ public static class AnimalAssetSetup
         var visual = Object.Instantiate(modelPrefab, catRoot.transform);
         visual.name = "Visual";
         visual.transform.localPosition = Vector3.zero;
-        visual.transform.localRotation = Quaternion.identity;
+        // Rotasi Y = -90 derajat agar model kucing menghadap lurus ke Z-forward (tidak jalan menyamping seperti kepiting)
+        visual.transform.localRotation = Quaternion.Euler(0, -90f, 0);
         // Skala realistis: panjang ~0.45m, tinggi punggung ~0.30m
         visual.transform.localScale = Vector3.one * 0.075f;
 
@@ -396,7 +397,8 @@ public static class AnimalAssetSetup
         var visual = Object.Instantiate(modelPrefab, wolfRoot.transform);
         visual.name = "Visual";
         visual.transform.localPosition = Vector3.zero;
-        visual.transform.localRotation = Quaternion.identity;
+        // Rotasi Y = -90 derajat agar model serigala menghadap lurus ke Z-forward (tidak jalan menyamping seperti kepiting)
+        visual.transform.localRotation = Quaternion.Euler(0, -90f, 0);
         // Skala realistis serigala: panjang ~1.2m, tinggi ~0.80m
         visual.transform.localScale = Vector3.one * 0.165f;
 
