@@ -13,6 +13,18 @@ public class PlayerController : MonoBehaviour
 
     void Awake() => cc = GetComponent<CharacterController>();
 
+    void Start()
+    {
+        // Anti-stuck: Jika pemain berada di sekitar pusat (0, y, 0), posisikan di alun-alun luar sumur
+        if (Mathf.Abs(transform.position.x) < 1.5f && Mathf.Abs(transform.position.z) < 1.5f)
+        {
+            if (cc != null) cc.enabled = false;
+            transform.position = new Vector3(0f, 1.05f, -6f);
+            transform.rotation = Quaternion.identity;
+            if (cc != null) cc.enabled = true;
+        }
+    }
+
     void Update()
     {
         Vector2 move = Vector2.zero;

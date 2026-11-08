@@ -246,6 +246,13 @@ public static class SceneSetupTool
         var cc = player.GetComponent<CharacterController>() ?? player.AddComponent<CharacterController>();
         cc.height = 2f; cc.radius = 0.5f; cc.center = Vector3.zero;
 
+        // Reset posisi dan rotasi player secara mutlak di ruang terbuka alun-alun (menghadap ke Utara)
+        bool ccActive = cc.enabled;
+        cc.enabled = false;
+        player.transform.position = new Vector3(0f, 1.05f, -6f);
+        player.transform.rotation = Quaternion.identity;
+        cc.enabled = ccActive;
+
         playerCtrl       = player.GetComponent<PlayerController>()  ?? player.AddComponent<PlayerController>();
         playerHealth     = player.GetComponent<Health>()             ?? player.AddComponent<Health>();
         playerHealth.max = 100f;
@@ -319,40 +326,38 @@ public static class SceneSetupTool
         //  A. SISTEM JALAN KOTA MEDIEVAL (COBBLESTONE BOULEVARD & CONNECTORS)
         // ═════════════════════════════════════════════════════════════════
 
-        // 1. Alun-Alun Paving Pusat (Central Plaza 18x18 meter, X: -9..9, Z: -9..9)
-        // Paving rapi cobblestone lebar membentuk lantai alun-alun desa yang megah dan bersih
-        for (float x = -9f; x <= 9f; x += 4.5f)
-        {
-            for (float z = -9f; z <= 9f; z += 4.5f)
-            {
-                InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, z),
-                    Quaternion.identity, new Vector3(1.25f, 1f, 1.25f), village.transform, slavicMat);
-            }
-        }
+        // 1. Alun-Alun Paving Pusat (Central Plaza 18 meter)
+        var plaza = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        plaza.name = "Central_Plaza_Stone";
+        plaza.transform.SetParent(village.transform);
+        plaza.transform.position = new Vector3(0, 0.02f, 0);
+        plaza.transform.localScale = new Vector3(18f, 0.04f, 18f);
+        Object.DestroyImmediate(plaza.GetComponent<Collider>());
+        ApplyColor(plaza, new Color(0.72f, 0.70f, 0.65f)); // Warna batu alam paving bersih
 
-        // 2. Jalur Utama Utara (North Avenue, X = 0, Z = 11.25 s/d 38 menuju Balai Desa)
-        for (float z = 11.25f; z <= 38f; z += 4.5f)
+        // 2. Jalur Utama Utara (North Avenue, X = 0, Z = 9 s/d 38 menuju Balai Desa)
+        for (float z = 9f; z <= 38f; z += 4.5f)
         {
             InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(0, 0.02f, z),
                 Quaternion.identity, new Vector3(1.5f, 1f, 1.5f), village.transform, slavicMat);
         }
 
-        // 3. Jalur Utama Selatan (South Avenue, X = 0, Z = -48 s/d -11.25 menuju Gerbang Benteng)
-        for (float z = -48f; z <= -11.25f; z += 4.5f)
+        // 3. Jalur Utama Selatan (South Avenue, X = 0, Z = -9 s/d -48 menuju Gerbang Benteng)
+        for (float z = -9f; z >= -48f; z -= 4.5f)
         {
             InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(0, 0.02f, z),
                 Quaternion.identity, new Vector3(1.5f, 1f, 1.5f), village.transform, slavicMat);
         }
 
-        // 4. Jalur Utama Timur (East Avenue, Z = 0, X = 11.25 s/d 66 menuju Kawasan Pengrajin)
-        for (float x = 11.25f; x <= 66f; x += 4.5f)
+        // 4. Jalur Utama Timur (East Avenue, Z = 0, X = 9 s/d 66 menuju Kawasan Pengrajin)
+        for (float x = 9f; x <= 66f; x += 4.5f)
         {
             InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, 0),
                 Quaternion.Euler(0, 90f, 0), new Vector3(1.5f, 1f, 1.5f), village.transform, slavicMat);
         }
 
-        // 5. Jalur Utama Barat (West Avenue, Z = 0, X = -66 s/d -11.25 menuju Kawasan Pertanian)
-        for (float x = -66f; x <= -11.25f; x += 4.5f)
+        // 5. Jalur Utama Barat (West Avenue, Z = 0, X = -9 s/d -66 menuju Kawasan Pertanian)
+        for (float x = -9f; x >= -66f; x -= 4.5f)
         {
             InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, 0),
                 Quaternion.Euler(0, 90f, 0), new Vector3(1.5f, 1f, 1.5f), village.transform, slavicMat);
@@ -570,6 +575,7 @@ public static class SceneSetupTool
         roofL.transform.localScale = new Vector3(1.3f, 0.08f, 1.8f);
         roofL.transform.localRotation = Quaternion.Euler(0, 0, 30f);
         ApplyColor(roofL, new Color(0.3f, 0.18f, 0.1f));
+        Object.DestroyImmediate(roofL.GetComponent<Collider>());
 
         var roofR = GameObject.CreatePrimitive(PrimitiveType.Cube);
         roofR.name = "Well_Roof_R";
@@ -578,6 +584,7 @@ public static class SceneSetupTool
         roofR.transform.localScale = new Vector3(1.3f, 0.08f, 1.8f);
         roofR.transform.localRotation = Quaternion.Euler(0, 0, -30f);
         ApplyColor(roofR, new Color(0.3f, 0.18f, 0.1f));
+        Object.DestroyImmediate(roofR.GetComponent<Collider>());
 
         // Lentera Hangat Sumur
         AddPorchLantern(wellRoot.transform, new Vector3(0, 2.1f, 0), new Color(1f, 0.75f, 0.35f), 10f);
@@ -747,12 +754,25 @@ public static class SceneSetupTool
             foreach (var r in instance.GetComponentsInChildren<Renderer>(true))
                 r.sharedMaterial = mat;
 
-        foreach (var mf in instance.GetComponentsInChildren<MeshFilter>(true))
-            if (!mf.GetComponent<Collider>())
-            {
-                var mc = mf.gameObject.AddComponent<MeshCollider>();
-                mc.sharedMesh = mf.sharedMesh;
-            }
+        bool isWalkSurfaceOrFoliage = fbxName.IndexOf("Road", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                     fbxName.IndexOf("Cobble", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                     fbxName.IndexOf("Grass", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                     fbxName.IndexOf("Flower", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
+        if (isWalkSurfaceOrFoliage)
+        {
+            foreach (var col in instance.GetComponentsInChildren<Collider>(true))
+                Object.DestroyImmediate(col);
+        }
+        else
+        {
+            foreach (var mf in instance.GetComponentsInChildren<MeshFilter>(true))
+                if (!mf.GetComponent<Collider>())
+                {
+                    var mc = mf.gameObject.AddComponent<MeshCollider>();
+                    mc.sharedMesh = mf.sharedMesh;
+                }
+        }
 
         return instance;
     }
@@ -2244,12 +2264,25 @@ public static class SceneSetupTool
                 }
             }
 
-            foreach (var mf in instance.GetComponentsInChildren<MeshFilter>(true))
+            bool isWalkSurfaceOrFoliage = fbxName.IndexOf("Road", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                         fbxName.IndexOf("Cobble", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                         fbxName.IndexOf("Grass", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                         fbxName.IndexOf("Flower", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (isWalkSurfaceOrFoliage)
             {
-                if (!mf.GetComponent<Collider>())
+                foreach (var col in instance.GetComponentsInChildren<Collider>(true))
+                    Object.DestroyImmediate(col);
+            }
+            else
+            {
+                foreach (var mf in instance.GetComponentsInChildren<MeshFilter>(true))
                 {
-                    var mc = mf.gameObject.AddComponent<MeshCollider>();
-                    mc.sharedMesh = mf.sharedMesh;
+                    if (!mf.GetComponent<Collider>())
+                    {
+                        var mc = mf.gameObject.AddComponent<MeshCollider>();
+                        mc.sharedMesh = mf.sharedMesh;
+                    }
                 }
             }
 
