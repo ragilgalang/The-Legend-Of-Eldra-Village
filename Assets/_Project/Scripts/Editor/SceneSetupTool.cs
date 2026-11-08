@@ -64,6 +64,10 @@ public static class SceneSetupTool
         // 9b. Ekosistem Fauna & Hewan Desa Eldara (Anjing, Kucing, Serigala, Elang, Ikan)
         SetupFaunaAndAnimals();
 
+        // 9c. EKSPANSI PETA — 4 Zona Baru: Pegunungan Utara, Rawa Selatan,
+        //     Desa Nelayan Barat, Tebing Tambang Timur (total peta 500x500m)
+        SetupExpandedWorld(slavicMat, grassTuftMat);
+
         // 10. Titik Invasi Monster Malam (4 Arah Hutan Liar)
         SetupEnemySpawners();
 
@@ -93,6 +97,13 @@ public static class SceneSetupTool
                 "🌲 Hutan Rimba Keliling: 90+ Pohon cemara & ek bervariasi mengitari desa\n" +
                 "🐾 Ekosistem Fauna: Anjing Penjaga (Milo), Kucing Desa (Luna & Oliver), Serigala Rimba, & Elang Perkasa di Langit!\n" +
                 "🏮 Lentera Malam: Lampu lentera hangat di tiap rumah & menara\n\n" +
+                "🗺️ EKSPANSI PETA BARU (500×500 meter):\n" +
+                "⛰️ Zona UTARA — Desa Pegunungan, Kuil Batu Kuno, Jembatan Kabut, 2 NPC Baru\n" +
+                "🌿 Zona SELATAN — Rawa Misterius, Perkemahan Goblin, Kolam Racun, NPC Penyihir Rawa\n" +
+                "⛵ Zona BARAT — Desa Nelayan, Dermaga Sungai Perak, Perahu Rakit, Kapten Nelayan\n" +
+                "💎 Zona TIMUR — Tebing Tambang Kristal, Gua Gelap, Formasi Kristal, 2 NPC Penambang\n" +
+                "🛤️ 4 Jalan Cobblestone Penghubung Antar-Zona\n" +
+                "🐺 6 Serigala Tambahan di Tiap Zona Baru\n\n" +
                 "Tekan ▶ Play untuk mulai menjelajahi dunia barumu!",
                 "Bagus Sekali, Mainkan!"
             );
@@ -112,7 +123,7 @@ public static class SceneSetupTool
             ground.name = "Ground";
             ground.transform.position = Vector3.zero;
         }
-        ground.transform.localScale = new Vector3(25f, 1f, 25f);
+        ground.transform.localScale = new Vector3(50f, 1f, 50f);
 
         // Material Rumput Bertekstur PBR dengan Normal Map
         string grassMatPath = "Assets/_Project/Art/SlavicWorld/Materials/M_Ground_Grass.mat";
@@ -880,63 +891,63 @@ public static class SceneSetupTool
         // Dikelompokkan di 4 zona alam eksterior: Rimba Utara (Altar), Lembah Selatan, Hutan Barat, & Tambang Timur
         var outerTreeZones = new System.Collections.Generic.List<Vector3>();
 
-        // Zona Rimba Utara (Z = 56 s/d 130, X = -120 s/d 120, sisakan celah jalan altar |X| < 6)
-        for (int i = 0; i < 65; i++)
+        // Zona Rimba Utara (Z = 56 s/d 220, X = -220 s/d 220, sisakan celah jalan altar |X| < 6)
+        for (int i = 0; i < 120; i++)
         {
-            float x = Random.Range(-120f, 120f);
+            float x = Random.Range(-220f, 220f);
             if (Mathf.Abs(x) < 7f) continue;
-            float z = Random.Range(56f, 130f);
+            float z = Random.Range(56f, 220f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
 
-        // Zona Rimba Selatan (Z = -130 s/d -58, X = -120 s/d 120, sisakan celah gerbang selatan |X| < 7)
-        for (int i = 0; i < 60; i++)
+        // Zona Rimba Selatan (Z = -220 s/d -58, X = -220 s/d 220, sisakan celah gerbang selatan |X| < 7)
+        for (int i = 0; i < 110; i++)
         {
-            float x = Random.Range(-120f, 120f);
+            float x = Random.Range(-220f, 220f);
             if (Mathf.Abs(x) < 7f) continue;
-            float z = Random.Range(-130f, -58f);
+            float z = Random.Range(-220f, -58f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
 
-        // Zona Hutan Barat (X = -130 s/d -56, Z = -60 s/d 60) — lebih tebal
-        for (int i = 0; i < 50; i++)
+        // Zona Hutan Barat (X = -220 s/d -56, Z = -100 s/d 100) — lebih tebal
+        for (int i = 0; i < 90; i++)
         {
-            float x = Random.Range(-130f, -56f);
-            float z = Random.Range(-60f, 60f);
+            float x = Random.Range(-220f, -56f);
+            float z = Random.Range(-100f, 100f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
 
-        // Zona Hutan Timur & Tebing Tambang (X = 56 s/d 130, Z = -60 s/d 60) — lebih tebal
-        for (int i = 0; i < 50; i++)
+        // Zona Hutan Timur & Tebing Tambang (X = 56 s/d 220, Z = -100 s/d 100) — lebih tebal
+        for (int i = 0; i < 90; i++)
         {
-            float x = Random.Range(56f, 130f);
-            float z = Random.Range(-60f, 60f);
+            float x = Random.Range(56f, 220f);
+            float z = Random.Range(-100f, 100f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
 
-        // Zona Peralihan Utara-Barat & Utara-Timur (pojok sudut yang lebih lebat)
-        for (int i = 0; i < 20; i++)
+        // Zona Peralihan 4 sudut pojok (lebih lebat)
+        for (int i = 0; i < 40; i++)
         {
-            float x = Random.Range(-130f, -60f);
-            float z = Random.Range(56f, 130f);
+            float x = Random.Range(-220f, -60f);
+            float z = Random.Range(56f, 220f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 40; i++)
         {
-            float x = Random.Range(60f, 130f);
-            float z = Random.Range(56f, 130f);
+            float x = Random.Range(60f, 220f);
+            float z = Random.Range(56f, 220f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 40; i++)
         {
-            float x = Random.Range(-130f, -60f);
-            float z = Random.Range(-130f, -56f);
+            float x = Random.Range(-220f, -60f);
+            float z = Random.Range(-220f, -56f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 40; i++)
         {
-            float x = Random.Range(60f, 130f);
-            float z = Random.Range(-130f, -56f);
+            float x = Random.Range(60f, 220f);
+            float z = Random.Range(-220f, -56f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
 
@@ -1261,6 +1272,529 @@ public static class SceneSetupTool
 
         // 5. Aquila - Elang Perkasa Penjaga Langit (Melayang tinggi melingkar di angkasa desa)
         AnimalAssetSetup.SpawnEagle(new Vector3(0f, 28f, 0f), faunaRoot.transform);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  9c. EKSPANSI PETA — 4 ZONA BARU (Total dunia 500x500m)
+    // ─────────────────────────────────────────────────────────────────────
+    /// <summary>
+    /// Membangun 4 zona dunia baru di luar hutan desa:
+    /// - UTARA  (Z=160-220): Desa Pegunungan, Kuil Batu Kuno, Jembatan Kabut
+    /// - SELATAN (Z=-160 s/d -220): Rawa Misterius, Perkemahan Goblin Bayangan
+    /// - BARAT  (X=-155 s/d -220): Desa Nelayan Tepi Sungai, Dermaga, Perahu Rakit
+    /// - TIMUR  (X=155-220): Tebing Tambang Kristal, Gua Gelap, Pos Penjaga
+    /// Juga menambah jalan antar-zona, NPC, resource point, spawn musuh,
+    /// serigala liar, dan rumput tambahan di masing-masing zona.
+    /// </summary>
+    static void SetupExpandedWorld(Material slavicMat, Material grassMat)
+    {
+        GameObject expandRoot = GameObject.Find("--- EXPANSION ZONES ---");
+        if (expandRoot) Object.DestroyImmediate(expandRoot);
+        expandRoot = new GameObject("--- EXPANSION ZONES ---");
+
+        var barkMat       = AssetMaterialSetup.SetupProceduralBarkMaterial(birch: false);
+        var birchBarkMat  = AssetMaterialSetup.SetupProceduralBarkMaterial(birch: true);
+        var summerLeafMat = AssetMaterialSetup.SetupProceduralFoliageMaterial("SUMMER");
+        var autumnLeafMat = AssetMaterialSetup.SetupProceduralFoliageMaterial("AUTUMN");
+
+        // ── JALAN PENGHUBUNG KE 4 ZONA BARU ──
+        // Jalan Utara (Z=56 ke Z=160)
+        for (float z = 56f; z <= 160f; z += 4.5f)
+            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(0, 0.02f, z),
+                Quaternion.identity, new Vector3(1.2f, 1f, 1.2f), expandRoot.transform, slavicMat);
+        // Jalan Selatan (Z=-56 ke Z=-160)
+        for (float z = -56f; z >= -160f; z -= 4.5f)
+            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(0, 0.02f, z),
+                Quaternion.identity, new Vector3(1.2f, 1f, 1.2f), expandRoot.transform, slavicMat);
+        // Jalan Barat (X=-80 ke X=-160, Z=0)
+        for (float x = -80f; x >= -160f; x -= 4.5f)
+            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, 0),
+                Quaternion.Euler(0, 90f, 0), new Vector3(1.2f, 1f, 1.2f), expandRoot.transform, slavicMat);
+        // Jalan Timur (X=80 ke X=160, Z=0)
+        for (float x = 80f; x <= 160f; x += 4.5f)
+            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, 0),
+                Quaternion.Euler(0, 90f, 0), new Vector3(1.2f, 1f, 1.2f), expandRoot.transform, slavicMat);
+
+        // ════════════════════════════════════════════════════════════════
+        // ZONA UTARA — DESA PEGUNUNGAN ELDARA ATAS (Z=160-220)
+        // ════════════════════════════════════════════════════════════════
+        {
+            var northRoot = new GameObject("Zone_North_MountainVillage");
+            northRoot.transform.SetParent(expandRoot.transform);
+
+            // Gerbang Pegunungan — Dua pilar batu tinggi
+            var pillarL = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            pillarL.name = "GatePillar_NorthLeft";
+            pillarL.transform.SetParent(northRoot.transform);
+            pillarL.transform.position = new Vector3(-4f, 3f, 158f);
+            pillarL.transform.localScale = new Vector3(1.2f, 6f, 1.2f);
+            ApplyColor(pillarL, new Color(0.5f, 0.47f, 0.44f));
+            var pillarR = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            pillarR.name = "GatePillar_NorthRight";
+            pillarR.transform.SetParent(northRoot.transform);
+            pillarR.transform.position = new Vector3(4f, 3f, 158f);
+            pillarR.transform.localScale = new Vector3(1.2f, 6f, 1.2f);
+            ApplyColor(pillarR, new Color(0.5f, 0.47f, 0.44f));
+
+            // Kuil Batu Kuno di puncak (Z=200)
+            var temple = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            temple.name = "TempleBase_North";
+            temple.transform.SetParent(northRoot.transform);
+            temple.transform.position = new Vector3(0f, 0.4f, 200f);
+            temple.transform.localScale = new Vector3(16f, 0.8f, 12f);
+            ApplyColor(temple, new Color(0.58f, 0.52f, 0.46f));
+
+            // 6 pilar kuil (barisan depan & belakang)
+            for (int p = 0; p < 6; p++)
+            {
+                float px = Mathf.Lerp(-6f, 6f, p / 5f);
+                var kp = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                kp.name = $"TemplePillar_N_{p}_front";
+                kp.transform.SetParent(northRoot.transform);
+                kp.transform.position = new Vector3(px, 2.5f, 194f);
+                kp.transform.localScale = new Vector3(0.9f, 5f, 0.9f);
+                ApplyColor(kp, new Color(0.62f, 0.56f, 0.5f));
+                Object.DestroyImmediate(kp.GetComponent<Collider>());
+                var kp2 = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                kp2.name = $"TemplePillar_N_{p}_back";
+                kp2.transform.SetParent(northRoot.transform);
+                kp2.transform.position = new Vector3(px, 2.5f, 206f);
+                kp2.transform.localScale = new Vector3(0.9f, 5f, 0.9f);
+                ApplyColor(kp2, new Color(0.62f, 0.56f, 0.5f));
+                Object.DestroyImmediate(kp2.GetComponent<Collider>());
+            }
+
+            // Atap kuil & cahaya mistis
+            var roof = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            roof.name = "TempleRoof_North";
+            roof.transform.SetParent(northRoot.transform);
+            roof.transform.position = new Vector3(0f, 5.5f, 200f);
+            roof.transform.localScale = new Vector3(17f, 0.6f, 13f);
+            ApplyColor(roof, new Color(0.35f, 0.28f, 0.22f));
+            AddPorchLantern(northRoot.transform, new Vector3(0, 7f, 200f), new Color(0.5f, 0.8f, 1f), 20f);
+
+            // 4 Rumah Pegunungan
+            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Cabin,
+                new Vector3(-18f, 0f, 165f), Quaternion.Euler(0, 90f, 0), northRoot.transform, "MtnHouse_West_1");
+            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Chalet,
+                new Vector3( 18f, 0f, 165f), Quaternion.Euler(0, -90f, 0), northRoot.transform, "MtnHouse_East_1");
+            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.AFrame,
+                new Vector3(-22f, 0f, 182f), Quaternion.Euler(0, 70f, 0), northRoot.transform, "MtnHouse_West_2");
+            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Cabin,
+                new Vector3( 22f, 0f, 182f), Quaternion.Euler(0, -70f, 0), northRoot.transform, "MtnHouse_East_2");
+
+            // Jembatan Kabut
+            var bridge = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            bridge.name = "Bridge_MistNorth";
+            bridge.transform.SetParent(northRoot.transform);
+            bridge.transform.position = new Vector3(0f, 0.15f, 152f);
+            bridge.transform.localScale = new Vector3(4f, 0.3f, 10f);
+            ApplyColor(bridge, new Color(0.4f, 0.32f, 0.22f));
+
+            // NPC Penjaga Kuil
+            var npcKuil = ProceduralNpcBuilder.BuildNpc(
+                ProceduralNpcBuilder.NpcStyle.Wizard,
+                new Vector3(-4f, 0f, 198f), Quaternion.Euler(0, 180f, 0),
+                northRoot.transform, "NPC_PenjagaKuil");
+            var dlgKuil = npcKuil.GetComponent<NpcDialogue>() ?? npcKuil.AddComponent<NpcDialogue>();
+            CreateSimpleDialogue("NPC_PenjagaKuil",
+                "Selamat datang di Kuil Batu Kuno Eldara Atas, pengembara. " +
+                "Tempat ini menyimpan jimat pelindung desa dari zaman para leluhur. " +
+                "Jangan ganggu ketenangan kuil ini, atau laknat pegunungan akan menimpamu!",
+                dlgKuil);
+
+            // NPC Pedagang Gunung
+            var npcPdg = ProceduralNpcBuilder.BuildNpc(
+                ProceduralNpcBuilder.NpcStyle.Merchant,
+                new Vector3(16f, 0f, 168f), Quaternion.Euler(0, -120f, 0),
+                northRoot.transform, "NPC_PedagangGunungNorth");
+            var dlgPdg = npcPdg.GetComponent<NpcDialogue>() ?? npcPdg.AddComponent<NpcDialogue>();
+            CreateSimpleDialogue("NPC_PedagangGunungNorth",
+                "Hei, traveler! Aku datang dari puncak gunung membawa kristal biru langka. " +
+                "Kalau kamu bisa bawakan aku kayu keras dari hutan barat, " +
+                "aku akan tukar dengan batu kristal yang bisa memperkuat menara pertahananmu!",
+                dlgPdg);
+
+            // Resource: Kristal Biru
+            PlaceArtResource(northRoot.transform, "CrystalBlue_1",
+                "EA03_Environment_Rock_Head_01c", "crystal",
+                "Tekan E untuk mengambil Kristal Biru",
+                new Vector3(-8f, 0f, 195f), Quaternion.Euler(0, 30f, 0),
+                new Vector3(1.2f, 1.4f, 1.2f), slavicMat, new Color(0.3f, 0.5f, 0.9f));
+            PlaceArtResource(northRoot.transform, "CrystalBlue_2",
+                "EA03_Environment_Rock_Head_01b", "crystal",
+                "Tekan E untuk mengambil Kristal Biru",
+                new Vector3(10f, 0f, 192f), Quaternion.Euler(0, 80f, 0),
+                new Vector3(1.0f, 1.3f, 1.0f), slavicMat, new Color(0.3f, 0.5f, 0.9f));
+
+            // Pohon & rumput pegunungan
+            for (int i = 0; i < 35; i++)
+            {
+                float tx = Random.Range(-40f, 40f);
+                float tz = Random.Range(160f, 215f);
+                if (Mathf.Abs(tx) < 10f && tz > 192f && tz < 210f) continue;
+                float ts = Random.Range(0.9f, 1.4f);
+                if (i % 3 == 0)
+                    RealisticTreeBuilder.BuildPineTree(new Vector3(tx, 0, tz), ts, northRoot.transform, barkMat, summerLeafMat);
+                else
+                    RealisticTreeBuilder.BuildOakTree(new Vector3(tx, 0, tz), ts, northRoot.transform, barkMat, summerLeafMat);
+            }
+            if (grassMat)
+                for (int i = 0; i < 30; i++)
+                {
+                    float gx = Random.Range(-35f, 35f);
+                    float gz = Random.Range(158f, 215f);
+                    RealisticGrassBuilder.BuildGrassClump(new Vector3(gx, 0, gz), 10, 4f, northRoot.transform, grassMat);
+                }
+
+            // Serigala gunung
+            AnimalAssetSetup.SpawnWolf(new Vector3(-15f, 0f, 175f), Quaternion.Euler(0, 45f, 0), northRoot.transform, "Serigala Gunung Barat");
+            AnimalAssetSetup.SpawnWolf(new Vector3( 20f, 0f, 188f), Quaternion.Euler(0, -130f, 0), northRoot.transform, "Serigala Gunung Timur");
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // ZONA SELATAN — RAWA MISTERIUS & PERKEMAHAN GOBLIN (Z=-155 s/d -220)
+        // ════════════════════════════════════════════════════════════════
+        {
+            var southRoot = new GameObject("Zone_South_SwampCamp");
+            southRoot.transform.SetParent(expandRoot.transform);
+
+            // 3 Kolam Rawa gelap
+            Vector3[] ponds = {
+                new Vector3(-12f, 0f, -175f),
+                new Vector3(  8f, 0f, -185f),
+                new Vector3( -5f, 0f, -200f)
+            };
+            foreach (var pond in ponds)
+            {
+                var pondObj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                pondObj.name = "SwampPond";
+                pondObj.transform.SetParent(southRoot.transform);
+                pondObj.transform.position = pond + new Vector3(0, 0.03f, 0);
+                pondObj.transform.localScale = new Vector3(Random.Range(6f, 10f), 0.1f, Random.Range(5f, 8f));
+                ApplyColor(pondObj, new Color(0.15f, 0.22f, 0.14f));
+                Object.DestroyImmediate(pondObj.GetComponent<Collider>());
+                AddPorchLantern(southRoot.transform, pond + new Vector3(0, 0.5f, 0), new Color(0.3f, 0.7f, 0.2f), 8f);
+            }
+
+            // Api Unggun Perkemahan Goblin
+            Vector3 campCenter = new Vector3(5f, 0f, -185f);
+            var campfire = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            campfire.name = "Campfire_Goblin";
+            campfire.transform.SetParent(southRoot.transform);
+            campfire.transform.position = campCenter + new Vector3(0, 0.3f, 0);
+            campfire.transform.localScale = new Vector3(1.2f, 0.6f, 1.2f);
+            ApplyColor(campfire, new Color(0.6f, 0.3f, 0.1f));
+            AddPorchLantern(southRoot.transform, campCenter + new Vector3(0, 1f, 0), new Color(1f, 0.4f, 0.1f), 14f);
+
+            // 4 Tenda goblin
+            Vector3[] tentPos = {
+                campCenter + new Vector3(-5f, 0f, -4f),
+                campCenter + new Vector3( 6f, 0f, -3f),
+                campCenter + new Vector3(-4f, 0f,  5f),
+                campCenter + new Vector3( 5f, 0f,  5f),
+            };
+            for (int t = 0; t < tentPos.Length; t++)
+            {
+                var tent = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                tent.name = $"GoblinTent_{t + 1}";
+                tent.transform.SetParent(southRoot.transform);
+                tent.transform.position = tentPos[t] + new Vector3(0, 1.1f, 0);
+                tent.transform.localScale = new Vector3(2.8f, 2.2f, 3f);
+                tent.transform.rotation = Quaternion.Euler(0, t * 85f, 0);
+                ApplyColor(tent, new Color(0.3f, 0.26f, 0.18f));
+            }
+
+            // Spawn musuh perkemahan
+            var spawnS = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            spawnS.name = "SpawnPoint_South_SwampCamp";
+            spawnS.transform.SetParent(southRoot.transform);
+            spawnS.transform.position = campCenter;
+            spawnS.transform.localScale = new Vector3(2f, 0.3f, 2f);
+            ApplyColor(spawnS, new Color(0.85f, 0.1f, 0.1f));
+            Object.DestroyImmediate(spawnS.GetComponent<Collider>());
+
+            // NPC Penyihir Rawa
+            var npcRawa = ProceduralNpcBuilder.BuildNpc(
+                ProceduralNpcBuilder.NpcStyle.Wizard,
+                new Vector3(-18f, 0f, -172f), Quaternion.Euler(0, 30f, 0),
+                southRoot.transform, "NPC_PenyihirRawa");
+            var dlgRawa = npcRawa.GetComponent<NpcDialogue>() ?? npcRawa.AddComponent<NpcDialogue>();
+            CreateSimpleDialogue("NPC_PenyihirRawa",
+                "Hssst... pengembara dungu! Kamu berani masuk ke Rawa Bayangan?! " +
+                "Kawanan goblin telah merampas jimat perlindunganku. " +
+                "Kalahkan Raja Perkemahan mereka dan bawa kembali jimatku, " +
+                "atau rawa ini akan menelanmu perlahan-lahan...",
+                dlgRawa);
+
+            // Resource: Jamur Langka
+            PlaceArtResource(southRoot.transform, "SwampShroom_1",
+                "EA03_Nature_Bush_03b", "rare_herb",
+                "Tekan E untuk memetik Jamur Langka",
+                new Vector3(-8f, 0f, -178f), Quaternion.identity,
+                Vector3.one * 0.7f, slavicMat, new Color(0.6f, 0.9f, 0.3f));
+
+            // Pohon & rumput rawa
+            for (int i = 0; i < 28; i++)
+            {
+                float tx = Random.Range(-40f, 40f);
+                float tz = Random.Range(-215f, -158f);
+                if (Vector3.Distance(new Vector3(tx, 0, tz), campCenter) < 12f) continue;
+                RealisticTreeBuilder.BuildAutumnOakTree(new Vector3(tx, 0, tz),
+                    Random.Range(0.85f, 1.3f), southRoot.transform, barkMat, autumnLeafMat);
+            }
+            if (grassMat)
+                for (int i = 0; i < 25; i++)
+                {
+                    float gx = Random.Range(-38f, 38f);
+                    float gz = Random.Range(-215f, -158f);
+                    RealisticGrassBuilder.BuildGrassClump(new Vector3(gx, 0, gz), 8, 3.5f, southRoot.transform, grassMat);
+                }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // ZONA BARAT — DESA NELAYAN TEPI SUNGAI (X=-155 s/d -220)
+        // ════════════════════════════════════════════════════════════════
+        {
+            var westRoot = new GameObject("Zone_West_FishingVillage");
+            westRoot.transform.SetParent(expandRoot.transform);
+
+            // Sungai (strip biru di X≈-148)
+            var river = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            river.name = "River_West";
+            river.transform.SetParent(westRoot.transform);
+            river.transform.position = new Vector3(-148f, 0.05f, 0f);
+            river.transform.localScale = new Vector3(5f, 0.1f, 120f);
+            ApplyColor(river, new Color(0.2f, 0.42f, 0.72f));
+            Object.DestroyImmediate(river.GetComponent<Collider>());
+            AddPorchLantern(westRoot.transform, new Vector3(-148f, 0.3f, 0f), new Color(0.4f, 0.7f, 1f), 25f);
+
+            // Dermaga
+            for (int p = 0; p < 6; p++)
+            {
+                var plank = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                plank.name = $"Dock_Plank_{p}";
+                plank.transform.SetParent(westRoot.transform);
+                plank.transform.position = new Vector3(-148f + p * 1.1f - 2f, 0.18f, 10f);
+                plank.transform.localScale = new Vector3(1.0f, 0.15f, 2.5f);
+                ApplyColor(plank, new Color(0.4f, 0.3f, 0.18f));
+            }
+
+            // 2 Perahu rakit
+            var boat = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            boat.name = "FishingBoat_1";
+            boat.transform.SetParent(westRoot.transform);
+            boat.transform.position = new Vector3(-150f, 0.1f, 15f);
+            boat.transform.localScale = new Vector3(2.5f, 0.6f, 5f);
+            boat.transform.rotation = Quaternion.Euler(0, 15f, 0);
+            ApplyColor(boat, new Color(0.45f, 0.3f, 0.18f));
+            var boat2 = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            boat2.name = "FishingBoat_2";
+            boat2.transform.SetParent(westRoot.transform);
+            boat2.transform.position = new Vector3(-150.5f, 0.1f, -8f);
+            boat2.transform.localScale = new Vector3(2.2f, 0.55f, 4.5f);
+            boat2.transform.rotation = Quaternion.Euler(0, -20f, 0);
+            ApplyColor(boat2, new Color(0.4f, 0.28f, 0.16f));
+
+            // 4 Rumah Nelayan
+            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Panggung,
+                new Vector3(-165f, 0f, 12f), Quaternion.Euler(0, 90f, 0), westRoot.transform, "FishHouse_1");
+            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Danau,
+                new Vector3(-165f, 0f, -10f), Quaternion.Euler(0, 90f, 0), westRoot.transform, "FishHouse_2");
+            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Panggung,
+                new Vector3(-180f, 0f, 20f), Quaternion.Euler(0, 70f, 0), westRoot.transform, "FishHouse_3");
+            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Barn,
+                new Vector3(-180f, 0f, -18f), Quaternion.Euler(0, 100f, 0), westRoot.transform, "FishHouse_Barn");
+
+            // NPC Kapten Nelayan
+            var npcNelayan = ProceduralNpcBuilder.BuildNpc(
+                ProceduralNpcBuilder.NpcStyle.Farmer,
+                new Vector3(-162f, 0f, 5f), Quaternion.Euler(0, 90f, 0),
+                westRoot.transform, "NPC_KaptenNelayan");
+            var dlgNelayan = npcNelayan.GetComponent<NpcDialogue>() ?? npcNelayan.AddComponent<NpcDialogue>();
+            CreateSimpleDialogue("NPC_KaptenNelayan",
+                "Ahoy, pelancong! Selamat datang di Dermaga Sungai Perak. " +
+                "Aku Kapten Bagas, pemimpin para nelayan di sini. " +
+                "Akhir-akhir ini ikan-ikan aneh bermunculan dari kedalaman sungai... " +
+                "Mungkin ada sesuatu yang mengganggu aliran air dari hutan timur!",
+                dlgNelayan);
+
+            // NPC Pedagang Ikan
+            var npcIkan = ProceduralNpcBuilder.BuildNpc(
+                ProceduralNpcBuilder.NpcStyle.Woman,
+                new Vector3(-160f, 0f, -8f), Quaternion.Euler(0, 60f, 0),
+                westRoot.transform, "NPC_PedagangIkan");
+            var dlgIkan = npcIkan.GetComponent<NpcDialogue>() ?? npcIkan.AddComponent<NpcDialogue>();
+            CreateSimpleDialogue("NPC_PedagangIkan",
+                "Hei, kamu mau beli ikan segar? Kami punya ikan mas, ikan patin, dan belut sungai! " +
+                "Tapi hati-hati ya, kemarin ada buaya raksasa terlihat di tikungan sungai sebelah utara...",
+                dlgIkan);
+
+            // Resource: Ikan Segar
+            PlaceArtResource(westRoot.transform, "FishCatch_1",
+                "EA03_Prop_Container_Crate_02a", "fish",
+                "Tekan E untuk mengambil Ikan Segar",
+                new Vector3(-144f, 0f, 14f), Quaternion.identity,
+                Vector3.one, slavicMat, new Color(0.3f, 0.6f, 0.8f));
+
+            // Anjing dermaga
+            AnimalAssetSetup.SpawnDog(new Vector3(-158f, 0f, 2f), Quaternion.Euler(0, 90f, 0),
+                westRoot.transform, RealisticDogBuilder.DogBreed.GoldenRetriever, "Bagas_Jr",
+                "Guk! Bagas Jr menjaga dermaga dengan semangat!");
+
+            // Pohon & rumput zona barat
+            for (int i = 0; i < 30; i++)
+            {
+                float tx = Random.Range(-215f, -155f);
+                float tz = Random.Range(-45f, 45f);
+                float ts = Random.Range(0.9f, 1.3f);
+                if (i % 3 == 0)
+                    RealisticTreeBuilder.BuildBirchTree(new Vector3(tx, 0, tz), ts, westRoot.transform, birchBarkMat, summerLeafMat);
+                else
+                    RealisticTreeBuilder.BuildOakTree(new Vector3(tx, 0, tz), ts, westRoot.transform, barkMat, summerLeafMat);
+            }
+            if (grassMat)
+                for (int i = 0; i < 28; i++)
+                {
+                    float gx = Random.Range(-210f, -155f);
+                    float gz = Random.Range(-40f, 40f);
+                    RealisticGrassBuilder.BuildGrassClump(new Vector3(gx, 0, gz), 10, 4.5f, westRoot.transform, grassMat);
+                }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // ZONA TIMUR — TEBING TAMBANG KRISTAL & GUA GELAP (X=155-220)
+        // ════════════════════════════════════════════════════════════════
+        {
+            var eastRoot = new GameObject("Zone_East_CrystalMines");
+            eastRoot.transform.SetParent(expandRoot.transform);
+
+            // Dinding Tebing Batu
+            var cliffBase = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cliffBase.name = "CliffBase_East";
+            cliffBase.transform.SetParent(eastRoot.transform);
+            cliffBase.transform.position = new Vector3(175f, 4f, 0f);
+            cliffBase.transform.localScale = new Vector3(10f, 8f, 60f);
+            ApplyColor(cliffBase, new Color(0.5f, 0.46f, 0.42f));
+
+            // Mulut Gua Gelap
+            var cavemouth = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cavemouth.name = "CaveMouth_East";
+            cavemouth.transform.SetParent(eastRoot.transform);
+            cavemouth.transform.position = new Vector3(171f, 1.5f, 8f);
+            cavemouth.transform.localScale = new Vector3(1f, 3.5f, 5.5f);
+            ApplyColor(cavemouth, new Color(0.05f, 0.05f, 0.08f));
+            Object.DestroyImmediate(cavemouth.GetComponent<Collider>());
+            AddPorchLantern(eastRoot.transform, new Vector3(172f, 2f, 8f), new Color(0.4f, 0.2f, 1f), 15f);
+
+            // 6 Kristal raksasa berdiri
+            Vector3[] crystalPos = {
+                new Vector3(162f, 0f, -5f), new Vector3(165f, 0f,  3f),
+                new Vector3(168f, 0f, -10f), new Vector3(160f, 0f, 10f),
+                new Vector3(170f, 0f, 16f), new Vector3(163f, 0f, -16f),
+            };
+            for (int c = 0; c < crystalPos.Length; c++)
+            {
+                var crystal = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                crystal.name = $"CrystalFormation_{c + 1}";
+                crystal.transform.SetParent(eastRoot.transform);
+                float ch = Random.Range(1.2f, 2.8f);
+                crystal.transform.position = crystalPos[c] + new Vector3(0, ch, 0);
+                crystal.transform.localScale = new Vector3(0.5f, ch, 0.5f);
+                crystal.transform.rotation = Quaternion.Euler(Random.Range(-8f, 8f), Random.Range(0, 360f), Random.Range(-8f, 8f));
+                ApplyColor(crystal, new Color(0.5f + Random.Range(0f, 0.2f), 0.2f, 0.9f));
+                Object.DestroyImmediate(crystal.GetComponent<Collider>());
+                AddPorchLantern(crystal.transform, new Vector3(0, ch, 0), new Color(0.5f, 0.3f, 1f), 6f);
+            }
+
+            // Pos Penjaga Tambang
+            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Cabin,
+                new Vector3(162f, 0f, -25f), Quaternion.Euler(0, -90f, 0), eastRoot.transform, "MineGuardPost_1");
+            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Minka,
+                new Vector3(162f, 0f,  25f), Quaternion.Euler(0, -90f, 0), eastRoot.transform, "MineGuardPost_2");
+
+            // Resource: Bijih Kristal Ungu
+            PlaceArtResource(eastRoot.transform, "CrystalOre_1",
+                "EA03_Environment_Rock_CatHead_01a", "crystal_ore",
+                "Tekan E untuk menambang Bijih Kristal",
+                new Vector3(165f, 0f, 3f), Quaternion.Euler(0, 45f, 0),
+                new Vector3(1.3f, 1.3f, 1.3f), slavicMat, new Color(0.6f, 0.3f, 0.9f));
+            PlaceArtResource(eastRoot.transform, "CrystalOre_2",
+                "EA03_Environment_Rock_Head_01a", "crystal_ore",
+                "Tekan E untuk menambang Bijih Kristal",
+                new Vector3(163f, 0f, -8f), Quaternion.Euler(0, 120f, 0),
+                new Vector3(1.1f, 1.1f, 1.1f), slavicMat, new Color(0.6f, 0.3f, 0.9f));
+            PlaceArtResource(eastRoot.transform, "CrystalOre_3",
+                "EA03_Environment_Rock_CatHead_01b", "crystal_ore",
+                "Tekan E untuk menambang Bijih Kristal",
+                new Vector3(169f, 0f, 14f), Quaternion.Euler(0, 70f, 0),
+                new Vector3(1.2f, 1.2f, 1.2f), slavicMat, new Color(0.6f, 0.3f, 0.9f));
+
+            // NPC Mandor Tambang
+            var npcMandor = ProceduralNpcBuilder.BuildNpc(
+                ProceduralNpcBuilder.NpcStyle.Guard,
+                new Vector3(160f, 0f, -20f), Quaternion.Euler(0, -120f, 0),
+                eastRoot.transform, "NPC_MandorTambang");
+            var dlgMandor = npcMandor.GetComponent<NpcDialogue>() ?? npcMandor.AddComponent<NpcDialogue>();
+            CreateSimpleDialogue("NPC_MandorTambang",
+                "Hei, berhenti! Area Tambang Kristal Eldara adalah kawasan terbatas. " +
+                "Hanya penambang berlisensi yang boleh masuk ke dalam gua. " +
+                "Kalau kamu bawa perlengkapan yang cukup, aku bisa izinkan kamu masuk... " +
+                "tapi awas, ada makhluk bawah tanah yang menjaga kristal-kristal itu!",
+                dlgMandor);
+
+            // NPC Penambang Tua
+            var npcTua = ProceduralNpcBuilder.BuildNpc(
+                ProceduralNpcBuilder.NpcStyle.Farmer,
+                new Vector3(158f, 0f, 18f), Quaternion.Euler(0, -150f, 0),
+                eastRoot.transform, "NPC_PenambangTua");
+            var dlgTua = npcTua.GetComponent<NpcDialogue>() ?? npcTua.AddComponent<NpcDialogue>();
+            CreateSimpleDialogue("NPC_PenambangTua",
+                "Sudah 30 tahun aku menambang di sini, nak. Kristal ungu ini punya kekuatan luar biasa. " +
+                "Kalau kamu bisa menyerahkan 5 bijih kristal ke Pandai Besi Desa, " +
+                "dia bisa buat senjata terkuat yang pernah ada di Eldara!",
+                dlgTua);
+
+            // Pohon & rumput zona timur
+            for (int i = 0; i < 20; i++)
+            {
+                float tx = Random.Range(155f, 210f);
+                float tz = Random.Range(-45f, 45f);
+                if (tx > 170f && Mathf.Abs(tz) < 25f) continue;
+                RealisticTreeBuilder.BuildPineTree(new Vector3(tx, 0, tz),
+                    Random.Range(0.8f, 1.2f), eastRoot.transform, barkMat, summerLeafMat);
+            }
+            if (grassMat)
+                for (int i = 0; i < 20; i++)
+                {
+                    float gx = Random.Range(158f, 205f);
+                    float gz = Random.Range(-38f, 38f);
+                    if (gx > 168f && Mathf.Abs(gz) < 20f) continue;
+                    RealisticGrassBuilder.BuildGrassClump(new Vector3(gx, 0, gz), 7, 3f, eastRoot.transform, grassMat);
+                }
+
+            // Serigala tambang
+            AnimalAssetSetup.SpawnWolf(new Vector3(158f, 0f, -38f), Quaternion.Euler(0, -90f, 0), eastRoot.transform, "Serigala Tambang Utara");
+            AnimalAssetSetup.SpawnWolf(new Vector3(160f, 0f,  35f), Quaternion.Euler(0, -130f, 0), eastRoot.transform, "Serigala Tambang Selatan");
+        }
+
+        // Spawn musuh di jalur masuk 4 zona baru
+        Vector3[] extraSpawns = {
+            new Vector3(  0f, 0f, 165f),
+            new Vector3(  0f, 0f,-168f),
+            new Vector3(-162f, 0f,  0f),
+            new Vector3( 162f, 0f,  0f),
+        };
+        foreach (var sp in extraSpawns)
+        {
+            var spMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            spMarker.name = "SpawnPoint_Expansion";
+            spMarker.transform.SetParent(expandRoot.transform);
+            spMarker.transform.position = sp;
+            spMarker.transform.localScale = new Vector3(2f, 0.3f, 2f);
+            ApplyColor(spMarker, new Color(0.85f, 0.1f, 0.1f));
+            Object.DestroyImmediate(spMarker.GetComponent<Collider>());
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────
