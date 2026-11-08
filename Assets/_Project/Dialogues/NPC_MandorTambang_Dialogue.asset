@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39307b13eff73ed41af5269e9ce6cbd3, type: 3}
+  m_Name: NPC_MandorTambang_Dialogue
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData
+  lines:
+  - speaker: MandorTambang
+    text: Hei, berhenti! Area Tambang Kristal Eldara adalah kawasan terbatas. Hanya
+      penambang berlisensi yang boleh masuk ke dalam gua. Kalau kamu bawa perlengkapan
+      yang cukup, aku bisa izinkan kamu masuk... tapi awas, ada makhluk bawah tanah
+      yang menjaga kristal-kristal itu!
+  choices: []

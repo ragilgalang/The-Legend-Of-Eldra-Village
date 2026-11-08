@@ -110,14 +110,16 @@ public class DayNightCycle : MonoBehaviour
                 moonVisual = moonGo.transform;
             }
         }
+
+        // Posisikan matahari dan bulan langsung tinggi di langit (bukan tertinggal di tanah (0,0,0) saat di editor)
+        UpdateCelestialPositions();
     }
 
-    void Update()
+    public void UpdateCelestialPositions()
     {
-        Hour += (24f / dayLengthInSeconds) * Time.deltaTime;
-        if (Hour >= 24f) { Hour -= 24f; DayCount++; OnNewDay?.Invoke(DayCount); }
-
         float t = Hour / 24f;
+        if (t <= 0.0001f) t = 0.35f; // Default siang (jam ~08:30) jika belum berjalan
+
         Vector3 centerPos = followTarget ? followTarget.position : (Camera.main ? Camera.main.transform.position : Vector3.zero);
         centerPos.y = 0f;
 
@@ -128,7 +130,7 @@ public class DayNightCycle : MonoBehaviour
             if (sunColor != null) sun.color = sunColor.Evaluate(t);
             if (sunIntensity != null && sunIntensity.length > 0) sun.intensity = sunIntensity.Evaluate(t);
 
-            // Pergerakan bola Matahari di langit mengikuti busur orbit matahari
+            // Pergerakan bola Matahari di langit mengikuti busur orbit matahari (tinggi di angkasa)
             if (sunVisual)
             {
                 sunVisual.position = centerPos - sun.transform.forward * celestialDistance;
@@ -142,6 +144,15 @@ public class DayNightCycle : MonoBehaviour
                 moonVisual.LookAt(centerPos);
             }
         }
+    }
+
+    void Update()
+    {
+        Hour += (24f / dayLengthInSeconds) * Time.deltaTime;
+        if (Hour >= 24f) { Hour -= 24f; DayCount++; OnNewDay?.Invoke(DayCount); }
+
+        float t = Hour / 24f;
+        UpdateCelestialPositions();
 
         if (fogColor != null) RenderSettings.fogColor = fogColor.Evaluate(t);
 
