@@ -405,33 +405,31 @@ public static class SceneSetupTool
                 Quaternion.Euler(0, 90f, 0), new Vector3(1.2f, 1f, 1.2f), village.transform, slavicMat);
 
         // ═════════════════════════════════════════════════════════════════
-        //  B. ALUN-ALUN PUSAT: SUMUR DESA, PASAR, & TEMPAT SANTAI
+        //  B. ALUN-ALUN PUSAT: SUMUR DESA KUNO (LANDMARK TUNGGAL ALUN-ALUN)
         // ═════════════════════════════════════════════════════════════════
 
-        // 1. Sumur Desa Kuno di Tengah Alun-Alun (Center Well Landmark)
+        // 1. Sumur Desa Kuno di Tengah Alun-Alun (Center Well Landmark) - Landmark tunggal alun-alun
         BuildVillageWell(village.transform, new Vector3(0f, 0f, 0f));
 
-        // 2. Area Pasar Terbuka (Sisi Timur Alun-Alun: X = 7, Z = 0)
-        InstantiateArtModel("Prop_Wagon", new Vector3(7.5f, 0f, 3.5f), Quaternion.Euler(0, -15f, 0), Vector3.one, village.transform);
-        InstantiateArtModel("Prop_Wagon", new Vector3(8f, 0f, -3.5f), Quaternion.Euler(0, 20f, 0), Vector3.one, village.transform);
-        InstantiateArtModel("EA03_Prop_Container_Crate_01a", new Vector3(9f, 0f, 1.8f), Quaternion.Euler(0, 15f, 0), Vector3.one, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Container_Crate_02a", new Vector3(9.4f, 0f, 3f), Quaternion.Euler(0, 80f, 0), Vector3.one, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Container_Crate_03a", new Vector3(9.2f, 0.75f, 2.3f), Quaternion.Euler(0, 35f, 0), Vector3.one * 0.9f, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Container_Barrel_01d", new Vector3(8.2f, 0f, -1.8f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Container_Barrel_01d", new Vector3(8.9f, 0f, -2.4f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Vegetable_Basket_02", new Vector3(6f, 0f, 1.8f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
+        // 2. Area Pasar Terbuka (Ditempatkan di luar alun-alun di sepanjang Jalan Timur / Kawasan Pengrajin)
+        InstantiateArtModel("Prop_Wagon", new Vector3(14f, 0f, 3.5f), Quaternion.Euler(0, -15f, 0), Vector3.one, village.transform);
+        InstantiateArtModel("Prop_Wagon", new Vector3(18f, 0f, -3.5f), Quaternion.Euler(0, 20f, 0), Vector3.one, village.transform);
+        InstantiateArtModel("EA03_Prop_Container_Crate_01a", new Vector3(15.5f, 0f, 2f), Quaternion.Euler(0, 15f, 0), Vector3.one, village.transform, slavicMat);
+        InstantiateArtModel("EA03_Prop_Container_Crate_02a", new Vector3(16f, 0f, 3.2f), Quaternion.Euler(0, 80f, 0), Vector3.one, village.transform, slavicMat);
+        InstantiateArtModel("EA03_Prop_Container_Crate_03a", new Vector3(15.8f, 0.75f, 2.5f), Quaternion.Euler(0, 35f, 0), Vector3.one * 0.9f, village.transform, slavicMat);
+        InstantiateArtModel("EA03_Prop_Container_Barrel_01d", new Vector3(19f, 0f, -2f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
+        InstantiateArtModel("EA03_Prop_Container_Barrel_01d", new Vector3(19.7f, 0f, -2.6f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
+        InstantiateArtModel("EA03_Prop_Vegetable_Basket_02", new Vector3(13f, 0f, 2.5f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
 
-        // 3. Area Warga & Informasi (Sisi Barat Alun-Alun: X = -7, Z = 0)
-        InstantiateArtModel("EA03_Prop_Tabble_01a", new Vector3(-6.5f, 0f, 0f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Town_Bench_01a", new Vector3(-6.5f, 0f, 1.5f), Quaternion.Euler(0, 180f, 0), Vector3.one, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Town_Bench_01a", new Vector3(-6.5f, 0f, -1.5f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Sign_Chapel_01", new Vector3(-5f, 0f, 4.5f), Quaternion.Euler(0, 135f, 0), Vector3.one, village.transform, slavicMat);
+        // 3. Bangku Santai Warga (Ditempatkan di pinggir taman luar alun-alun barat di bawah pepohonan)
+        InstantiateArtModel("EA03_Prop_Town_Bench_01a", new Vector3(-13.5f, 0f, 3.5f), Quaternion.Euler(0, 135f, 0), Vector3.one, village.transform, slavicMat);
+        InstantiateArtModel("EA03_Prop_Town_Bench_01a", new Vector3(-13.5f, 0f, -3.5f), Quaternion.Euler(0, 45f, 0), Vector3.one, village.transform, slavicMat);
 
-        // 4. Tiang Lentera Sudut Alun-Alun (4 Lampu Jalan di 4 Sudut Plaza)
-        AddStreetLamp(village.transform, new Vector3(-8.5f, 0,  8.5f));
-        AddStreetLamp(village.transform, new Vector3( 8.5f, 0,  8.5f));
-        AddStreetLamp(village.transform, new Vector3(-8.5f, 0, -8.5f));
-        AddStreetLamp(village.transform, new Vector3( 8.5f, 0, -8.5f));
+        // 4. Tiang Lentera Sudut Alun-Alun (4 Lampu Jalan di 4 Sudut Luar Plaza)
+        AddStreetLamp(village.transform, new Vector3(-9.5f, 0,  9.5f));
+        AddStreetLamp(village.transform, new Vector3( 9.5f, 0,  9.5f));
+        AddStreetLamp(village.transform, new Vector3(-9.5f, 0, -9.5f));
+        AddStreetLamp(village.transform, new Vector3( 9.5f, 0, -9.5f));
 
         // ═════════════════════════════════════════════════════════════════
         //  C. TATA LETAK 11 GAYA BANGUNAN DESA (TERSTRUKTUR & HARMONIS)
@@ -516,7 +514,7 @@ public static class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Membangun Sumur Batu Kuno di pusat Alun-Alun desa
+    /// Membangun Sumur Batu Kuno Megah di pusat Alun-Alun desa
     /// </summary>
     static void BuildVillageWell(Transform parent, Vector3 pos)
     {
@@ -524,70 +522,125 @@ public static class SceneSetupTool
         wellRoot.transform.SetParent(parent);
         wellRoot.transform.position = pos;
 
-        // Cincin Batu Sumur
+        // 1. Pelataran Tangga Melingkar Dasar Sumur (Stone Base Foundation)
+        var stepBase = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        stepBase.name = "Well_StepBase";
+        stepBase.transform.SetParent(wellRoot.transform);
+        stepBase.transform.localPosition = new Vector3(0, 0.05f, 0);
+        stepBase.transform.localScale = new Vector3(3.6f, 0.05f, 3.6f);
+        ApplyColor(stepBase, new Color(0.62f, 0.60f, 0.55f));
+        Object.DestroyImmediate(stepBase.GetComponent<Collider>());
+
+        // 2. Dinding Cincin Batu Sumur (Main Stone Curb Wall)
         var stoneBase = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         stoneBase.name = "Well_StoneCurb";
         stoneBase.transform.SetParent(wellRoot.transform);
-        stoneBase.transform.localPosition = new Vector3(0, 0.45f, 0);
-        stoneBase.transform.localScale = new Vector3(2.2f, 0.45f, 2.2f);
-        ApplyColor(stoneBase, new Color(0.48f, 0.48f, 0.52f));
+        stoneBase.transform.localPosition = new Vector3(0, 0.48f, 0);
+        stoneBase.transform.localScale = new Vector3(2.3f, 0.42f, 2.3f);
+        ApplyColor(stoneBase, new Color(0.48f, 0.46f, 0.44f));
 
-        // Permukaan Air di Dalam Sumur
+        // 3. Bibir Batu Pahat Atas Sumur (Top Chiseled Stone Rim)
+        var stoneRim = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        stoneRim.name = "Well_StoneRim";
+        stoneRim.transform.SetParent(wellRoot.transform);
+        stoneRim.transform.localPosition = new Vector3(0, 0.90f, 0);
+        stoneRim.transform.localScale = new Vector3(2.45f, 0.05f, 2.45f);
+        ApplyColor(stoneRim, new Color(0.55f, 0.53f, 0.50f));
+        Object.DestroyImmediate(stoneRim.GetComponent<Collider>());
+
+        // 4. Permukaan Air Jernih di Dalam Sumur
         var water = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         water.name = "Well_Water";
         water.transform.SetParent(wellRoot.transform);
-        water.transform.localPosition = new Vector3(0, 0.6f, 0);
-        water.transform.localScale = new Vector3(1.8f, 0.05f, 1.8f);
-        ApplyColor(water, new Color(0.12f, 0.42f, 0.65f));
+        water.transform.localPosition = new Vector3(0, 0.65f, 0);
+        water.transform.localScale = new Vector3(1.85f, 0.02f, 1.85f);
+        ApplyColor(water, new Color(0.12f, 0.45f, 0.68f));
         Object.DestroyImmediate(water.GetComponent<Collider>());
 
-        // 2 Tiang Kayu Penopang
-        var poleL = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        // 5. Dua Pilar Kayu Solid (Hand-Hewn Timber Posts)
+        var poleL = GameObject.CreatePrimitive(PrimitiveType.Cube);
         poleL.name = "Well_Pole_L";
         poleL.transform.SetParent(wellRoot.transform);
-        poleL.transform.localPosition = new Vector3(-0.95f, 1.35f, 0);
-        poleL.transform.localScale = new Vector3(0.16f, 1.35f, 0.16f);
-        ApplyColor(poleL, new Color(0.38f, 0.24f, 0.14f));
+        poleL.transform.localPosition = new Vector3(-0.95f, 1.55f, 0);
+        poleL.transform.localScale = new Vector3(0.18f, 1.55f, 0.18f);
+        ApplyColor(poleL, new Color(0.30f, 0.18f, 0.10f));
         Object.DestroyImmediate(poleL.GetComponent<Collider>());
 
-        var poleR = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        var poleR = GameObject.CreatePrimitive(PrimitiveType.Cube);
         poleR.name = "Well_Pole_R";
         poleR.transform.SetParent(wellRoot.transform);
-        poleR.transform.localPosition = new Vector3(0.95f, 1.35f, 0);
-        poleR.transform.localScale = new Vector3(0.16f, 1.35f, 0.16f);
-        ApplyColor(poleR, new Color(0.38f, 0.24f, 0.14f));
+        poleR.transform.localPosition = new Vector3(0.95f, 1.55f, 0);
+        poleR.transform.localScale = new Vector3(0.18f, 1.55f, 0.18f);
+        ApplyColor(poleR, new Color(0.30f, 0.18f, 0.10f));
         Object.DestroyImmediate(poleR.GetComponent<Collider>());
 
-        // Palang Kayu Atas
+        // 6. Palang Kayu Penopang Atas (Main Timber Crossbeam)
         var beam = GameObject.CreatePrimitive(PrimitiveType.Cube);
         beam.name = "Well_Crossbeam";
         beam.transform.SetParent(wellRoot.transform);
         beam.transform.localPosition = new Vector3(0, 2.45f, 0);
-        beam.transform.localScale = new Vector3(2.2f, 0.15f, 0.2f);
-        ApplyColor(beam, new Color(0.35f, 0.22f, 0.12f));
+        beam.transform.localScale = new Vector3(2.35f, 0.18f, 0.18f);
+        ApplyColor(beam, new Color(0.28f, 0.16f, 0.09f));
         Object.DestroyImmediate(beam.GetComponent<Collider>());
 
-        // Atap Segitiga Kayu Mini
+        // 7. Penggulung Tali Sumur (Wooden Pulley Spindle & Rope)
+        var spindle = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        spindle.name = "Well_Spindle";
+        spindle.transform.SetParent(wellRoot.transform);
+        spindle.transform.localPosition = new Vector3(0, 2.22f, 0);
+        spindle.transform.localRotation = Quaternion.Euler(0, 0, 90f);
+        spindle.transform.localScale = new Vector3(0.18f, 0.45f, 0.18f);
+        ApplyColor(spindle, new Color(0.68f, 0.58f, 0.42f));
+        Object.DestroyImmediate(spindle.GetComponent<Collider>());
+
+        // Tali yang Menggantung ke Bawah
+        var rope = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        rope.name = "Well_Rope";
+        rope.transform.SetParent(wellRoot.transform);
+        rope.transform.localPosition = new Vector3(0, 1.58f, 0);
+        rope.transform.localScale = new Vector3(0.04f, 0.62f, 0.04f);
+        ApplyColor(rope, new Color(0.65f, 0.55f, 0.40f));
+        Object.DestroyImmediate(rope.GetComponent<Collider>());
+
+        // 8. Ember Timba Kayu (Wooden Bucket di Bibir Sumur)
+        var bucket = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        bucket.name = "Well_Bucket";
+        bucket.transform.SetParent(wellRoot.transform);
+        bucket.transform.localPosition = new Vector3(0.72f, 1.05f, 0.35f);
+        bucket.transform.localScale = new Vector3(0.32f, 0.20f, 0.32f);
+        ApplyColor(bucket, new Color(0.35f, 0.22f, 0.12f));
+        Object.DestroyImmediate(bucket.GetComponent<Collider>());
+
+        // 9. Atap Segitiga Kayu Sirap (Gable Shingle Roof)
         var roofL = GameObject.CreatePrimitive(PrimitiveType.Cube);
         roofL.name = "Well_Roof_L";
         roofL.transform.SetParent(wellRoot.transform);
-        roofL.transform.localPosition = new Vector3(-0.55f, 2.75f, 0);
-        roofL.transform.localScale = new Vector3(1.3f, 0.08f, 1.8f);
-        roofL.transform.localRotation = Quaternion.Euler(0, 0, 30f);
-        ApplyColor(roofL, new Color(0.3f, 0.18f, 0.1f));
+        roofL.transform.localPosition = new Vector3(-0.55f, 2.85f, 0);
+        roofL.transform.localScale = new Vector3(1.35f, 0.08f, 2.1f);
+        roofL.transform.localRotation = Quaternion.Euler(0, 0, 32f);
+        ApplyColor(roofL, new Color(0.26f, 0.15f, 0.08f));
         Object.DestroyImmediate(roofL.GetComponent<Collider>());
 
         var roofR = GameObject.CreatePrimitive(PrimitiveType.Cube);
         roofR.name = "Well_Roof_R";
         roofR.transform.SetParent(wellRoot.transform);
-        roofR.transform.localPosition = new Vector3(0.55f, 2.75f, 0);
-        roofR.transform.localScale = new Vector3(1.3f, 0.08f, 1.8f);
-        roofR.transform.localRotation = Quaternion.Euler(0, 0, -30f);
-        ApplyColor(roofR, new Color(0.3f, 0.18f, 0.1f));
+        roofR.transform.localPosition = new Vector3(0.55f, 2.85f, 0);
+        roofR.transform.localScale = new Vector3(1.35f, 0.08f, 2.1f);
+        roofR.transform.localRotation = Quaternion.Euler(0, 0, -32f);
+        ApplyColor(roofR, new Color(0.26f, 0.15f, 0.08f));
         Object.DestroyImmediate(roofR.GetComponent<Collider>());
 
-        // Lentera Hangat Sumur
-        AddPorchLantern(wellRoot.transform, new Vector3(0, 2.1f, 0), new Color(1f, 0.75f, 0.35f), 10f);
+        // Nok Puncak Atap (Roof Ridge Cap Beam)
+        var ridge = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        ridge.name = "Well_Roof_Ridge";
+        ridge.transform.SetParent(wellRoot.transform);
+        ridge.transform.localPosition = new Vector3(0, 3.22f, 0);
+        ridge.transform.localScale = new Vector3(0.12f, 0.12f, 2.15f);
+        ApplyColor(ridge, new Color(0.22f, 0.12f, 0.06f));
+        Object.DestroyImmediate(ridge.GetComponent<Collider>());
+
+        // 10. Lentera Hangat Sumur (Amber Lantern)
+        AddPorchLantern(wellRoot.transform, new Vector3(0, 2.05f, 0), new Color(1f, 0.78f, 0.42f), 10f);
     }
 
     /// <summary>
@@ -813,7 +866,7 @@ public static class SceneSetupTool
                  new Vector3(  0f, 0f, 24f), // Perempatan Boulevard Utara
                  new Vector3(  0f, 0f, 34f), // Teras Balai Desa
                  new Vector3(  0f, 0f, 10f), // Pintu Masuk Alun-Alun Utara
-                 new Vector3( -6f, 0f,  2f)  // Meja Santai Alun-Alun
+                 new Vector3(  0f, 0f,  6f)  // Tepi Utara Alun-Alun
              }),
 
             // 2. Petani Ladang (Farmer: Caping jerami lebar, rompi kerja, kumis melengkung, & garpu rumput)
@@ -859,13 +912,13 @@ public static class SceneSetupTool
             // Di Alun-Alun tengah (-6, 0, 2), mengitari sumur desa dan pasar
             ("NPC_GadisDesa",
              ProceduralNpcBuilder.NpcStyle.Woman,
-             new Vector3(-6f, 0f, 2f), 45f,
+             new Vector3(0f, 0f, 4.5f), 180f,
              "Halo petualang! Udara di desa Eldara hari ini begitu sejuk dan damai. Berhati-hatilah saat senja menjelang ya, kabut hutan sering membawa bahaya tak terduga!",
              new Vector3[] {
-                 new Vector3(-6f, 0f,  2f), // Meja Santai Alun-Alun
-                 new Vector3( 0f, 0f,  3.5f), // Depan Sumur Desa Kuno
-                 new Vector3( 6f, 0f,  2f), // Pasar Gerobak Timur
-                 new Vector3( 0f, 0f, -3.5f) // Sisi Selatan Alun-Alun
+                 new Vector3( 0f, 0f,  4.5f), // Sisi Utara Sumur Kuno
+                 new Vector3( 4.5f, 0f, 0f),  // Sisi Timur Sumur Kuno
+                 new Vector3( 0f, 0f, -4.5f), // Sisi Selatan Sumur Kuno
+                 new Vector3(-4.5f, 0f, 0f)   // Sisi Barat Sumur Kuno
              }),
 
             // 6. Kapten Penjaga Benteng (Guard: Helm baja, jubah perang, pedang ksatria)
