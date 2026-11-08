@@ -16,8 +16,57 @@ public static class RealisticGrassBuilder
 {
     private static Mesh sharedGrassMesh;
 
+    /// <summary>
+    /// Memastikan posisi tidak berada di atas pelataran batu alun-alun, jalanan, atau di dalam rumah
+    /// </summary>
+    public static bool IsPositionOnStoneOrRoad(Vector3 pos)
+    {
+        // 1. Alun-Alun Pusat (Central Plaza): lingkaran radius 9.5 meter (bersih mutlak tanpa rumput liar)
+        if (pos.x * pos.x + pos.z * pos.z < 9.5f * 9.5f) return true;
+
+        // 2. Jalur Utama (Boulevard):
+        // North Avenue: X = 0, Z = 8.5 s/d 42
+        if (Mathf.Abs(pos.x) < 2.3f && pos.z >= 8.5f && pos.z <= 42f) return true;
+        // South Avenue: X = 0, Z = -50 s/d -8.5
+        if (Mathf.Abs(pos.x) < 2.3f && pos.z <= -8.5f && pos.z >= -50f) return true;
+        // East Avenue: Z = 0, X = 8.5 s/d 68
+        if (Mathf.Abs(pos.z) < 2.3f && pos.x >= 8.5f && pos.x <= 68f) return true;
+        // West Avenue: Z = 0, X = -68 s/d -8.5
+        if (Mathf.Abs(pos.z) < 2.3f && pos.x <= -8.5f && pos.x >= -68f) return true;
+
+        // 3. Jalan Cabang Penghubung:
+        // Cabang Barat Laut: Z = 24, X = -24 s/d -3
+        if (Mathf.Abs(pos.z - 24f) < 2.0f && pos.x >= -24f && pos.x <= -3f) return true;
+        // Cabang Timur Laut: Z = 24, X = 3 s/d 24
+        if (Mathf.Abs(pos.z - 24f) < 2.0f && pos.x >= 3f && pos.x <= 24f) return true;
+        // Cabang Pertanian & Danau (Barat): X = -28, Z = -16 s/d 14
+        if (Mathf.Abs(pos.x + 28f) < 2.0f && pos.z >= -16f && pos.z <= 14f) return true;
+        // Cabang Pandai Besi & Cabin (Timur): X = 28, Z = -16 s/d 14
+        if (Mathf.Abs(pos.x - 28f) < 2.0f && pos.z >= -16f && pos.z <= 14f) return true;
+        // Cabang Selatan: Z = -30, X = -20 s/d 22
+        if (Mathf.Abs(pos.z + 30f) < 2.0f && pos.x >= -20f && pos.x <= 22f) return true;
+
+        // 4. Area Tapak Bangunan (Mencegah rumput tembus ke dalam lantai rumah)
+        if (Mathf.Abs(pos.x) < 7f && pos.z >= 36f && pos.z <= 46f) return true; // Balai Desa
+        if (Mathf.Abs(pos.x + 26f) < 6f && Mathf.Abs(pos.z - 26f) < 6f) return true; // Rumah Gadang
+        if (Mathf.Abs(pos.x - 26f) < 6f && Mathf.Abs(pos.z - 26f) < 6f) return true; // Joglo
+        if (Mathf.Abs(pos.x + 28f) < 6f && Mathf.Abs(pos.z - 14f) < 6f) return true; // Petani
+        if (Mathf.Abs(pos.x + 48f) < 7f && Mathf.Abs(pos.z - 14f) < 6f) return true; // Barn
+        if (Mathf.Abs(pos.x - 28f) < 6f && Mathf.Abs(pos.z - 14f) < 6f) return true; // Pandai Besi
+        if (Mathf.Abs(pos.x - 44f) < 6f && Mathf.Abs(pos.z - 14f) < 6f) return true; // Gudang Besi
+        if (Mathf.Abs(pos.x - 28f) < 6f && Mathf.Abs(pos.z + 16f) < 6f) return true; // Cabin
+        if (Mathf.Abs(pos.x - 48f) < 6f && Mathf.Abs(pos.z + 16f) < 6f) return true; // Villa
+        if (Mathf.Abs(pos.x + 20f) < 6f && Mathf.Abs(pos.z + 34f) < 6f) return true; // Chalet
+        if (Mathf.Abs(pos.x - 24f) < 6f && Mathf.Abs(pos.z + 34f) < 6f) return true; // Minka
+        if (Mathf.Abs(pos.x + 10f) < 5f && Mathf.Abs(pos.z + 46f) < 5f) return true; // A-Frame
+
+        return false;
+    }
+
     public static GameObject BuildGrassTuft(Vector3 position, float scale, Transform parent, Material grassMat)
     {
+        if (IsPositionOnStoneOrRoad(position)) return null;
+
         if (!sharedGrassMesh)
         {
             sharedGrassMesh = GenerateGrassMesh();
@@ -38,8 +87,8 @@ public static class RealisticGrassBuilder
         mr.receiveShadows = true;
 
         var sway = go.AddComponent<GrassWindSway>();
-        sway.swayIntensity = Random.Range(3.0f, 4.5f);
-        sway.swaySpeed = Random.Range(1.5f, 2.0f);
+        sway.swayIntensity = Random.Range(1.8f, 2.8f);
+        sway.swaySpeed = Random.Range(1.2f, 1.8f);
 
         return go;
     }
@@ -50,7 +99,8 @@ public static class RealisticGrassBuilder
         {
             Vector2 circle = Random.insideUnitCircle * radius;
             Vector3 pos = center + new Vector3(circle.x, 0, circle.y);
-            float scale = Random.Range(0.85f, 1.25f);
+            if (IsPositionOnStoneOrRoad(pos)) continue;
+            float scale = Random.Range(0.70f, 1.0f);
             BuildGrassTuft(pos, scale, parent, grassMat);
         }
     }
@@ -67,8 +117,8 @@ public static class RealisticGrassBuilder
 
         // 3 quad saling silang (sudut 0, 60, dan 120 derajat)
         float[] angles = { 0f, 60f, 120f };
-        float width = 1.15f;
-        float height = 1.05f;
+        float width = 0.85f;
+        float height = 0.55f;
         float halfW = width * 0.5f;
 
         foreach (float deg in angles)

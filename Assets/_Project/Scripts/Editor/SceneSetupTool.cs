@@ -1278,23 +1278,18 @@ public static class SceneSetupTool
 
         if (!grassMat) return;
 
-        // 1. Tepi Jalan Setapak & Alun-Alun Desa (Bordir rumput alami di sela batu)
+        // 1. Tepi Jalan Setapak di Luar Alun-Alun Desa (Bordir rumput alami di sisi rumput samping jalan)
         Vector3[] pathwayPoints = {
-            // Tepi Alun-Alun Pusat
-            new Vector3( 9.5f, 0f,  4.5f), new Vector3(-9.5f, 0f,  4.5f),
-            new Vector3( 9.5f, 0f, -4.5f), new Vector3(-9.5f, 0f, -4.5f),
-            new Vector3( 4.5f, 0f,  9.5f), new Vector3(-4.5f, 0f,  9.5f),
-            new Vector3( 4.5f, 0f, -9.5f), new Vector3(-4.5f, 0f, -9.5f),
-            // Tepi Boulevard Utara & Selatan
-            new Vector3( 3.2f, 0f,  18f),  new Vector3(-3.2f, 0f,  18f),
-            new Vector3( 3.2f, 0f,  30f),  new Vector3(-3.2f, 0f,  30f),
-            new Vector3( 3.2f, 0f, -18f),  new Vector3(-3.2f, 0f, -18f),
-            new Vector3( 3.2f, 0f, -32f),  new Vector3(-3.2f, 0f, -32f),
-            // Tepi Boulevard Barat & Timur
-            new Vector3( 18f, 0f,   3.2f), new Vector3( 18f, 0f, -3.2f),
-            new Vector3( 32f, 0f,   3.2f), new Vector3( 32f, 0f, -3.2f),
-            new Vector3(-18f, 0f,   3.2f), new Vector3(-18f, 0f, -3.2f),
-            new Vector3(-32f, 0f,   3.2f), new Vector3(-32f, 0f, -3.2f),
+            // Tepi Boulevard Utara & Selatan (di sisi rumput X = +/- 3.5m, di luar jalan)
+            new Vector3( 3.5f, 0f,  18f),  new Vector3(-3.5f, 0f,  18f),
+            new Vector3( 3.5f, 0f,  30f),  new Vector3(-3.5f, 0f,  30f),
+            new Vector3( 3.5f, 0f, -18f),  new Vector3(-3.5f, 0f, -18f),
+            new Vector3( 3.5f, 0f, -32f),  new Vector3(-3.5f, 0f, -32f),
+            // Tepi Boulevard Barat & Timur (di sisi rumput Z = +/- 3.5m, di luar jalan)
+            new Vector3( 18f, 0f,   3.5f), new Vector3( 18f, 0f, -3.5f),
+            new Vector3( 32f, 0f,   3.5f), new Vector3( 32f, 0f, -3.5f),
+            new Vector3(-18f, 0f,   3.5f), new Vector3(-18f, 0f, -3.5f),
+            new Vector3(-32f, 0f,   3.5f), new Vector3(-32f, 0f, -3.5f),
         };
         foreach (var pt in pathwayPoints)
         {
