@@ -859,8 +859,6 @@ public static class SceneSetupTool
                  new Vector3( 0f, 0f, -42f), // Tengah Jalan Masuk Selatan
                  new Vector3( 0f, 0f, -52f)  // Pemeriksaan Pintu Benteng Luar
              })
-                 new Vector3( 0f, 0f, -52f)  // Pemeriksaan Pintu Benteng Luar
-             })
         };
 
         foreach (var (npcName, style, startPos, yRot, greeting, route) in npcConfigs)
