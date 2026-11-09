@@ -426,8 +426,8 @@ public static class AnimalAssetSetup
         var visual = Object.Instantiate(modelPrefab, wolfRoot.transform);
         visual.name = "Visual";
         visual.transform.localPosition = Vector3.zero;
-        // Rotasi Y = -90 derajat agar model serigala menghadap lurus ke Z-forward (tidak jalan menyamping seperti kepiting)
-        visual.transform.localRotation = Quaternion.Euler(0, -90f, 0);
+        // Rotasi Y = 180 derajat agar kepala/moncong serigala menghadap lurus ke Z-forward (+Z maju Unity)
+        visual.transform.localRotation = Quaternion.Euler(0, 180f, 0);
         // Skala realistis serigala: panjang ~1.2m, tinggi ~0.80m
         visual.transform.localScale = Vector3.one * 0.165f;
 
@@ -465,8 +465,10 @@ public static class AnimalAssetSetup
         ctrl.animalName = wolfName;
         ctrl.wanderRadius = 14.0f;
         ctrl.moveSpeed = 2.4f;
-        ctrl.acceleration = 3.6f;
+        ctrl.acceleration = 4.2f;
+        ctrl.turnSpeed = 220f;
         ctrl.turnSmoothness = 4.5f;
+        ctrl.clipWalkSpeed = 2.2f;
         ctrl.petMessage = "Auuu! Serigala rimba menatapmu tajam dari sela rimbunnya pepohonan.";
         ctrl.canFollowPlayer = false;
 

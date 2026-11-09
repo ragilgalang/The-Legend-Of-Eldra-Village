@@ -568,8 +568,8 @@ public static class RealisticDogBuilder
             visual = UnityEngine.Object.Instantiate(dogPrefab, dogRoot.transform);
             visual.name = "Visual";
             visual.transform.localPosition = Vector3.zero;
-            // Rotasi Y = -90 derajat agar model anjing menghadap lurus ke Z-forward (tidak jalan menyamping seperti kepiting)
-            visual.transform.localRotation = Quaternion.Euler(0, -90f, 0);
+            // Rotasi Y = 180 derajat agar kepala/moncong anjing menghadap lurus ke Z-forward (+Z maju Unity)
+            visual.transform.localRotation = Quaternion.Euler(0, 180f, 0);
 
             float scale = BreedScales.ContainsKey(breed) ? BreedScales[breed] : 0.145f;
             visual.transform.localScale = Vector3.one * scale;
@@ -633,8 +633,10 @@ public static class RealisticDogBuilder
         ctrl.animalName = dogName;
         ctrl.wanderRadius = breed == DogBreed.Kintamani || breed == DogBreed.GermanShepherd ? 8.0f : 6.0f;
         ctrl.moveSpeed = dogSpeed;
-        ctrl.acceleration = 3.5f;
+        ctrl.acceleration = 4.2f;
+        ctrl.turnSpeed = 220f;
         ctrl.turnSmoothness = 5.2f;
+        ctrl.clipWalkSpeed = dogSpeed * 0.95f;
         ctrl.petMessage = petMsg ?? $"Guk! {dogName} mengibaskan ekornya riang dan kini menemanimu!";
         ctrl.canFollowPlayer = canFollow;
 

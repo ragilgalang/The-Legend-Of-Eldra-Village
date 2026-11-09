@@ -26,9 +26,9 @@ public class AnimalController : Interactable
     public float wanderRadius = 6.0f;
     [Tooltip("Kecepatan jalan maksimum (m/s).")]
     public float moveSpeed = 1.8f;
-    public float acceleration = 3.2f;
+    public float acceleration = 3.8f;
     [Tooltip("Kecepatan putar maksimum badan (derajat/detik).")]
-    public float turnSpeed = 140f;
+    public float turnSpeed = 200f;
     [Tooltip("Kompatibilitas legacy smoothness (RealisticDogBuilder / AnimalAssetSetup).")]
     public float turnSmoothness = 5.0f;
     public float idleTimeMin = 3.0f;
@@ -167,17 +167,36 @@ public class AnimalController : Interactable
 
         Quaternion extra;
 
-        if (autoDetectFacing && TryDetectBodyAxis(out bool alongX))
+        if (autoDetectFacing)
         {
-            // Tubuh memanjang di sumbu X → perlu Y=-90° agar menghadap +Z.
-            // Tubuh memanjang di sumbu Z → sudah menghadap +Z, Y=0°.
-            float yaw = alongX ? -90f : 0f;
+            float yaw;
+            if (animalType == AnimalType.Dog || animalType == AnimalType.Wolf)
+            {
+                // Model Dog.fbx dan Wolf.fbx memanjang di sumbu Z, dengan kepala di -Z lokal Blender.
+                // Dibutuhkan rotasi 180° agar moncong/kepala menghadap +Z (arah maju Unity) dan tidak berjalan mundur.
+                yaw = 180f;
+            }
+            else if (animalType == AnimalType.Cat)
+            {
+                // Model Cat.fbx memanjang di sumbu X, dengan kepala di -X lokal Blender.
+                // Dibutuhkan rotasi -90° agar kepala menghadap +Z.
+                yaw = -90f;
+            }
+            else
+            {
+                // Fallback otomatis berdasarkan deteksi sumbu terpanjang
+                if (TryDetectBodyAxis(out bool alongX))
+                {
+                    yaw = alongX ? -90f : 180f;
+                }
+                else
+                {
+                    yaw = visualRotationOffset.y;
+                }
+            }
+
             if (flipFacing) yaw += 180f;
             extra = Quaternion.Euler(0f, yaw, 0f);
-
-            // Verifikasi: kepala harus ada di +Z setelah rotasi diterapkan sementara.
-            // Jika TryDetectBodyAxis benar, CorrectFacingByHead tidak dibutuhkan.
-            // Nonaktifkan CorrectFacingByHead karena bisa salah deteksi jika FBX T-pose ambigu.
         }
         else
         {
@@ -188,7 +207,7 @@ public class AnimalController : Interactable
 
         visualTransform.localRotation = extra;
 
-        Debug.Log($"[AnimalController] {animalName}: ApplyVisualFacing → localRotation = {extra.eulerAngles}", gameObject);
+        Debug.Log($"[AnimalController] {animalName} ({animalType}): ApplyVisualFacing → localRotation = {extra.eulerAngles}", gameObject);
     }
 
     /// <summary>
@@ -323,14 +342,14 @@ public class AnimalController : Interactable
 
         // Putar badan: makin kecil sudut, makin halus (ease-out), dibatasi turnSpeed
         float maxStep = turnSpeed * turnMul * Time.deltaTime;
-        float easedStep = Mathf.Max(angle * 4f * Time.deltaTime, 25f * Time.deltaTime);
+        float easedStep = Mathf.Max(angle * 5f * Time.deltaTime, 35f * Time.deltaTime);
         float step = Mathf.Min(maxStep, easedStep);
         Quaternion targetRot = Quaternion.LookRotation(desiredDir, Vector3.up);
         transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, step);
 
-        // Selaraskan kecepatan dengan sudut: lurus = penuh, belok tajam = pelan tapi kaki tetap melangkah
-        float alignment = Mathf.InverseLerp(100f, 20f, angle);
-        float desiredSpeed = targetSpeed * Mathf.Lerp(0.2f, 1f, alignment);
+        // Selaraskan kecepatan dengan sudut: lurus = penuh, belok tajam = pelan fokus memutar
+        float alignment = Mathf.InverseLerp(90f, 15f, angle);
+        float desiredSpeed = targetSpeed * Mathf.Lerp(0.08f, 1f, alignment);
         currentSpeed = Mathf.MoveTowards(currentSpeed, desiredSpeed, acceleration * Time.deltaTime);
 
         MoveForward(currentSpeed);
