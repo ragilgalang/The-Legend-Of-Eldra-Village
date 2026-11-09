@@ -95,7 +95,7 @@ public static class SceneSetupTool
                 "🔮 Kompleks Altar Mistis: Formasi 12 pilar batu kuno di utara desa\n" +
                 "🛡️ 8 Menara Pengawas Benteng + Pagar Kayu Melingkar Skala 80 Meter\n" +
                 "🌲 Hutan Rimba Keliling: 90+ Pohon cemara & ek bervariasi mengitari desa\n" +
-                "🐾 Ekosistem Fauna: Anjing Penjaga (Milo), Kucing Desa (Luna & Oliver), Serigala Rimba, & Elang Perkasa di Langit!\n" +
+                "🐾 Ekosistem Fauna: Kucing Desa (Luna & Oliver), Serigala Rimba, & Elang Perkasa di Langit!\n" +
                 "🏮 Lentera Malam: Lampu lentera hangat di tiap rumah & menara\n\n" +
                 "🗺️ EKSPANSI PETA BARU (500×500 meter):\n" +
                 "⛰️ Zona UTARA — Desa Pegunungan, Kuil Batu Kuno, Jembatan Kabut, 2 NPC Baru\n" +
@@ -1503,33 +1503,22 @@ public static class SceneSetupTool
         GameObject faunaRoot = GameObject.Find("--- FAUNA & ANIMALS ---");
         if (faunaRoot) Object.DestroyImmediate(faunaRoot);
 
+        // Hapus seluruh objek anjing jika masih ada di scene
+        foreach (var obj in Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
+        {
+            if (obj && (obj.name.StartsWith("Animal_Dog_") || obj.name == "Animal_Milo_Dog"))
+            {
+                Object.DestroyImmediate(obj);
+            }
+        }
+
         faunaRoot = new GameObject("--- FAUNA & ANIMALS ---");
 
-        // 1. Milo - Anjing Kintamani Asli Penjaga Desa (Di Alun-Alun dekat Sumur Desa)
-        AnimalAssetSetup.SpawnDog(new Vector3(3f, 0f, 2f), Quaternion.Euler(0, 190f, 0), faunaRoot.transform,
-            RealisticDogBuilder.DogBreed.Kintamani, "Milo",
-            "Guk! Milo si Anjing Kintamani mengibaskan ekor melengkungnya riang dan menemanimu berjalan-jalan!");
-
-        // 1b. Bobi - Anjing Golden Retriever Ramah (Di pelataran kebun & rumah petani)
-        AnimalAssetSetup.SpawnDog(new Vector3(-24f, 0f, 8f), Quaternion.Euler(0, 180f, 0), faunaRoot.transform,
-            RealisticDogBuilder.DogBreed.GoldenRetriever, "Bobi",
-            "Guk guk! Bobi si Golden Retriever menyapa ramah dengan telinga turun dan bulu emas berkilau!");
-
-        // 1c. Bruno - Anjing German Shepherd Penjaga Benteng (Di pos gerbang selatan luar)
-        AnimalAssetSetup.SpawnDog(new Vector3(-5f, 0f, -46f), Quaternion.Euler(0, 20f, 0), faunaRoot.transform,
-            RealisticDogBuilder.DogBreed.GermanShepherd, "Bruno",
-            "Guk! Bruno si German Shepherd berdiri tegap dan waspada menjaga gerbang utama desa!");
-
-        // 1d. Kiko - Anjing Dachshund Lincah (Di teras Chalet Selatan)
-        AnimalAssetSetup.SpawnDog(new Vector3(-18f, 0f, -30f), Quaternion.Euler(0, 90f, 0), faunaRoot.transform,
-            RealisticDogBuilder.DogBreed.Dachshund, "Kiko",
-            "Guk! Kiko si Dachshund bertubuh panjang berlari-lari kecil menyambutmu!");
-
-        // 2. Luna - Kucing Abu-Abu Desa (Di teras Log Cabin Warga Pemburu)
+        // 1. Luna - Kucing Abu-Abu Desa (Di teras Log Cabin Warga Pemburu)
         AnimalAssetSetup.SpawnCat(new Vector3(26f, 0f, -12f), Quaternion.Euler(0, 0f, 0), faunaRoot.transform,
             "Luna", "Meow~ Luna mendengkur manja dan mengusapkan badannya ke kakimu.", false);
 
-        // 3. Oliver - Kucing Oranye Pasar (Di dekat gerobak pasar alun-alun)
+        // 2. Oliver - Kucing Oranye Pasar (Di dekat gerobak pasar alun-alun)
         AnimalAssetSetup.SpawnCat(new Vector3(7.5f, 0f, 2f), Quaternion.Euler(0, -60f, 0), faunaRoot.transform,
             "Oliver", "Meow! Oliver si kucing oranye melompat manja dan menatapmu ramah.", true);
 
@@ -1908,10 +1897,6 @@ public static class SceneSetupTool
                 new Vector3(-144f, 0f, 14f), Quaternion.identity,
                 Vector3.one, slavicMat, new Color(0.3f, 0.6f, 0.8f));
 
-            // Anjing dermaga
-            AnimalAssetSetup.SpawnDog(new Vector3(-158f, 0f, 2f), Quaternion.Euler(0, 90f, 0),
-                westRoot.transform, RealisticDogBuilder.DogBreed.GoldenRetriever, "Bagas_Jr",
-                "Guk! Bagas Jr menjaga dermaga dengan semangat!");
 
             // Pohon & rumput zona barat
             for (int i = 0; i < 30; i++)

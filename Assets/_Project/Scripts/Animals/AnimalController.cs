@@ -89,6 +89,13 @@ public class AnimalController : Interactable
 
     void Awake()
     {
+        // Anjing telah dinonaktifkan/dihapus dari desa atas permintaan user
+        if (animalType == AnimalType.Dog)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         homePosition = transform.position;
         homePosition.y = 0f;
 
