@@ -328,83 +328,63 @@ public static class SceneSetupTool
         //  A. SISTEM JALAN KOTA MEDIEVAL (COBBLESTONE BOULEVARD & CONNECTORS)
         // ═════════════════════════════════════════════════════════════════
 
+        // Material jalan batu paving medieval (PBR Cobblestone)
+        var roadMat = GetOrCreateVillageRoadMaterial();
+
         // 1. Alun-Alun Paving Pusat (Central Plaza 18 meter)
-        var plaza = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        plaza.name = "Central_Plaza_Stone";
-        plaza.transform.SetParent(village.transform);
-        plaza.transform.position = new Vector3(0, 0.02f, 0);
-        plaza.transform.localScale = new Vector3(18f, 0.04f, 18f);
-        Object.DestroyImmediate(plaza.GetComponent<Collider>());
-        ApplyColor(plaza, new Color(0.72f, 0.70f, 0.65f)); // Warna batu alam paving bersih
+        CreateCircularPlaza(village.transform, "Central_Plaza_Stone", Vector3.zero, 9.0f, roadMat, 2.5f);
 
-        // 2. Jalur Utama Utara (North Avenue, X = 0, Z = 9 s/d 38 menuju Balai Desa)
-        for (float z = 9f; z <= 38f; z += 4.5f)
-        {
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(0, 0.02f, z),
-                Quaternion.identity, new Vector3(1.5f, 1f, 1.5f), village.transform, slavicMat);
-        }
+        var roadsParent = new GameObject("Village_Road_Network");
+        roadsParent.transform.SetParent(village.transform);
 
-        // 3. Jalur Utama Selatan (South Avenue, X = 0, Z = -9 s/d -48 menuju Gerbang Benteng)
-        for (float z = -9f; z >= -48f; z -= 4.5f)
-        {
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(0, 0.02f, z),
-                Quaternion.identity, new Vector3(1.5f, 1f, 1.5f), village.transform, slavicMat);
-        }
+        // 2. Jalur Utama Utara (North Avenue, X = 0, Z = 8.8 s/d 40 menuju Balai Desa, lebar 4.2m)
+        CreateContinuousPavedRoad(roadsParent.transform, "Road_North_Avenue",
+            new Vector3(0, 0, 8.8f), new Vector3(0, 0, 40f), 4.2f, roadMat, 2.5f);
 
-        // 4. Jalur Utama Timur (East Avenue, Z = 0, X = 9 s/d 66 menuju Kawasan Pengrajin)
-        for (float x = 9f; x <= 66f; x += 4.5f)
-        {
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, 0),
-                Quaternion.Euler(0, 90f, 0), new Vector3(1.5f, 1f, 1.5f), village.transform, slavicMat);
-        }
+        // 3. Jalur Utama Selatan (South Avenue, X = 0, Z = -8.8 s/d -48 menuju Gerbang Benteng, lebar 4.2m)
+        CreateContinuousPavedRoad(roadsParent.transform, "Road_South_Avenue",
+            new Vector3(0, 0, -8.8f), new Vector3(0, 0, -48f), 4.2f, roadMat, 2.5f);
 
-        // 5. Jalur Utama Barat (West Avenue, Z = 0, X = -9 s/d -66 menuju Kawasan Pertanian)
-        for (float x = -9f; x >= -66f; x -= 4.5f)
-        {
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, 0),
-                Quaternion.Euler(0, 90f, 0), new Vector3(1.5f, 1f, 1.5f), village.transform, slavicMat);
-        }
+        // 4. Jalur Utama Timur (East Avenue, Z = 0, X = 8.8 s/d 66 menuju Kawasan Pengrajin, lebar 4.2m)
+        CreateContinuousPavedRoad(roadsParent.transform, "Road_East_Avenue",
+            new Vector3(8.8f, 0, 0), new Vector3(66f, 0, 0), 4.2f, roadMat, 2.5f);
 
-        // 6. Jalan Cabang Penghubung Halaman Rumah (District Connector Streets):
-        // a. Cabang Barat Laut ke Halaman Rumah Gadang: (Z = 24, X = -4.5 s/d -22)
-        for (float x = -4.5f; x >= -22f; x -= 4.5f)
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, 24f),
-                Quaternion.Euler(0, 90f, 0), new Vector3(1.2f, 1f, 1.2f), village.transform, slavicMat);
+        // 5. Jalur Utama Barat (West Avenue, Z = 0, X = -8.8 s/d -66 menuju Kawasan Pertanian, lebar 4.2m)
+        CreateContinuousPavedRoad(roadsParent.transform, "Road_West_Avenue",
+            new Vector3(-8.8f, 0, 0), new Vector3(-66f, 0, 0), 4.2f, roadMat, 2.5f);
 
-        // b. Cabang Timur Laut ke Halaman Joglo: (Z = 24, X = 4.5 s/d 22)
-        for (float x = 4.5f; x <= 22f; x += 4.5f)
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, 24f),
-                Quaternion.Euler(0, 90f, 0), new Vector3(1.2f, 1f, 1.2f), village.transform, slavicMat);
+        // 6. Jalan Cabang Penghubung Halaman Rumah (District Connector Streets, lebar 3.2m):
+        // a. Cabang Barat Laut ke Halaman Rumah Gadang:
+        CreateContinuousPavedRoad(roadsParent.transform, "Road_Branch_NorthWest_Gadang",
+            new Vector3(-2.1f, 0, 24f), new Vector3(-24f, 0, 24f), 3.2f, roadMat, 2.5f);
 
-        // c. Cabang Pertanian Utara (Rumah Petani & Barn): (X = -28, Z = 4.5 s/d 12)
-        for (float z = 4.5f; z <= 12f; z += 4.5f)
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(-28f, 0.02f, z),
-                Quaternion.identity, new Vector3(1.2f, 1f, 1.2f), village.transform, slavicMat);
+        // b. Cabang Timur Laut ke Halaman Joglo:
+        CreateContinuousPavedRoad(roadsParent.transform, "Road_Branch_NorthEast_Joglo",
+            new Vector3(2.1f, 0, 24f), new Vector3(24f, 0, 24f), 3.2f, roadMat, 2.5f);
 
-        // d. Cabang Danau Selatan (Pondok Danau): (X = -28, Z = -4.5 s/d -14)
-        for (float z = -4.5f; z >= -14f; z -= 4.5f)
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(-28f, 0.02f, z),
-                Quaternion.identity, new Vector3(1.2f, 1f, 1.2f), village.transform, slavicMat);
+        // c. Cabang Pertanian Utara (Rumah Petani & Barn):
+        CreateContinuousPavedRoad(roadsParent.transform, "Road_Branch_FarmNorth",
+            new Vector3(-28f, 0, 0f), new Vector3(-28f, 0, 14f), 3.2f, roadMat, 2.5f);
 
-        // e. Cabang Pandai Besi Utara: (X = 28, Z = 4.5 s/d 12)
-        for (float z = 4.5f; z <= 12f; z += 4.5f)
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(28f, 0.02f, z),
-                Quaternion.identity, new Vector3(1.2f, 1f, 1.2f), village.transform, slavicMat);
+        // d. Cabang Danau Selatan (Pondok Danau):
+        CreateContinuousPavedRoad(roadsParent.transform, "Road_Branch_LakeSouth",
+            new Vector3(-28f, 0, 0f), new Vector3(-28f, 0, -14f), 3.2f, roadMat, 2.5f);
 
-        // f. Cabang Logistik & Cabin Selatan: (X = 28, Z = -4.5 s/d -14)
-        for (float z = -4.5f; z >= -14f; z -= 4.5f)
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(28f, 0.02f, z),
-                Quaternion.identity, new Vector3(1.2f, 1f, 1.2f), village.transform, slavicMat);
+        // e. Cabang Pandai Besi Utara:
+        CreateContinuousPavedRoad(roadsParent.transform, "Road_Branch_BlacksmithNorth",
+            new Vector3(28f, 0, 0f), new Vector3(28f, 0, 14f), 3.2f, roadMat, 2.5f);
 
-        // g. Cabang Pemukiman Selatan (Chalet & A-Frame): (Z = -30, X = -4.5 s/d -18)
-        for (float x = -4.5f; x >= -18f; x -= 4.5f)
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, -30f),
-                Quaternion.Euler(0, 90f, 0), new Vector3(1.2f, 1f, 1.2f), village.transform, slavicMat);
+        // f. Cabang Logistik & Cabin Selatan:
+        CreateContinuousPavedRoad(roadsParent.transform, "Road_Branch_LogisticsSouth",
+            new Vector3(28f, 0, 0f), new Vector3(28f, 0, -14f), 3.2f, roadMat, 2.5f);
 
-        // h. Cabang Minka Dukun Tenggara: (Z = -30, X = 4.5 s/d 20)
-        for (float x = 4.5f; x <= 20f; x += 4.5f)
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, -30f),
-                Quaternion.Euler(0, 90f, 0), new Vector3(1.2f, 1f, 1.2f), village.transform, slavicMat);
+        // g. Cabang Pemukiman Selatan (Chalet & A-Frame):
+        CreateContinuousPavedRoad(roadsParent.transform, "Road_Branch_ChaletSouthWest",
+            new Vector3(-2.1f, 0, -30f), new Vector3(-20f, 0, -30f), 3.2f, roadMat, 2.5f);
+
+        // h. Cabang Minka Dukun Tenggara:
+        CreateContinuousPavedRoad(roadsParent.transform, "Road_Branch_MinkaSouthEast",
+            new Vector3(2.1f, 0, -30f), new Vector3(22f, 0, -30f), 3.2f, roadMat, 2.5f);
 
         // ═════════════════════════════════════════════════════════════════
         //  B. ALUN-ALUN PUSAT: SUMUR DESA KUNO (LANDMARK TUNGGAL ALUN-ALUN)
@@ -837,6 +817,324 @@ public static class SceneSetupTool
     {
         string path = $"Assets/_Project/Art/MedievalVillage/Materials/{matName}.mat";
         return AssetDatabase.LoadAssetAtPath<Material>(path);
+    }
+
+    // Helper: Buat / dapatkan material jalan batu paving desa (Cobblestone)
+    static Material GetOrCreateVillageRoadMaterial()
+    {
+        string roadMatPath = "Assets/_Project/Art/MedievalVillage/Materials/M_Village_Cobblestone_Road.mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(roadMatPath);
+        if (!mat)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            mat = new Material(shader);
+            mat.name = "M_Village_Cobblestone_Road";
+            AssetDatabase.CreateAsset(mat, roadMatPath);
+        }
+
+        var albedo = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/MedievalVillage/Textures/T_UnevenBrick_BaseColor.png");
+        var normal = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/MedievalVillage/Textures/T_UnevenBrick_Normal.png");
+
+        if (albedo) mat.SetTexture("_BaseMap", albedo);
+        if (normal)
+        {
+            mat.SetTexture("_BumpMap", normal);
+            mat.EnableKeyword("_NORMALMAP");
+            mat.SetFloat("_BumpScale", 0.9f);
+        }
+        mat.SetColor("_BaseColor", new Color(0.92f, 0.90f, 0.86f, 1f));
+        mat.SetFloat("_Smoothness", 0.15f);
+
+        EditorUtility.SetDirty(mat);
+        return mat;
+    }
+
+    // Helper: Buat jalan batu terusan (continuous paved road) tanpa celah rumput
+    static GameObject CreateContinuousPavedRoad(
+        Transform parent,
+        string name,
+        Vector3 start,
+        Vector3 end,
+        float width,
+        Material roadMat,
+        float uvScale = 2.5f)
+    {
+        var roadGO = new GameObject(name);
+        roadGO.transform.SetParent(parent);
+        roadGO.transform.position = Vector3.zero;
+        roadGO.transform.rotation = Quaternion.identity;
+
+        Vector3 delta = end - start;
+        float length = delta.magnitude;
+        if (length < 0.05f) return roadGO;
+
+        Vector3 forward = delta.normalized;
+        Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+
+        float topY = 0.025f; // Permukaan jalan sejajar alun-alun
+        float botY = -0.05f; // Masuk ke dalam tanah agar tepi tidak mengambang
+
+        Vector3 halfW = right * (width * 0.5f);
+        Vector3 p0 = start - halfW;
+        Vector3 p1 = start + halfW;
+        Vector3 p2 = end - halfW;
+        Vector3 p3 = end + halfW;
+
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var norms = new List<Vector3>();
+        var tris = new List<int>();
+
+        // 1. TOP FACE (Permukaan jalan yang diinjak)
+        int idx = verts.Count;
+        verts.Add(new Vector3(p0.x, topY, p0.z));
+        verts.Add(new Vector3(p1.x, topY, p1.z));
+        verts.Add(new Vector3(p2.x, topY, p2.z));
+        verts.Add(new Vector3(p3.x, topY, p3.z));
+
+        // World-aligned UV planar mapping agar sambungan dan percabangan 100% mulus tanpa celah atau stretch
+        uvs.Add(new Vector2(p0.x / uvScale, p0.z / uvScale));
+        uvs.Add(new Vector2(p1.x / uvScale, p1.z / uvScale));
+        uvs.Add(new Vector2(p2.x / uvScale, p2.z / uvScale));
+        uvs.Add(new Vector2(p3.x / uvScale, p3.z / uvScale));
+
+        norms.Add(Vector3.up);
+        norms.Add(Vector3.up);
+        norms.Add(Vector3.up);
+        norms.Add(Vector3.up);
+
+        tris.Add(idx + 0);
+        tris.Add(idx + 2);
+        tris.Add(idx + 1);
+
+        tris.Add(idx + 1);
+        tris.Add(idx + 2);
+        tris.Add(idx + 3);
+
+        // 2. LEFT SIDE SKIRT (Tepi kiri jalan)
+        idx = verts.Count;
+        verts.Add(new Vector3(p0.x, topY, p0.z));
+        verts.Add(new Vector3(p2.x, topY, p2.z));
+        verts.Add(new Vector3(p0.x, botY, p0.z));
+        verts.Add(new Vector3(p2.x, botY, p2.z));
+
+        uvs.Add(new Vector2(p0.x / uvScale, p0.z / uvScale));
+        uvs.Add(new Vector2(p2.x / uvScale, p2.z / uvScale));
+        uvs.Add(new Vector2(p0.x / uvScale, p0.z / uvScale));
+        uvs.Add(new Vector2(p2.x / uvScale, p2.z / uvScale));
+
+        norms.Add(-right);
+        norms.Add(-right);
+        norms.Add(-right);
+        norms.Add(-right);
+
+        tris.Add(idx + 0);
+        tris.Add(idx + 2);
+        tris.Add(idx + 1);
+
+        tris.Add(idx + 1);
+        tris.Add(idx + 2);
+        tris.Add(idx + 3);
+
+        // 3. RIGHT SIDE SKIRT (Tepi kanan jalan)
+        idx = verts.Count;
+        verts.Add(new Vector3(p1.x, topY, p1.z));
+        verts.Add(new Vector3(p3.x, topY, p3.z));
+        verts.Add(new Vector3(p1.x, botY, p1.z));
+        verts.Add(new Vector3(p3.x, botY, p3.z));
+
+        uvs.Add(new Vector2(p1.x / uvScale, p1.z / uvScale));
+        uvs.Add(new Vector2(p3.x / uvScale, p3.z / uvScale));
+        uvs.Add(new Vector2(p1.x / uvScale, p1.z / uvScale));
+        uvs.Add(new Vector2(p3.x / uvScale, p3.z / uvScale));
+
+        norms.Add(right);
+        norms.Add(right);
+        norms.Add(right);
+        norms.Add(right);
+
+        tris.Add(idx + 0);
+        tris.Add(idx + 1);
+        tris.Add(idx + 2);
+
+        tris.Add(idx + 2);
+        tris.Add(idx + 1);
+        tris.Add(idx + 3);
+
+        // 4. START CAP (Ujung awal jalan)
+        idx = verts.Count;
+        verts.Add(new Vector3(p0.x, topY, p0.z));
+        verts.Add(new Vector3(p1.x, topY, p1.z));
+        verts.Add(new Vector3(p0.x, botY, p0.z));
+        verts.Add(new Vector3(p1.x, botY, p1.z));
+
+        uvs.Add(new Vector2(p0.x / uvScale, p0.z / uvScale));
+        uvs.Add(new Vector2(p1.x / uvScale, p1.z / uvScale));
+        uvs.Add(new Vector2(p0.x / uvScale, p0.z / uvScale));
+        uvs.Add(new Vector2(p1.x / uvScale, p1.z / uvScale));
+
+        norms.Add(-forward);
+        norms.Add(-forward);
+        norms.Add(-forward);
+        norms.Add(-forward);
+
+        tris.Add(idx + 0);
+        tris.Add(idx + 1);
+        tris.Add(idx + 2);
+
+        tris.Add(idx + 2);
+        tris.Add(idx + 1);
+        tris.Add(idx + 3);
+
+        // 5. END CAP (Ujung akhir jalan)
+        idx = verts.Count;
+        verts.Add(new Vector3(p2.x, topY, p2.z));
+        verts.Add(new Vector3(p3.x, topY, p3.z));
+        verts.Add(new Vector3(p2.x, botY, p2.z));
+        verts.Add(new Vector3(p3.x, botY, p3.z));
+
+        uvs.Add(new Vector2(p2.x / uvScale, p2.z / uvScale));
+        uvs.Add(new Vector2(p3.x / uvScale, p3.z / uvScale));
+        uvs.Add(new Vector2(p2.x / uvScale, p2.z / uvScale));
+        uvs.Add(new Vector2(p3.x / uvScale, p3.z / uvScale));
+
+        norms.Add(forward);
+        norms.Add(forward);
+        norms.Add(forward);
+        norms.Add(forward);
+
+        tris.Add(idx + 0);
+        tris.Add(idx + 2);
+        tris.Add(idx + 1);
+
+        tris.Add(idx + 1);
+        tris.Add(idx + 2);
+        tris.Add(idx + 3);
+
+        var mesh = new Mesh();
+        mesh.name = $"Mesh_{name}";
+        mesh.SetVertices(verts);
+        mesh.SetUVs(0, uvs);
+        mesh.SetNormals(norms);
+        mesh.SetTriangles(tris, 0);
+        mesh.RecalculateBounds();
+        mesh.RecalculateTangents();
+
+        var mf = roadGO.AddComponent<MeshFilter>();
+        mf.sharedMesh = mesh;
+
+        var mr = roadGO.AddComponent<MeshRenderer>();
+        mr.sharedMaterial = roadMat;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        mr.receiveShadows = true;
+
+        return roadGO;
+    }
+
+    // Helper: Buat pelataran alun-alun melingkar batu paving (Central Plaza)
+    static GameObject CreateCircularPlaza(
+        Transform parent,
+        string name,
+        Vector3 center,
+        float radius,
+        Material roadMat,
+        float uvScale = 2.5f)
+    {
+        var plazaGO = new GameObject(name);
+        plazaGO.transform.SetParent(parent);
+        plazaGO.transform.position = Vector3.zero;
+        plazaGO.transform.rotation = Quaternion.identity;
+
+        float topY = 0.025f;
+        float botY = -0.05f;
+        int segments = 48;
+
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var norms = new List<Vector3>();
+        var tris = new List<int>();
+
+        // Center vertex
+        int centerIdx = verts.Count;
+        verts.Add(new Vector3(center.x, topY, center.z));
+        uvs.Add(new Vector2(center.x / uvScale, center.z / uvScale));
+        norms.Add(Vector3.up);
+
+        // Perimeter top vertices: indices 1 to segments + 1
+        for (int i = 0; i <= segments; i++)
+        {
+            float angle = (i % segments) * Mathf.PI * 2f / segments;
+            float px = center.x + Mathf.Cos(angle) * radius;
+            float pz = center.z + Mathf.Sin(angle) * radius;
+
+            verts.Add(new Vector3(px, topY, pz));
+            uvs.Add(new Vector2(px / uvScale, pz / uvScale));
+            norms.Add(Vector3.up);
+        }
+
+        // Top disc triangles (fan)
+        for (int i = 1; i <= segments; i++)
+        {
+            tris.Add(centerIdx);
+            tris.Add(i + 1);
+            tris.Add(i);
+        }
+
+        // Perimeter skirt (drop into ground)
+        int skirtStartIdx = verts.Count;
+        for (int i = 0; i <= segments; i++)
+        {
+            float angle = (i % segments) * Mathf.PI * 2f / segments;
+            float cos = Mathf.Cos(angle);
+            float sin = Mathf.Sin(angle);
+            float px = center.x + cos * radius;
+            float pz = center.z + sin * radius;
+
+            // Top
+            verts.Add(new Vector3(px, topY, pz));
+            uvs.Add(new Vector2(px / uvScale, pz / uvScale));
+            norms.Add(new Vector3(cos, 0f, sin));
+
+            // Bot
+            verts.Add(new Vector3(px, botY, pz));
+            uvs.Add(new Vector2(px / uvScale, pz / uvScale));
+            norms.Add(new Vector3(cos, 0f, sin));
+        }
+
+        for (int i = 0; i < segments; i++)
+        {
+            int t0 = skirtStartIdx + i * 2;
+            int b0 = t0 + 1;
+            int t1 = skirtStartIdx + (i + 1) * 2;
+            int b1 = t1 + 1;
+
+            tris.Add(t0);
+            tris.Add(t1);
+            tris.Add(b0);
+
+            tris.Add(b0);
+            tris.Add(t1);
+            tris.Add(b1);
+        }
+
+        var mesh = new Mesh();
+        mesh.name = $"Mesh_{name}";
+        mesh.SetVertices(verts);
+        mesh.SetUVs(0, uvs);
+        mesh.SetNormals(norms);
+        mesh.SetTriangles(tris, 0);
+        mesh.RecalculateBounds();
+        mesh.RecalculateTangents();
+
+        var mf = plazaGO.AddComponent<MeshFilter>();
+        mf.sharedMesh = mesh;
+
+        var mr = plazaGO.AddComponent<MeshRenderer>();
+        mr.sharedMaterial = roadMat;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        mr.receiveShadows = true;
+
+        return plazaGO;
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -1380,8 +1678,10 @@ public static class SceneSetupTool
         {
             float x = Random.Range(-28f, 28f);
             float z = Random.Range(-28f, 28f);
-            // Jangan taruh di tengah alun-alun (radius 5m)
-            if (Mathf.Sqrt(x * x + z * z) < 5f) continue;
+            // Jangan taruh di atas alun-alun pusat (radius 9.5m) atau di atas badan jalan utama
+            if (Mathf.Sqrt(x * x + z * z) < 9.5f) continue;
+            if (Mathf.Abs(x) < 2.5f) continue; // Koridor Jalan Utara & Selatan
+            if (Mathf.Abs(z) < 2.5f) continue; // Koridor Jalan Timur & Barat
             Vector3 pos = new Vector3(x, 0f, z);
             RealisticGrassBuilder.BuildGrassClump(pos, 6, 2.0f, grassRoot.transform, grassMat);
         }
@@ -1555,22 +1855,25 @@ public static class SceneSetupTool
         var autumnLeafMat = AssetMaterialSetup.SetupProceduralFoliageMaterial("AUTUMN");
 
         // ── JALAN PENGHUBUNG KE 4 ZONA BARU ──
-        // Jalan Utara (Z=56 ke Z=160)
-        for (float z = 56f; z <= 160f; z += 4.5f)
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(0, 0.02f, z),
-                Quaternion.identity, new Vector3(1.2f, 1f, 1.2f), expandRoot.transform, slavicMat);
-        // Jalan Selatan (Z=-56 ke Z=-160)
-        for (float z = -56f; z >= -160f; z -= 4.5f)
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(0, 0.02f, z),
-                Quaternion.identity, new Vector3(1.2f, 1f, 1.2f), expandRoot.transform, slavicMat);
-        // Jalan Barat (X=-80 ke X=-160, Z=0)
-        for (float x = -80f; x >= -160f; x -= 4.5f)
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, 0),
-                Quaternion.Euler(0, 90f, 0), new Vector3(1.2f, 1f, 1.2f), expandRoot.transform, slavicMat);
-        // Jalan Timur (X=80 ke X=160, Z=0)
-        for (float x = 80f; x <= 160f; x += 4.5f)
-            InstantiateArtModel("EA03_Environment_Road_Cobble_01a", new Vector3(x, 0.02f, 0),
-                Quaternion.Euler(0, 90f, 0), new Vector3(1.2f, 1f, 1.2f), expandRoot.transform, slavicMat);
+        var roadMat = GetOrCreateVillageRoadMaterial();
+        var expandRoads = new GameObject("Expansion_Road_Network");
+        expandRoads.transform.SetParent(expandRoot.transform);
+
+        // Jalan Utama Utara ke Desa Pegunungan (Z=40 ke Z=160, lebar 4m)
+        CreateContinuousPavedRoad(expandRoads.transform, "Road_North_Expansion",
+            new Vector3(0, 0, 40f), new Vector3(0, 0, 160f), 4.0f, roadMat, 2.5f);
+
+        // Jalan Utama Selatan ke Gerbang Benteng Kuno (Z=-48 ke Z=-160, lebar 4m)
+        CreateContinuousPavedRoad(expandRoads.transform, "Road_South_Expansion",
+            new Vector3(0, 0, -48f), new Vector3(0, 0, -160f), 4.0f, roadMat, 2.5f);
+
+        // Jalan Utama Barat ke Lembah Pertanian Luas & Kincir Angin (X=-66 ke X=-160, lebar 4m)
+        CreateContinuousPavedRoad(expandRoads.transform, "Road_West_Expansion",
+            new Vector3(-66f, 0, 0), new Vector3(-160f, 0, 0), 4.0f, roadMat, 2.5f);
+
+        // Jalan Utama Timur ke Hutan Belantara & Makam Kuno (X=66 ke X=160, lebar 4m)
+        CreateContinuousPavedRoad(expandRoads.transform, "Road_East_Expansion",
+            new Vector3(66f, 0, 0), new Vector3(160f, 0, 0), 4.0f, roadMat, 2.5f);
 
         // ════════════════════════════════════════════════════════════════
         // ZONA UTARA — DESA PEGUNUNGAN ELDARA ATAS (Z=160-220)
