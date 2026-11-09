@@ -100,8 +100,16 @@ public static class RealisticGrassBuilder
             Vector2 circle = Random.insideUnitCircle * radius;
             Vector3 pos = center + new Vector3(circle.x, 0, circle.y);
             if (IsPositionOnStoneOrRoad(pos)) continue;
-            float scale = Random.Range(0.70f, 1.0f);
+            float scale = Random.Range(0.85f, 1.25f);
             BuildGrassTuft(pos, scale, parent, grassMat);
+
+            // 35% kesempatan menumbuhkan bunga 3D timbul di dalam rumpun rumput
+            if (Random.value < 0.35f)
+            {
+                RealisticFlowerBuilder.FlowerColor col = (RealisticFlowerBuilder.FlowerColor)Random.Range(0, 5);
+                RealisticFlowerBuilder.BuildFlower(pos + new Vector3(Random.Range(-0.25f, 0.25f), 0, Random.Range(-0.25f, 0.25f)),
+                    col, Random.Range(0.85f, 1.20f), parent);
+            }
         }
     }
 
@@ -115,16 +123,20 @@ public static class RealisticGrassBuilder
         var uvs = new List<Vector2>();
         var tris = new List<int>();
 
-        // 3 quad saling silang (sudut 0, 60, dan 120 derajat)
-        float[] angles = { 0f, 60f, 120f };
-        float width = 0.85f;
-        float height = 0.55f;
+        // 5 quad saling silang membentuk rumpun mekar rimbun (0, 36, 72, 108, 144 derajat)
+        float[] angles = { 0f, 36f, 72f, 108f, 144f };
+        float width = 0.95f;
+        float baseHeight = 0.85f;
         float halfW = width * 0.5f;
 
-        foreach (float deg in angles)
+        for (int idxQuad = 0; idxQuad < angles.Length; idxQuad++)
         {
+            float deg = angles[idxQuad];
             int baseIdx = verts.Count;
             Quaternion rot = Quaternion.Euler(0, deg, 0);
+
+            // Variasi tinggi bilah: bilah tengah lebih tinggi dan timbul (0.95m), bilah luar melengkung (0.75m)
+            float h = (idxQuad % 2 == 0) ? baseHeight * 1.12f : baseHeight * 0.88f;
 
             Vector3 right = rot * Vector3.right * halfW;
             Vector3 forward = rot * Vector3.forward;
@@ -133,18 +145,18 @@ public static class RealisticGrassBuilder
             Vector3 b0 = -right;
             Vector3 b1 =  right;
 
-            // Puncak rumput sedikit mekar melengkung ke luar
-            Vector3 t0 = -right * 1.15f + Vector3.up * height;
-            Vector3 t1 =  right * 1.15f + Vector3.up * height;
+            // Puncak rumput mekar melengkung ke luar secara alami
+            Vector3 t0 = -right * 1.25f + Vector3.up * h;
+            Vector3 t1 =  right * 1.25f + Vector3.up * h;
 
             verts.Add(b0);
             verts.Add(b1);
             verts.Add(t1);
             verts.Add(t0);
 
-            // Normal melengkung ke atas agar shading rumput cerah dan menyerap cahaya matahari
-            Vector3 n0 = (Vector3.up * 0.7f - right * 0.3f).normalized;
-            Vector3 n1 = (Vector3.up * 0.7f + right * 0.3f).normalized;
+            // Normal melengkung ke atas agar shading rumput cerah dan menyerap cahaya matahari lembut
+            Vector3 n0 = (Vector3.up * 0.8f - right * 0.3f).normalized;
+            Vector3 n1 = (Vector3.up * 0.8f + right * 0.3f).normalized;
 
             norms.Add(n0);
             norms.Add(n1);

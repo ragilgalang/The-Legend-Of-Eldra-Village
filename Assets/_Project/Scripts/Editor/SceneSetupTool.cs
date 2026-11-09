@@ -148,12 +148,13 @@ public static class SceneSetupTool
         }
         if (grassMat)
         {
-            // Gunakan Flower_Grass.png (1024x1024 seamless) agar tanah tidak memiliki garis-garis kotak grid/border
-            var grassTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/SlavicWorld/Textures/Flower_Grass.png");
+            // Gunakan Clean_Grass_Meadow.png (1024x1024 seamless tanpa gambar bunga ceper 2D) agar tanah rumput hijau murni
+            var grassTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/SlavicWorld/Textures/Clean_Grass_Meadow.png")
+                           ?? AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/SlavicWorld/Textures/Flower_Grass.png");
             if (grassTex)
             {
                 grassMat.SetTexture("_BaseMap", grassTex);
-                grassMat.SetTextureScale("_BaseMap", new Vector2(65f, 65f));
+                grassMat.SetTextureScale("_BaseMap", new Vector2(70f, 70f));
             }
             var normTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/SlavicWorld/Textures/Flower_Grass_NM.png");
             if (normTex)
@@ -1591,7 +1592,7 @@ public static class SceneSetupTool
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  8b. HAMPARAN PADANG RUMPUT 3D REALISTIS & BUNGA LIAR
+    //  8b. HAMPARAN PADANG RUMPUT 3D REALISTIS & BUNGA LIAR TIMBUL
     // ─────────────────────────────────────────────────────────────────────
     static void SetupRealisticGrassFields(Material grassMat)
     {
@@ -1600,48 +1601,74 @@ public static class SceneSetupTool
 
         grassRoot = new GameObject("--- GRASS FIELDS ---");
 
+        var flowerRoot = new GameObject("--- 3D WILDFLOWERS ---");
+        flowerRoot.transform.SetParent(grassRoot.transform);
+
         if (!grassMat) return;
 
-        // 1. Tepi Jalan Setapak di Luar Alun-Alun Desa (Bordir rumput alami di sisi rumput samping jalan)
-        Vector3[] pathwayPoints = {
-            // Tepi Boulevard Utara & Selatan (di sisi rumput X = +/- 3.5m, di luar jalan)
-            new Vector3( 3.5f, 0f,  18f),  new Vector3(-3.5f, 0f,  18f),
-            new Vector3( 3.5f, 0f,  30f),  new Vector3(-3.5f, 0f,  30f),
-            new Vector3( 3.5f, 0f, -18f),  new Vector3(-3.5f, 0f, -18f),
-            new Vector3( 3.5f, 0f, -32f),  new Vector3(-3.5f, 0f, -32f),
-            // Tepi Boulevard Barat & Timur (di sisi rumput Z = +/- 3.5m, di luar jalan)
-            new Vector3( 18f, 0f,   3.5f), new Vector3( 18f, 0f, -3.5f),
-            new Vector3( 32f, 0f,   3.5f), new Vector3( 32f, 0f, -3.5f),
-            new Vector3(-18f, 0f,   3.5f), new Vector3(-18f, 0f, -3.5f),
-            new Vector3(-32f, 0f,   3.5f), new Vector3(-32f, 0f, -3.5f),
-        };
-        foreach (var pt in pathwayPoints)
+        // 1. Tepi Boulevard Jalan Utama (Bordir Rumput Rimbun & Bunga Liar 3D Timbul Sepanjang Jalan)
+        // a. Jalan Utara (Menuju Balai Desa, Z = 9.5 s/d 38)
+        for (float z = 10f; z <= 38f; z += 3.5f)
         {
-            RealisticGrassBuilder.BuildGrassClump(pt, 8, 2.0f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(-2.8f, 0, z), 8, 1.5f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3( 2.8f, 0, z), 8, 1.5f, grassRoot.transform, grassMat);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(-2.9f, 0, z), 4, 1.2f, flowerRoot.transform, RealisticFlowerBuilder.FlowerColor.RedPoppy);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3( 2.9f, 0, z), 4, 1.2f, flowerRoot.transform, RealisticFlowerBuilder.FlowerColor.WhiteDaisy);
         }
 
-        // 2. Pekarangan & Halaman Sekitar Bangunan Desa (Sesuai Tata Letak Baru)
-        Vector3[] yardCenters = {
-            new Vector3(-26f, 0f,  26f), // Pekarangan Rumah Gadang
-            new Vector3( 26f, 0f,  26f), // Pekarangan Joglo
-            new Vector3(  0f, 0f,  42f), // Halaman Balai Desa
-            new Vector3(-28f, 0f,  14f), // Halaman Rumah Petani
-            new Vector3(-48f, 0f,  14f), // Halaman Lumbung Barn
-            new Vector3(-28f, 0f, -16f), // Tepi Kolam Danau
-            new Vector3( 28f, 0f,  14f), // Halaman Bengkel Pandai Besi
-            new Vector3( 44f, 0f,  14f), // Halaman Gudang Logistik
-            new Vector3( 28f, 0f, -16f), // Halaman Log Cabin Pemburu
-            new Vector3( 48f, 0f, -16f), // Halaman Villa Modern
-            new Vector3(-20f, 0f, -34f), // Halaman Chalet Pegunungan
-            new Vector3(-10f, 0f, -44f), // Halaman A-Frame Singgah
-            new Vector3( 24f, 0f, -34f), // Taman Zen Minka Dukun
-        };
-        foreach (var yc in yardCenters)
+        // b. Jalan Selatan (Menuju Gerbang Benteng, Z = -10 s/d -46)
+        for (float z = -10f; z >= -46f; z -= 3.5f)
         {
-            RealisticGrassBuilder.BuildGrassClump(yc, 16, 5.0f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(-2.8f, 0, z), 8, 1.5f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3( 2.8f, 0, z), 8, 1.5f, grassRoot.transform, grassMat);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(-2.9f, 0, z), 4, 1.2f, flowerRoot.transform, RealisticFlowerBuilder.FlowerColor.GoldenDandelion);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3( 2.9f, 0, z), 4, 1.2f, flowerRoot.transform, RealisticFlowerBuilder.FlowerColor.MysticPurple);
         }
 
-        // 3. Pangkal Pohon-Pohon Desa & Semak Alami (Sinkron dengan innerTrees baru)
+        // c. Jalan Timur (Menuju Kawasan Pengrajin, X = 10 s/d 64)
+        for (float x = 10f; x <= 64f; x += 3.5f)
+        {
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0,  2.8f), 8, 1.5f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0, -2.8f), 8, 1.5f, grassRoot.transform, grassMat);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(x, 0,  2.9f), 4, 1.2f, flowerRoot.transform, RealisticFlowerBuilder.FlowerColor.SkyBluebell);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(x, 0, -2.9f), 4, 1.2f, flowerRoot.transform, RealisticFlowerBuilder.FlowerColor.GoldenDandelion);
+        }
+
+        // d. Jalan Barat (Menuju Pertanian & Kincir Angin, X = -10 s/d -64)
+        for (float x = -10f; x >= -64f; x -= 3.5f)
+        {
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0,  2.8f), 8, 1.5f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0, -2.8f), 8, 1.5f, grassRoot.transform, grassMat);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(x, 0,  2.9f), 4, 1.2f, flowerRoot.transform, RealisticFlowerBuilder.FlowerColor.WhiteDaisy);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(x, 0, -2.9f), 4, 1.2f, flowerRoot.transform, RealisticFlowerBuilder.FlowerColor.RedPoppy);
+        }
+
+        // 2. Taman Bunga Tematik & Pekarangan Rumah Warga (Themed Flower Gardens)
+        var gardenConfigs = new (Vector3 center, RealisticFlowerBuilder.FlowerColor col1, RealisticFlowerBuilder.FlowerColor col2, int flowerCount, int grassCount)[]
+        {
+            (new Vector3(-26f, 0f,  26f), RealisticFlowerBuilder.FlowerColor.RedPoppy,        RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       18, 20), // Taman Gadang
+            (new Vector3( 26f, 0f,  26f), RealisticFlowerBuilder.FlowerColor.GoldenDandelion, RealisticFlowerBuilder.FlowerColor.MysticPurple,    18, 20), // Taman Joglo
+            (new Vector3(  0f, 0f,  43f), RealisticFlowerBuilder.FlowerColor.RedPoppy,        RealisticFlowerBuilder.FlowerColor.SkyBluebell,      24, 24), // Taman Balai Desa
+            (new Vector3(-28f, 0f,  14f), RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       RealisticFlowerBuilder.FlowerColor.GoldenDandelion, 16, 20), // Kebun Petani
+            (new Vector3(-48f, 0f,  14f), RealisticFlowerBuilder.FlowerColor.GoldenDandelion, RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       16, 24), // Lumbung Gandum
+            (new Vector3(-28f, 0f, -16f), RealisticFlowerBuilder.FlowerColor.SkyBluebell,     RealisticFlowerBuilder.FlowerColor.MysticPurple,    22, 24), // Tepi Danau Alami
+            (new Vector3( 28f, 0f,  14f), RealisticFlowerBuilder.FlowerColor.GoldenDandelion, RealisticFlowerBuilder.FlowerColor.RedPoppy,        14, 20), // Bengkel Pandai Besi
+            (new Vector3( 44f, 0f,  14f), RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       RealisticFlowerBuilder.FlowerColor.GoldenDandelion, 14, 20), // Gudang Logistik
+            (new Vector3( 28f, 0f, -16f), RealisticFlowerBuilder.FlowerColor.MysticPurple,    RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       18, 20), // Halaman Log Cabin
+            (new Vector3( 48f, 0f, -16f), RealisticFlowerBuilder.FlowerColor.SkyBluebell,     RealisticFlowerBuilder.FlowerColor.RedPoppy,        18, 20), // Halaman Villa
+            (new Vector3(-20f, 0f, -34f), RealisticFlowerBuilder.FlowerColor.RedPoppy,        RealisticFlowerBuilder.FlowerColor.SkyBluebell,      18, 20), // Chalet Pegunungan
+            (new Vector3(-10f, 0f, -44f), RealisticFlowerBuilder.FlowerColor.GoldenDandelion, RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       16, 18), // A-Frame Singgah
+            (new Vector3( 24f, 0f, -34f), RealisticFlowerBuilder.FlowerColor.MysticPurple,    RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       22, 20), // Zen Garden Dukun
+        };
+
+        foreach (var gc in gardenConfigs)
+        {
+            RealisticGrassBuilder.BuildGrassClump(gc.center, gc.grassCount, 5.5f, grassRoot.transform, grassMat);
+            RealisticFlowerBuilder.BuildFlowerClump(gc.center, gc.flowerCount / 2, 4.5f, flowerRoot.transform, gc.col1);
+            RealisticFlowerBuilder.BuildFlowerClump(gc.center, gc.flowerCount / 2, 4.5f, flowerRoot.transform, gc.col2);
+        }
+
+        // 3. Pangkal Pepohonan Rindang Desa (Rings of Grass & Flowers under Canopies)
         var innerTrees = new Vector3[]
         {
             new Vector3(-6.5f, 0f, 16f), new Vector3( 6.5f, 0f, 16f),
@@ -1652,62 +1679,74 @@ public static class SceneSetupTool
             new Vector3( 36f, 0f,  6.5f), new Vector3( 36f, 0f, -6.5f),
             new Vector3(-18f, 0f,  6.5f), new Vector3(-18f, 0f, -6.5f),
             new Vector3(-36f, 0f,  6.5f), new Vector3(-36f, 0f, -6.5f),
-            new Vector3(-38f, 0f, 36f), new Vector3( 38f, 0f, 36f),
-            new Vector3(-58f, 0f, 22f), new Vector3(-38f, 0f,-26f),
-            new Vector3( 58f, 0f,-24f), new Vector3( 34f, 0f,-42f),
-            new Vector3(-30f, 0f,-44f), new Vector3( 14f, 0f,-46f),
+            new Vector3(-38f, 0f, 36f),  new Vector3( 38f, 0f, 36f),
+            new Vector3(-58f, 0f, 22f),  new Vector3(-38f, 0f,-26f),
+            new Vector3( 58f, 0f,-24f),  new Vector3( 34f, 0f,-42f),
+            new Vector3(-30f, 0f,-44f),  new Vector3( 14f, 0f,-46f),
         };
         foreach (var tp in innerTrees)
         {
-            RealisticGrassBuilder.BuildGrassClump(tp, 10, 3.0f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(tp, 12, 3.2f, grassRoot.transform, grassMat);
+            RealisticFlowerBuilder.BuildFlowerClump(tp, 6, 2.8f, flowerRoot.transform);
         }
 
         // 4. Sepanjang Garis Perimeter Pagar Kayu Benteng (Perimeter 160x106m)
-        // Sisi Utara & Selatan
-        for (float x = -75f; x <= 75f; x += 10f)
+        for (float x = -75f; x <= 75f; x += 8f)
         {
             if (Mathf.Abs(x) < 6f) continue;
-            RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0,  50f), 6, 3.0f, grassRoot.transform, grassMat);
-            RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0, -52f), 6, 3.0f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0,  50f), 8, 3.5f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0, -52f), 8, 3.5f, grassRoot.transform, grassMat);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(x, 0,  50f), 4, 3.0f, flowerRoot.transform);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(x, 0, -52f), 4, 3.0f, flowerRoot.transform);
         }
-        // Sisi Timur & Barat
-        for (float z = -48f; z <= 48f; z += 10f)
+        for (float z = -48f; z <= 48f; z += 8f)
         {
-            RealisticGrassBuilder.BuildGrassClump(new Vector3( 78f, 0, z), 6, 3.0f, grassRoot.transform, grassMat);
-            RealisticGrassBuilder.BuildGrassClump(new Vector3(-78f, 0, z), 6, 3.0f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3( 78f, 0, z), 8, 3.5f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(-78f, 0, z), 8, 3.5f, grassRoot.transform, grassMat);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3( 78f, 0, z), 4, 3.0f, flowerRoot.transform);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(-78f, 0, z), 4, 3.0f, flowerRoot.transform);
         }
 
-        // 5. Hamparan Padang Rumput Liar Luar Desa — lebah rapat, cincin ganda
+        // 5. Hamparan Padang Rumput Liar Luar Desa — lebat & rapat
         // Cincin dalam (36-60m)
-        int meadowInner = 72;
+        int meadowInner = 80;
         for (int i = 0; i < meadowInner; i++)
         {
             float ang = (i / (float)meadowInner) * 360f * Mathf.Deg2Rad;
             float r = Random.Range(36f, 60f);
             Vector3 pos = new Vector3(Mathf.Cos(ang) * r, 0f, Mathf.Sin(ang) * r);
-            RealisticGrassBuilder.BuildGrassClump(pos, 10, 4.5f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(pos, 12, 4.5f, grassRoot.transform, grassMat);
+            if (i % 2 == 0)
+                RealisticFlowerBuilder.BuildFlowerClump(pos, 5, 3.5f, flowerRoot.transform);
         }
-        // Cincin luar (60-100m) — semakin lebat di dekat hutan
-        int meadowOuter = 90;
+        // Cincin luar (60-105m) — semakin lebat di dekat hutan
+        int meadowOuter = 110;
         for (int i = 0; i < meadowOuter; i++)
         {
             float ang = (i / (float)meadowOuter) * 360f * Mathf.Deg2Rad;
             float r = Random.Range(60f, 105f);
             Vector3 pos = new Vector3(Mathf.Cos(ang) * r, 0f, Mathf.Sin(ang) * r);
-            RealisticGrassBuilder.BuildGrassClump(pos, 12, 5.5f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(pos, 14, 5.5f, grassRoot.transform, grassMat);
+            if (i % 2 == 0)
+                RealisticFlowerBuilder.BuildFlowerClump(pos, 6, 4.0f, flowerRoot.transform);
         }
 
-        // 6. Tambalan Rumput Acak di Dalam Desa (mengisi area kosong antar bangunan)
-        for (int i = 0; i < 50; i++)
+        // 6. Hamparan Rumput Rimbun & Taburan Bunga 3D Timbul di Seluruh Lapangan Desa
+        for (int i = 0; i < 160; i++)
         {
-            float x = Random.Range(-28f, 28f);
-            float z = Random.Range(-28f, 28f);
-            // Jangan taruh di atas alun-alun pusat (radius 9.5m) atau di atas badan jalan utama
-            if (Mathf.Sqrt(x * x + z * z) < 9.5f) continue;
-            if (Mathf.Abs(x) < 2.5f) continue; // Koridor Jalan Utara & Selatan
-            if (Mathf.Abs(z) < 2.5f) continue; // Koridor Jalan Timur & Barat
+            float x = Random.Range(-32f, 32f);
+            float z = Random.Range(-32f, 32f);
+
+            // Filter agar tidak spawn di atas alun-alun atau badan jalan
             Vector3 pos = new Vector3(x, 0f, z);
-            RealisticGrassBuilder.BuildGrassClump(pos, 6, 2.0f, grassRoot.transform, grassMat);
+            if (RealisticGrassBuilder.IsPositionOnStoneOrRoad(pos)) continue;
+
+            RealisticGrassBuilder.BuildGrassClump(pos, 8, 2.5f, grassRoot.transform, grassMat);
+
+            if (Random.value < 0.65f)
+            {
+                RealisticFlowerBuilder.BuildFlowerClump(pos, 4, 2.0f, flowerRoot.transform);
+            }
         }
     }
 
