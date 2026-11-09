@@ -771,6 +771,130 @@ public static class SceneSetupTool
     }
 
     /// <summary>
+    /// Membuat mesh permukaan air berteselasi cincin konsentris halus (Tessellated Water Disc Mesh)
+    /// </summary>
+    static Mesh CreateTessellatedWaterMesh(string name, float radius, float yLevel, int rings = 4, int segments = 36)
+    {
+        var mesh = new Mesh { name = name };
+        var vertices = new List<Vector3>();
+        var normals = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var triangles = new List<int>();
+
+        // Titik Pusat (Center vertex)
+        vertices.Add(new Vector3(0f, yLevel, 0f));
+        normals.Add(Vector3.up);
+        uvs.Add(new Vector2(0.5f, 0.5f));
+
+        // Cincin konsentris titik (Concentric rings)
+        for (int r = 1; r <= rings; r++)
+        {
+            float ringR = radius * ((float)r / rings);
+            for (int s = 0; s < segments; s++)
+            {
+                float angle = (float)s / segments * Mathf.PI * 2f;
+                float cos = Mathf.Cos(angle);
+                float sin = Mathf.Sin(angle);
+
+                vertices.Add(new Vector3(cos * ringR, yLevel, sin * ringR));
+                normals.Add(Vector3.up);
+                uvs.Add(new Vector2(0.5f + cos * 0.5f * ((float)r / rings), 0.5f + sin * 0.5f * ((float)r / rings)));
+            }
+        }
+
+        // Segitiga untuk lingkaran pusat
+        for (int s = 0; s < segments; s++)
+        {
+            int next = (s + 1) % segments;
+            // Sisi Atas
+            triangles.Add(0);
+            triangles.Add(1 + s);
+            triangles.Add(1 + next);
+            // Sisi Bawah (Double-sided)
+            triangles.Add(0);
+            triangles.Add(1 + next);
+            triangles.Add(1 + s);
+        }
+
+        // Segitiga di antara cincin-cincin konsentris
+        for (int r = 1; r < rings; r++)
+        {
+            int innerStart = 1 + (r - 1) * segments;
+            int outerStart = 1 + r * segments;
+
+            for (int s = 0; s < segments; s++)
+            {
+                int next = (s + 1) % segments;
+
+                int i0 = innerStart + s;
+                int i1 = innerStart + next;
+                int o0 = outerStart + s;
+                int o1 = outerStart + next;
+
+                // Sisi Atas
+                triangles.Add(i0);
+                triangles.Add(o0);
+                triangles.Add(i1);
+
+                triangles.Add(i1);
+                triangles.Add(o0);
+                triangles.Add(o1);
+
+                // Sisi Bawah (Double-sided)
+                triangles.Add(i0);
+                triangles.Add(i1);
+                triangles.Add(o0);
+
+                triangles.Add(i1);
+                triangles.Add(o1);
+                triangles.Add(o0);
+            }
+        }
+
+        mesh.SetVertices(vertices);
+        mesh.SetNormals(normals);
+        mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(triangles, 0);
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    /// <summary>
+    /// Mendapatkan atau membuat material air sumur desa fotorealistik (Realistic PBR Water Material)
+    /// </summary>
+    static Material GetOrCreateRealisticWaterMaterial()
+    {
+        string matPath = "Assets/_Project/Art/MedievalVillage/Materials/M_Village_Well_Water.mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        var shader = Shader.Find("Eldara/RealisticWater");
+        if (!mat)
+        {
+            if (shader) mat = new Material(shader);
+            else mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+
+            AssetDatabase.CreateAsset(mat, matPath);
+        }
+        else if (shader && mat.shader != shader)
+        {
+            mat.shader = shader;
+            EditorUtility.SetDirty(mat);
+        }
+
+        // Konfigurasi parameter air jernih dan pantulan realistis
+        mat.SetColor("_DeepColor", new Color(0.03f, 0.18f, 0.32f, 0.90f));     // Biru safir kedalaman
+        mat.SetColor("_ShallowColor", new Color(0.16f, 0.62f, 0.78f, 0.65f));  // Toska jernih berkilau
+        mat.SetColor("_FresnelColor", new Color(0.85f, 0.95f, 1.0f, 1.0f));    // Pantulan langit cerah
+        mat.SetFloat("_Smoothness", 0.96f);
+        mat.SetFloat("_WaveSpeed", 1.35f);
+        mat.SetFloat("_WaveScale", 7.5f);
+        mat.SetFloat("_WaveStrength", 0.42f);
+        mat.SetFloat("_RippleFrequency", 24.0f);
+        mat.SetFloat("_RippleSpeed", 2.6f);
+        mat.SetFloat("_RippleStrength", 0.38f);
+        return mat;
+    }
+
+    /// <summary>
     /// Membangun Sumur Batu Kuno Megah Berongga (Hollow Stone Well) di pusat Alun-Alun desa
     /// Dilengkapi rongga lubang sumur dalam dengan air jernih berkilau, dinding batu tekstur abad pertengahan,
     /// pilar kayu bertiang siku, penggulung tali kerekan, ember kayu bertali, dan atap genteng sirap.
@@ -786,7 +910,7 @@ public static class SceneSetupTool
         var rockMat  = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/MedievalVillage/Materials/M_Medieval_RockTrim.mat");
         var woodMat  = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/MedievalVillage/Materials/M_Medieval_WoodTrim.mat");
         var roofMat  = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/MedievalVillage/Materials/M_Medieval_RoundTiles.mat");
-        var waterMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/HouseMaterials/M_House_Water.mat");
+        var waterMat = GetOrCreateRealisticWaterMaterial();
         var darkMat  = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/HouseMaterials/M_House_Dark.mat");
         var metalMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/HouseMaterials/M_House_Metal.mat");
 
@@ -803,12 +927,35 @@ public static class SceneSetupTool
         var rimMesh = CreateHollowRingMesh("Well_StoneRim_Mesh", outerR: 1.30f, innerR: 0.85f, topY: 0.99f, bottomY: 0.93f, segments: 32, addInnerWall: true);
         CreateMeshObject("Well_StoneRim", wellRoot.transform, rimMesh, rockMat, new Color(0.55f, 0.53f, 0.50f));
 
-        // 4. Dasar Gelap & Permukaan Air di Dalam Rongga Sumur (Shaft Floor & Water)
+        // 4. Dasar Gelap & Permukaan Air Fotorealistik di Dalam Rongga Sumur (Shaft Floor & Water)
         var floorMesh = CreateCircularDiscMesh("Well_Floor_Mesh", radius: 0.88f, yLevel: 0.05f, segments: 32);
-        CreateMeshObject("Well_ShaftFloor", wellRoot.transform, floorMesh, darkMat, new Color(0.12f, 0.12f, 0.12f));
+        CreateMeshObject("Well_ShaftFloor", wellRoot.transform, floorMesh, rockMat, new Color(0.18f, 0.18f, 0.16f));
 
-        // Terletak di ketinggian Y = 0.35m (64 cm di bawah bibir sumur), memberi rongga lubang sumur yang sangat nyata!
-        var waterMesh = CreateCircularDiscMesh("Well_Water_Mesh", radius: 0.87f, yLevel: 0.35f, segments: 32);
+        // Kerikil & koin kuno di dasar sumur di bawah air jernih
+        var floorProps = new GameObject("Well_Floor_Pebbles");
+        floorProps.transform.SetParent(wellRoot.transform, false);
+        Vector3[] pebbleOffsets = {
+            new Vector3( 0.22f, 0.06f,  0.18f),
+            new Vector3(-0.30f, 0.06f,  0.15f),
+            new Vector3( 0.15f, 0.06f, -0.28f),
+            new Vector3(-0.18f, 0.06f, -0.22f),
+            new Vector3( 0.35f, 0.06f, -0.05f),
+        };
+        for (int p = 0; p < pebbleOffsets.Length; p++)
+        {
+            var pebble = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            pebble.name = $"Pebble_{p}";
+            pebble.transform.SetParent(floorProps.transform, false);
+            pebble.transform.localPosition = pebbleOffsets[p];
+            pebble.transform.localScale = new Vector3(0.08f, 0.02f, 0.08f);
+            if (p % 2 == 0) ApplyColor(pebble, new Color(0.85f, 0.72f, 0.25f)); // Koin kuno keemasan
+            else if (darkMat) pebble.GetComponent<Renderer>().sharedMaterial = darkMat;
+            Object.DestroyImmediate(pebble.GetComponent<Collider>());
+        }
+
+        // Permukaan Air Bergelombang Realistis (Tessellated Dynamic Water Surface)
+        // Terletak di ketinggian Y = 0.35m (64 cm di bawah bibir sumur), dengan animasi riak gelombang alami
+        var waterMesh = CreateTessellatedWaterMesh("Well_Water_Mesh", radius: 0.875f, yLevel: 0.35f, rings: 4, segments: 36);
         CreateMeshObject("Well_Water", wellRoot.transform, waterMesh, waterMat, new Color(0.12f, 0.45f, 0.68f));
 
         // 8 Box Colliders membentuk cincin pelindung solid di sekeliling dinding sumur
@@ -826,17 +973,6 @@ public static class SceneSetupTool
             var bc = colGo.AddComponent<BoxCollider>();
             bc.size = new Vector3(0.90f, 1.0f, 0.38f);
         }
-
-        // Pendaran kilau lembut air di dalam lubang sumur
-        var waterLightGo = new GameObject("Well_WaterGlow");
-        waterLightGo.transform.SetParent(wellRoot.transform, false);
-        waterLightGo.transform.localPosition = new Vector3(0, 0.45f, 0);
-        var wl = waterLightGo.AddComponent<Light>();
-        wl.type = LightType.Point;
-        wl.color = new Color(0.2f, 0.65f, 0.95f);
-        wl.intensity = 0.6f;
-        wl.range = 2.5f;
-        wl.shadows = LightShadows.None;
 
         // 5. Dua Pilar Kayu Solid (Hand-Hewn Timber Posts)
         GameObject MakeTimber(string name, Vector3 localPos, Vector3 localScale, Quaternion? localRot = null)
