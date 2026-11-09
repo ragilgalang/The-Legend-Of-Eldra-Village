@@ -520,9 +520,10 @@ public static class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Membuat mesh cincin / silinder berlubang (Hollow Ring / Shaft Tube) untuk sumur atau plinth
+    /// Membuat mesh cincin / silinder berlubang (Hollow Ring / Shaft Tube) untuk sumur atau plinth.
+    /// Dibuat double-sided sehingga memiliki ketebalan nyata dan terlihat solid dari segala sudut tanpa tembus pandang.
     /// </summary>
-    static Mesh CreateHollowRingMesh(string name, float outerR, float innerR, float topY, float bottomY, int segments = 32, bool addInnerWall = true, bool addBottomFloor = false)
+    static Mesh CreateHollowRingMesh(string name, float outerR, float innerR, float topY, float bottomY, int segments = 32, bool addInnerWall = true)
     {
         var mesh = new Mesh { name = name };
         var vertices = new List<Vector3>();
@@ -530,37 +531,54 @@ public static class SceneSetupTool
         var uvs = new List<Vector2>();
         var triangles = new List<int>();
 
-        // 1. Dinding Luar (Outer Wall: normal mengarah ke luar)
+        void AddQuad(int v0, int v1, int v2, int v3)
+        {
+            // Sisi Depan (Clockwise)
+            triangles.Add(v0);
+            triangles.Add(v1);
+            triangles.Add(v2);
+
+            triangles.Add(v0);
+            triangles.Add(v2);
+            triangles.Add(v3);
+
+            // Sisi Belakang (Double-sided - memastikan tidak pernah tembus pandang dari sudut manapun)
+            triangles.Add(v0);
+            triangles.Add(v2);
+            triangles.Add(v1);
+
+            triangles.Add(v0);
+            triangles.Add(v3);
+            triangles.Add(v2);
+        }
+
+        // 1. Dinding Luar (Outer Wall)
+        int outerStart = vertices.Count;
         for (int i = 0; i <= segments; i++)
         {
             float angle = (float)i / segments * Mathf.PI * 2f;
             float cos = Mathf.Cos(angle);
             float sin = Mathf.Sin(angle);
-            Vector3 norm = new Vector3(cos, 0f, sin);
             float u = (float)i / segments * 4f;
 
+            // v0: bawah luar
             vertices.Add(new Vector3(cos * outerR, bottomY, sin * outerR));
-            normals.Add(norm);
+            normals.Add(new Vector3(cos, 0f, sin));
             uvs.Add(new Vector2(u, 0f));
 
+            // v1: atas luar
             vertices.Add(new Vector3(cos * outerR, topY, sin * outerR));
-            normals.Add(norm);
+            normals.Add(new Vector3(cos, 0f, sin));
             uvs.Add(new Vector2(u, 1f));
         }
 
         for (int i = 0; i < segments; i++)
         {
-            int baseIdx = i * 2;
-            triangles.Add(baseIdx);
-            triangles.Add(baseIdx + 1);
-            triangles.Add(baseIdx + 2);
-
-            triangles.Add(baseIdx + 1);
-            triangles.Add(baseIdx + 3);
-            triangles.Add(baseIdx + 2);
+            int b = outerStart + i * 2;
+            AddQuad(b, b + 1, b + 3, b + 2);
         }
 
-        // 2. Bibir Atas (Top Rim: normal mengarah lurus ke atas / UP)
+        // 2. Bibir Atas (Top Rim: antara outerR dan innerR di topY)
         int rimStart = vertices.Count;
         for (int i = 0; i <= segments; i++)
         {
@@ -568,10 +586,12 @@ public static class SceneSetupTool
             float cos = Mathf.Cos(angle);
             float sin = Mathf.Sin(angle);
 
+            // Atas luar
             vertices.Add(new Vector3(cos * outerR, topY, sin * outerR));
             normals.Add(Vector3.up);
             uvs.Add(new Vector2(0.5f + cos * 0.5f, 0.5f + sin * 0.5f));
 
+            // Atas dalam
             vertices.Add(new Vector3(cos * innerR, topY, sin * innerR));
             normals.Add(Vector3.up);
             uvs.Add(new Vector2(0.5f + cos * 0.35f, 0.5f + sin * 0.35f));
@@ -579,17 +599,11 @@ public static class SceneSetupTool
 
         for (int i = 0; i < segments; i++)
         {
-            int baseIdx = rimStart + i * 2;
-            triangles.Add(baseIdx);
-            triangles.Add(baseIdx + 2);
-            triangles.Add(baseIdx + 1);
-
-            triangles.Add(baseIdx + 2);
-            triangles.Add(baseIdx + 3);
-            triangles.Add(baseIdx + 1);
+            int b = rimStart + i * 2;
+            AddQuad(b, b + 1, b + 3, b + 2);
         }
 
-        // 3. Dinding Dalam (Inner Shaft Wall: normal mengarah ke DALAM rongga lubang sumur)
+        // 3. Dinding Dalam (Inner Shaft Wall)
         if (addInnerWall)
         {
             int innerStart = vertices.Count;
@@ -598,55 +612,23 @@ public static class SceneSetupTool
                 float angle = (float)i / segments * Mathf.PI * 2f;
                 float cos = Mathf.Cos(angle);
                 float sin = Mathf.Sin(angle);
-                Vector3 norm = new Vector3(-cos, 0f, -sin);
                 float u = (float)i / segments * 3f;
 
+                // Atas dalam
                 vertices.Add(new Vector3(cos * innerR, topY, sin * innerR));
-                normals.Add(norm);
+                normals.Add(new Vector3(-cos, 0f, -sin));
                 uvs.Add(new Vector2(u, 1f));
 
+                // Bawah dalam
                 vertices.Add(new Vector3(cos * innerR, bottomY, sin * innerR));
-                normals.Add(norm);
+                normals.Add(new Vector3(-cos, 0f, -sin));
                 uvs.Add(new Vector2(u, 0f));
             }
 
             for (int i = 0; i < segments; i++)
             {
-                int baseIdx = innerStart + i * 2;
-                triangles.Add(baseIdx + 2);
-                triangles.Add(baseIdx);
-                triangles.Add(baseIdx + 1);
-
-                triangles.Add(baseIdx + 2);
-                triangles.Add(baseIdx + 1);
-                triangles.Add(baseIdx + 3);
-            }
-        }
-
-        // 4. Dasar Kedalaman Lubang Sumur (Bottom Floor: normal mengarah ke atas / UP)
-        if (addBottomFloor)
-        {
-            int floorStart = vertices.Count;
-            vertices.Add(new Vector3(0f, bottomY, 0f));
-            normals.Add(Vector3.up);
-            uvs.Add(new Vector2(0.5f, 0.5f));
-
-            for (int i = 0; i <= segments; i++)
-            {
-                float angle = (float)i / segments * Mathf.PI * 2f;
-                float cos = Mathf.Cos(angle);
-                float sin = Mathf.Sin(angle);
-
-                vertices.Add(new Vector3(cos * innerR, bottomY, sin * innerR));
-                normals.Add(Vector3.up);
-                uvs.Add(new Vector2(0.5f + cos * 0.5f, 0.5f + sin * 0.5f));
-            }
-
-            for (int i = 0; i < segments; i++)
-            {
-                triangles.Add(floorStart);
-                triangles.Add(floorStart + 1 + i);
-                triangles.Add(floorStart + 1 + i + 1);
+                int b = innerStart + i * 2;
+                AddQuad(b, b + 1, b + 3, b + 2);
             }
         }
 
@@ -659,7 +641,7 @@ public static class SceneSetupTool
     }
 
     /// <summary>
-    /// Membuat mesh cakram lingkaran horizontal (Circular Disc Mesh) untuk permukaan air sumur
+    /// Membuat mesh cakram lingkaran horizontal (Circular Disc Mesh) double-sided untuk permukaan air atau lantai sumur
     /// </summary>
     static Mesh CreateCircularDiscMesh(string name, float radius, float yLevel, int segments = 32)
     {
@@ -686,9 +668,15 @@ public static class SceneSetupTool
 
         for (int i = 0; i < segments; i++)
         {
+            // Sisi Atas
             triangles.Add(0);
             triangles.Add(1 + i);
             triangles.Add(1 + i + 1);
+
+            // Sisi Bawah (Double-sided)
+            triangles.Add(0);
+            triangles.Add(1 + i + 1);
+            triangles.Add(1 + i);
         }
 
         mesh.SetVertices(vertices);
@@ -803,22 +791,41 @@ public static class SceneSetupTool
         var metalMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/HouseMaterials/M_House_Metal.mat");
 
         // 1. Pelataran Tangga Melingkar Berlubang Dasar Sumur (Hollow Foundation Plinth)
-        var stepMesh = CreateHollowRingMesh("Well_StepBase_Mesh", outerR: 1.75f, innerR: 0.95f, topY: 0.10f, bottomY: 0f, segments: 32, addInnerWall: false, addBottomFloor: false);
+        var stepMesh = CreateHollowRingMesh("Well_StepBase_Mesh", outerR: 1.65f, innerR: 0.95f, topY: 0.10f, bottomY: 0f, segments: 32, addInnerWall: false);
         CreateMeshObject("Well_StepBase", wellRoot.transform, stepMesh, rockMat, new Color(0.62f, 0.60f, 0.55f));
 
         // 2. Dinding Cincin Batu Sumur Berongga (Main Hollow Stone Curb Shaft)
-        // Memiliki lubang dalam berdiameter 1.76m yang menembus ke bawah tanah hingga -0.70m!
-        var curbMesh = CreateHollowRingMesh("Well_StoneCurb_Mesh", outerR: 1.25f, innerR: 0.88f, topY: 0.95f, bottomY: -0.70f, segments: 32, addInnerWall: true, addBottomFloor: true);
+        // Memiliki rongga lubang dalam berdiameter 1.76m dengan dinding batu tebal 37cm yang solid dan double-sided!
+        var curbMesh = CreateHollowRingMesh("Well_StoneCurb_Mesh", outerR: 1.25f, innerR: 0.88f, topY: 0.95f, bottomY: 0f, segments: 32, addInnerWall: true);
         CreateMeshObject("Well_StoneCurb", wellRoot.transform, curbMesh, brickMat, new Color(0.48f, 0.46f, 0.44f), addMeshCollider: true);
 
         // 3. Bibir Batu Pahat Atas Sumur Berlubang (Top Chiseled Stone Rim)
-        var rimMesh = CreateHollowRingMesh("Well_StoneRim_Mesh", outerR: 1.30f, innerR: 0.85f, topY: 0.99f, bottomY: 0.93f, segments: 32, addInnerWall: true, addBottomFloor: false);
+        var rimMesh = CreateHollowRingMesh("Well_StoneRim_Mesh", outerR: 1.30f, innerR: 0.85f, topY: 0.99f, bottomY: 0.93f, segments: 32, addInnerWall: true);
         CreateMeshObject("Well_StoneRim", wellRoot.transform, rimMesh, rockMat, new Color(0.55f, 0.53f, 0.50f));
 
-        // 4. Permukaan Air Jernih di Kedalaman Lubang Sumur (Water Surface)
-        // Terletak di kedalaman Y = 0.32m (67 cm di bawah bibir sumur), memberi ruang visual rongga lubang sumur yang sangat nyata!
-        var waterMesh = CreateCircularDiscMesh("Well_Water_Mesh", radius: 0.87f, yLevel: 0.32f, segments: 32);
+        // 4. Dasar Gelap & Permukaan Air di Dalam Rongga Sumur (Shaft Floor & Water)
+        var floorMesh = CreateCircularDiscMesh("Well_Floor_Mesh", radius: 0.88f, yLevel: 0.05f, segments: 32);
+        CreateMeshObject("Well_ShaftFloor", wellRoot.transform, floorMesh, darkMat, new Color(0.12f, 0.12f, 0.12f));
+
+        // Terletak di ketinggian Y = 0.35m (64 cm di bawah bibir sumur), memberi rongga lubang sumur yang sangat nyata!
+        var waterMesh = CreateCircularDiscMesh("Well_Water_Mesh", radius: 0.87f, yLevel: 0.35f, segments: 32);
         CreateMeshObject("Well_Water", wellRoot.transform, waterMesh, waterMat, new Color(0.12f, 0.45f, 0.68f));
+
+        // 8 Box Colliders membentuk cincin pelindung solid di sekeliling dinding sumur
+        var collidersRoot = new GameObject("Well_Colliders");
+        collidersRoot.transform.SetParent(wellRoot.transform, false);
+        for (int i = 0; i < 8; i++)
+        {
+            float angle = i * 45f * Mathf.Deg2Rad;
+            float cos = Mathf.Cos(angle);
+            float sin = Mathf.Sin(angle);
+            var colGo = new GameObject($"Col_Segment_{i}");
+            colGo.transform.SetParent(collidersRoot.transform, false);
+            colGo.transform.localPosition = new Vector3(cos * 1.06f, 0.50f, sin * 1.06f);
+            colGo.transform.localRotation = Quaternion.Euler(0, -i * 45f, 0);
+            var bc = colGo.AddComponent<BoxCollider>();
+            bc.size = new Vector3(0.90f, 1.0f, 0.38f);
+        }
 
         // Pendaran kilau lembut air di dalam lubang sumur
         var waterLightGo = new GameObject("Well_WaterGlow");
