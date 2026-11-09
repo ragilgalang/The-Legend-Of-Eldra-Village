@@ -136,11 +136,12 @@ public static class SceneSetupTool
         }
         if (grassMat)
         {
-            var grassTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/SlavicWorld/Textures/Grass_Texture.png");
+            // Gunakan Flower_Grass.png (1024x1024 seamless) agar tanah tidak memiliki garis-garis kotak grid/border
+            var grassTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/SlavicWorld/Textures/Flower_Grass.png");
             if (grassTex)
             {
                 grassMat.SetTexture("_BaseMap", grassTex);
-                grassMat.SetTextureScale("_BaseMap", new Vector2(45f, 45f));
+                grassMat.SetTextureScale("_BaseMap", new Vector2(65f, 65f));
             }
             var normTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/SlavicWorld/Textures/Flower_Grass_NM.png");
             if (normTex)
@@ -152,6 +153,7 @@ public static class SceneSetupTool
                     importer.SaveAndReimport();
                 }
                 grassMat.SetTexture("_BumpMap", normTex);
+                grassMat.SetTextureScale("_BumpMap", new Vector2(65f, 65f));
                 grassMat.EnableKeyword("_NORMALMAP");
                 grassMat.SetFloat("_BumpScale", 0.75f);
             }
