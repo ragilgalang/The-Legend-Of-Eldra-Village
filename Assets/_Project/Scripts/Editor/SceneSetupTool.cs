@@ -27,6 +27,17 @@ public static class SceneSetupTool
             return;
         }
 
+        // Pastikan scene yang aktif adalah SampleScene, bukan scene baru kosong (Untitled)
+        string sampleScenePath = "Assets/Scenes/SampleScene.unity";
+        var activeScene = EditorSceneManager.GetActiveScene();
+        if (string.IsNullOrEmpty(activeScene.path) || activeScene.name == "Untitled")
+        {
+            if (System.IO.File.Exists(sampleScenePath))
+            {
+                EditorSceneManager.OpenScene(sampleScenePath);
+            }
+        }
+
         // 1. Tag & Material pre-flight
         EnsureTagExists("NPC");
         var slavicMat = AssetMaterialSetup.SetupSlavicMaterial();
@@ -190,7 +201,8 @@ public static class SceneSetupTool
 
         // DayNightCycle
         GameObject managers = GetOrCreateManagerRoot();
-        var dnc = managers.GetComponent<DayNightCycle>() ?? managers.AddComponent<DayNightCycle>();
+        var dnc = managers.GetComponent<DayNightCycle>();
+        if (!dnc) dnc = managers.AddComponent<DayNightCycle>();
         var soDnc = new SerializedObject(dnc);
         soDnc.FindProperty("sun").objectReferenceValue = sunLight;
 
@@ -246,7 +258,8 @@ public static class SceneSetupTool
         var oldCol = player.GetComponent<CapsuleCollider>();
         if (oldCol) Object.DestroyImmediate(oldCol);
 
-        var cc = player.GetComponent<CharacterController>() ?? player.AddComponent<CharacterController>();
+        var cc = player.GetComponent<CharacterController>();
+        if (!cc) cc = player.AddComponent<CharacterController>();
         cc.height = 2f; cc.radius = 0.5f; cc.center = Vector3.zero;
 
         // Reset posisi dan rotasi player secara mutlak di ruang terbuka alun-alun (menghadap ke Utara)
@@ -256,13 +269,20 @@ public static class SceneSetupTool
         player.transform.rotation = Quaternion.identity;
         cc.enabled = ccActive;
 
-        playerCtrl       = player.GetComponent<PlayerController>()  ?? player.AddComponent<PlayerController>();
-        playerHealth     = player.GetComponent<Health>()             ?? player.AddComponent<Health>();
+        playerCtrl = player.GetComponent<PlayerController>();
+        if (!playerCtrl) playerCtrl = player.AddComponent<PlayerController>();
+
+        playerHealth = player.GetComponent<Health>();
+        if (!playerHealth) playerHealth = player.AddComponent<Health>();
         playerHealth.max = 100f;
-        if (!player.GetComponent<PlayerCombat>())    player.AddComponent<PlayerCombat>();
-        playerInteractor = player.GetComponent<PlayerInteractor>()   ?? player.AddComponent<PlayerInteractor>();
-        if (!player.GetComponent<HitFlash>())        player.AddComponent<HitFlash>();
-        if (!player.GetComponent<BuildMode>())       player.AddComponent<BuildMode>();
+
+        if (!player.GetComponent<PlayerCombat>()) player.AddComponent<PlayerCombat>();
+
+        playerInteractor = player.GetComponent<PlayerInteractor>();
+        if (!playerInteractor) playerInteractor = player.AddComponent<PlayerInteractor>();
+
+        if (!player.GetComponent<HitFlash>()) player.AddComponent<HitFlash>();
+        if (!player.GetComponent<BuildMode>()) player.AddComponent<BuildMode>();
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -279,7 +299,8 @@ public static class SceneSetupTool
             go.AddComponent<AudioListener>();
         }
 
-        var rig = cam.GetComponent<CameraRig>() ?? cam.gameObject.AddComponent<CameraRig>();
+        var rig = cam.GetComponent<CameraRig>();
+        if (!rig) rig = cam.gameObject.AddComponent<CameraRig>();
         var so = new SerializedObject(rig);
         so.FindProperty("target").objectReferenceValue = player.transform;
         var rProp = so.FindProperty("playerRenderers");
@@ -302,13 +323,15 @@ public static class SceneSetupTool
         if (!managers.GetComponent<NightLight>())      managers.AddComponent<NightLight>();
         if (!managers.GetComponent<CloudManager>())    managers.AddComponent<CloudManager>();
 
-        var gm = managers.GetComponent<GameManager>() ?? managers.AddComponent<GameManager>();
+        var gm = managers.GetComponent<GameManager>();
+        if (!gm) gm = managers.AddComponent<GameManager>();
         var soGm = new SerializedObject(gm);
         soGm.FindProperty("player").objectReferenceValue = playerCtrl;
         soGm.FindProperty("playerHealth").objectReferenceValue = playerHealth;
         soGm.ApplyModifiedProperties();
 
-        var saveSys = managers.GetComponent<SaveSystem>() ?? managers.AddComponent<SaveSystem>();
+        var saveSys = managers.GetComponent<SaveSystem>();
+        if (!saveSys) saveSys = managers.AddComponent<SaveSystem>();
         var soSave = new SerializedObject(saveSys);
         soSave.FindProperty("player").objectReferenceValue = playerCtrl;
         soSave.FindProperty("playerHealth").objectReferenceValue = playerHealth;

@@ -11,7 +11,17 @@ public class PlayerController : MonoBehaviour
     CharacterController cc;
     float vy;
 
-    void Awake() => cc = GetComponent<CharacterController>();
+    void Awake()
+    {
+        cc = GetComponent<CharacterController>();
+        if (cc == null)
+        {
+            cc = gameObject.AddComponent<CharacterController>();
+            cc.height = 2f;
+            cc.radius = 0.5f;
+            cc.center = Vector3.zero;
+        }
+    }
 
     void Start()
     {
@@ -59,10 +69,13 @@ public class PlayerController : MonoBehaviour
                 Quaternion.LookRotation(dir), turnSpeed * Time.deltaTime);
         }
 
-        vy = cc.isGrounded ? -1f : vy + gravity * Time.deltaTime;
-        Vector3 vel = dir * (run ? runSpeed : walkSpeed);
-        vel.y = vy;
-        cc.Move(vel * Time.deltaTime);
+        if (cc != null && cc.enabled)
+        {
+            vy = cc.isGrounded ? -1f : vy + gravity * Time.deltaTime;
+            Vector3 vel = dir * (run ? runSpeed : walkSpeed);
+            vel.y = vy;
+            cc.Move(vel * Time.deltaTime);
+        }
 
         if (anim) anim.SetFloat("Speed", dir.magnitude * (run ? 1f : 0.5f));
     }
