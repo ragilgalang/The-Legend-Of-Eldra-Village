@@ -161,17 +161,46 @@ public static class AnimalAssetSetup
         string fbxPath = $"{AnimalsFolder}/FBX/{animalName}.fbx";
         AnimationClip idleClip = null;
         AnimationClip walkClip = null;
+        AnimationClip flyClip = null;
 
         foreach (var obj in AssetDatabase.LoadAllAssetsAtPath(fbxPath))
         {
             if (obj is AnimationClip clip && !clip.name.StartsWith("__preview__"))
             {
                 string lower = clip.name.ToLowerInvariant();
-                if (lower.Contains("walk") || lower.Contains("run") || lower.Contains("trot"))
+                if (lower.Contains("fly") || lower.Contains("flight"))
+                    flyClip = clip;
+                else if (lower.Contains("walk") || lower.Contains("run") || lower.Contains("trot"))
                     walkClip = clip;
                 else if (lower.Contains("idle"))
                     idleClip = clip;
             }
+        }
+
+        // Khusus burung (Eagle): Prioritaskan animasi terbang/kepakan sayap aktif
+        if (animalName == "Eagle" && flyClip != null)
+        {
+            AnimatorController eagleCtrl;
+            if (existingCtrl != null)
+            {
+                eagleCtrl = existingCtrl;
+            }
+            else
+            {
+                eagleCtrl = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+            }
+
+            var eagleSm = eagleCtrl.layers[0].stateMachine;
+            foreach (var s in eagleSm.states) eagleSm.RemoveState(s.state);
+
+            var flyState = eagleSm.AddState("Flying");
+            flyState.motion = flyClip;
+            flyState.speed = 1.0f;
+            eagleSm.defaultState = flyState;
+
+            EditorUtility.SetDirty(eagleCtrl);
+            AssetDatabase.SaveAssets();
+            return eagleCtrl;
         }
 
         if (idleClip == null) return existingCtrl;
