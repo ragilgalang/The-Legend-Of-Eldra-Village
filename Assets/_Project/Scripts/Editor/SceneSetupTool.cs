@@ -520,7 +520,272 @@ public static class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Membangun Sumur Batu Kuno Megah di pusat Alun-Alun desa
+    /// Membuat mesh cincin / silinder berlubang (Hollow Ring / Shaft Tube) untuk sumur atau plinth
+    /// </summary>
+    static Mesh CreateHollowRingMesh(string name, float outerR, float innerR, float topY, float bottomY, int segments = 32, bool addInnerWall = true, bool addBottomFloor = false)
+    {
+        var mesh = new Mesh { name = name };
+        var vertices = new List<Vector3>();
+        var normals = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var triangles = new List<int>();
+
+        // 1. Dinding Luar (Outer Wall: normal mengarah ke luar)
+        for (int i = 0; i <= segments; i++)
+        {
+            float angle = (float)i / segments * Mathf.PI * 2f;
+            float cos = Mathf.Cos(angle);
+            float sin = Mathf.Sin(angle);
+            Vector3 norm = new Vector3(cos, 0f, sin);
+            float u = (float)i / segments * 4f;
+
+            vertices.Add(new Vector3(cos * outerR, bottomY, sin * outerR));
+            normals.Add(norm);
+            uvs.Add(new Vector2(u, 0f));
+
+            vertices.Add(new Vector3(cos * outerR, topY, sin * outerR));
+            normals.Add(norm);
+            uvs.Add(new Vector2(u, 1f));
+        }
+
+        for (int i = 0; i < segments; i++)
+        {
+            int baseIdx = i * 2;
+            triangles.Add(baseIdx);
+            triangles.Add(baseIdx + 1);
+            triangles.Add(baseIdx + 2);
+
+            triangles.Add(baseIdx + 1);
+            triangles.Add(baseIdx + 3);
+            triangles.Add(baseIdx + 2);
+        }
+
+        // 2. Bibir Atas (Top Rim: normal mengarah lurus ke atas / UP)
+        int rimStart = vertices.Count;
+        for (int i = 0; i <= segments; i++)
+        {
+            float angle = (float)i / segments * Mathf.PI * 2f;
+            float cos = Mathf.Cos(angle);
+            float sin = Mathf.Sin(angle);
+
+            vertices.Add(new Vector3(cos * outerR, topY, sin * outerR));
+            normals.Add(Vector3.up);
+            uvs.Add(new Vector2(0.5f + cos * 0.5f, 0.5f + sin * 0.5f));
+
+            vertices.Add(new Vector3(cos * innerR, topY, sin * innerR));
+            normals.Add(Vector3.up);
+            uvs.Add(new Vector2(0.5f + cos * 0.35f, 0.5f + sin * 0.35f));
+        }
+
+        for (int i = 0; i < segments; i++)
+        {
+            int baseIdx = rimStart + i * 2;
+            triangles.Add(baseIdx);
+            triangles.Add(baseIdx + 2);
+            triangles.Add(baseIdx + 1);
+
+            triangles.Add(baseIdx + 2);
+            triangles.Add(baseIdx + 3);
+            triangles.Add(baseIdx + 1);
+        }
+
+        // 3. Dinding Dalam (Inner Shaft Wall: normal mengarah ke DALAM rongga lubang sumur)
+        if (addInnerWall)
+        {
+            int innerStart = vertices.Count;
+            for (int i = 0; i <= segments; i++)
+            {
+                float angle = (float)i / segments * Mathf.PI * 2f;
+                float cos = Mathf.Cos(angle);
+                float sin = Mathf.Sin(angle);
+                Vector3 norm = new Vector3(-cos, 0f, -sin);
+                float u = (float)i / segments * 3f;
+
+                vertices.Add(new Vector3(cos * innerR, topY, sin * innerR));
+                normals.Add(norm);
+                uvs.Add(new Vector2(u, 1f));
+
+                vertices.Add(new Vector3(cos * innerR, bottomY, sin * innerR));
+                normals.Add(norm);
+                uvs.Add(new Vector2(u, 0f));
+            }
+
+            for (int i = 0; i < segments; i++)
+            {
+                int baseIdx = innerStart + i * 2;
+                triangles.Add(baseIdx + 2);
+                triangles.Add(baseIdx);
+                triangles.Add(baseIdx + 1);
+
+                triangles.Add(baseIdx + 2);
+                triangles.Add(baseIdx + 1);
+                triangles.Add(baseIdx + 3);
+            }
+        }
+
+        // 4. Dasar Kedalaman Lubang Sumur (Bottom Floor: normal mengarah ke atas / UP)
+        if (addBottomFloor)
+        {
+            int floorStart = vertices.Count;
+            vertices.Add(new Vector3(0f, bottomY, 0f));
+            normals.Add(Vector3.up);
+            uvs.Add(new Vector2(0.5f, 0.5f));
+
+            for (int i = 0; i <= segments; i++)
+            {
+                float angle = (float)i / segments * Mathf.PI * 2f;
+                float cos = Mathf.Cos(angle);
+                float sin = Mathf.Sin(angle);
+
+                vertices.Add(new Vector3(cos * innerR, bottomY, sin * innerR));
+                normals.Add(Vector3.up);
+                uvs.Add(new Vector2(0.5f + cos * 0.5f, 0.5f + sin * 0.5f));
+            }
+
+            for (int i = 0; i < segments; i++)
+            {
+                triangles.Add(floorStart);
+                triangles.Add(floorStart + 1 + i);
+                triangles.Add(floorStart + 1 + i + 1);
+            }
+        }
+
+        mesh.SetVertices(vertices);
+        mesh.SetNormals(normals);
+        mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(triangles, 0);
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    /// <summary>
+    /// Membuat mesh cakram lingkaran horizontal (Circular Disc Mesh) untuk permukaan air sumur
+    /// </summary>
+    static Mesh CreateCircularDiscMesh(string name, float radius, float yLevel, int segments = 32)
+    {
+        var mesh = new Mesh { name = name };
+        var vertices = new List<Vector3>();
+        var normals = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var triangles = new List<int>();
+
+        vertices.Add(new Vector3(0f, yLevel, 0f));
+        normals.Add(Vector3.up);
+        uvs.Add(new Vector2(0.5f, 0.5f));
+
+        for (int i = 0; i <= segments; i++)
+        {
+            float angle = (float)i / segments * Mathf.PI * 2f;
+            float cos = Mathf.Cos(angle);
+            float sin = Mathf.Sin(angle);
+
+            vertices.Add(new Vector3(cos * radius, yLevel, sin * radius));
+            normals.Add(Vector3.up);
+            uvs.Add(new Vector2(0.5f + cos * 0.5f, 0.5f + sin * 0.5f));
+        }
+
+        for (int i = 0; i < segments; i++)
+        {
+            triangles.Add(0);
+            triangles.Add(1 + i);
+            triangles.Add(1 + i + 1);
+        }
+
+        mesh.SetVertices(vertices);
+        mesh.SetNormals(normals);
+        mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(triangles, 0);
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    /// <summary>
+    /// Helper membuat GameObject berbasis custom mesh lengkap dengan Renderer & Collider
+    /// </summary>
+    static GameObject CreateMeshObject(string name, Transform parent, Mesh mesh, Material mat, Color fallbackColor, bool addMeshCollider = false)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var mf = go.AddComponent<MeshFilter>();
+        mf.sharedMesh = mesh;
+        var mr = go.AddComponent<MeshRenderer>();
+        if (mat != null) mr.sharedMaterial = mat;
+        else ApplyColor(go, fallbackColor);
+
+        if (addMeshCollider)
+        {
+            var mc = go.AddComponent<MeshCollider>();
+            mc.sharedMesh = mesh;
+        }
+        return go;
+    }
+
+    /// <summary>
+    /// Helper membuat ember kayu pedesaan tradisional dengan klem besi dan rongga dalam
+    /// </summary>
+    static GameObject MakeWoodenBucket(Transform parent, Vector3 localPos, Quaternion localRot, Material woodMat, Material metalMat, Material darkMat)
+    {
+        var bucketGo = new GameObject("Well_Bucket");
+        bucketGo.transform.SetParent(parent, false);
+        bucketGo.transform.localPosition = localPos;
+        bucketGo.transform.localRotation = localRot;
+
+        // Badan ember kayu silinder
+        var body = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        body.name = "BucketBody";
+        body.transform.SetParent(bucketGo.transform, false);
+        body.transform.localPosition = new Vector3(0, 0.10f, 0);
+        body.transform.localScale = new Vector3(0.28f, 0.10f, 0.28f);
+        if (woodMat) body.GetComponent<Renderer>().sharedMaterial = woodMat;
+        else ApplyColor(body, new Color(0.35f, 0.22f, 0.12f));
+        Object.DestroyImmediate(body.GetComponent<Collider>());
+
+        // Rongga dalam ember gelap
+        var cavity = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        cavity.name = "BucketCavity";
+        cavity.transform.SetParent(bucketGo.transform, false);
+        cavity.transform.localPosition = new Vector3(0, 0.15f, 0);
+        cavity.transform.localScale = new Vector3(0.23f, 0.05f, 0.23f);
+        if (darkMat) cavity.GetComponent<Renderer>().sharedMaterial = darkMat;
+        else ApplyColor(cavity, new Color(0.12f, 0.12f, 0.12f));
+        Object.DestroyImmediate(cavity.GetComponent<Collider>());
+
+        // Klem besi pengikat ember
+        var hoop1 = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        hoop1.name = "HoopLower";
+        hoop1.transform.SetParent(bucketGo.transform, false);
+        hoop1.transform.localPosition = new Vector3(0, 0.05f, 0);
+        hoop1.transform.localScale = new Vector3(0.29f, 0.015f, 0.29f);
+        if (metalMat) hoop1.GetComponent<Renderer>().sharedMaterial = metalMat;
+        else ApplyColor(hoop1, new Color(0.2f, 0.2f, 0.2f));
+        Object.DestroyImmediate(hoop1.GetComponent<Collider>());
+
+        var hoop2 = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        hoop2.name = "HoopUpper";
+        hoop2.transform.SetParent(bucketGo.transform, false);
+        hoop2.transform.localPosition = new Vector3(0, 0.16f, 0);
+        hoop2.transform.localScale = new Vector3(0.29f, 0.015f, 0.29f);
+        if (metalMat) hoop2.GetComponent<Renderer>().sharedMaterial = metalMat;
+        else ApplyColor(hoop2, new Color(0.2f, 0.2f, 0.2f));
+        Object.DestroyImmediate(hoop2.GetComponent<Collider>());
+
+        // Gagang lengkung ember
+        var handle = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        handle.name = "BucketHandle";
+        handle.transform.SetParent(bucketGo.transform, false);
+        handle.transform.localPosition = new Vector3(0, 0.26f, 0);
+        handle.transform.localScale = new Vector3(0.02f, 0.14f, 0.26f);
+        if (metalMat) handle.GetComponent<Renderer>().sharedMaterial = metalMat;
+        else ApplyColor(handle, new Color(0.2f, 0.2f, 0.2f));
+        Object.DestroyImmediate(handle.GetComponent<Collider>());
+
+        return bucketGo;
+    }
+
+    /// <summary>
+    /// Membangun Sumur Batu Kuno Megah Berongga (Hollow Stone Well) di pusat Alun-Alun desa
+    /// Dilengkapi rongga lubang sumur dalam dengan air jernih berkilau, dinding batu tekstur abad pertengahan,
+    /// pilar kayu bertiang siku, penggulung tali kerekan, ember kayu bertali, dan atap genteng sirap.
     /// </summary>
     static void BuildVillageWell(Transform parent, Vector3 pos)
     {
@@ -528,125 +793,152 @@ public static class SceneSetupTool
         wellRoot.transform.SetParent(parent);
         wellRoot.transform.position = pos;
 
-        // 1. Pelataran Tangga Melingkar Dasar Sumur (Stone Base Foundation)
-        var stepBase = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        stepBase.name = "Well_StepBase";
-        stepBase.transform.SetParent(wellRoot.transform);
-        stepBase.transform.localPosition = new Vector3(0, 0.05f, 0);
-        stepBase.transform.localScale = new Vector3(3.6f, 0.05f, 3.6f);
-        ApplyColor(stepBase, new Color(0.62f, 0.60f, 0.55f));
-        Object.DestroyImmediate(stepBase.GetComponent<Collider>());
+        // Muat material tematik berkualitas tinggi
+        var brickMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/MedievalVillage/Materials/M_Medieval_UnevenBrick.mat");
+        var rockMat  = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/MedievalVillage/Materials/M_Medieval_RockTrim.mat");
+        var woodMat  = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/MedievalVillage/Materials/M_Medieval_WoodTrim.mat");
+        var roofMat  = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/MedievalVillage/Materials/M_Medieval_RoundTiles.mat");
+        var waterMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/HouseMaterials/M_House_Water.mat");
+        var darkMat  = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/HouseMaterials/M_House_Dark.mat");
+        var metalMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/HouseMaterials/M_House_Metal.mat");
 
-        // 2. Dinding Cincin Batu Sumur (Main Stone Curb Wall)
-        var stoneBase = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        stoneBase.name = "Well_StoneCurb";
-        stoneBase.transform.SetParent(wellRoot.transform);
-        stoneBase.transform.localPosition = new Vector3(0, 0.48f, 0);
-        stoneBase.transform.localScale = new Vector3(2.3f, 0.42f, 2.3f);
-        ApplyColor(stoneBase, new Color(0.48f, 0.46f, 0.44f));
+        // 1. Pelataran Tangga Melingkar Berlubang Dasar Sumur (Hollow Foundation Plinth)
+        var stepMesh = CreateHollowRingMesh("Well_StepBase_Mesh", outerR: 1.75f, innerR: 0.95f, topY: 0.10f, bottomY: 0f, segments: 32, addInnerWall: false, addBottomFloor: false);
+        CreateMeshObject("Well_StepBase", wellRoot.transform, stepMesh, rockMat, new Color(0.62f, 0.60f, 0.55f));
 
-        // 3. Bibir Batu Pahat Atas Sumur (Top Chiseled Stone Rim)
-        var stoneRim = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        stoneRim.name = "Well_StoneRim";
-        stoneRim.transform.SetParent(wellRoot.transform);
-        stoneRim.transform.localPosition = new Vector3(0, 0.90f, 0);
-        stoneRim.transform.localScale = new Vector3(2.45f, 0.05f, 2.45f);
-        ApplyColor(stoneRim, new Color(0.55f, 0.53f, 0.50f));
-        Object.DestroyImmediate(stoneRim.GetComponent<Collider>());
+        // 2. Dinding Cincin Batu Sumur Berongga (Main Hollow Stone Curb Shaft)
+        // Memiliki lubang dalam berdiameter 1.76m yang menembus ke bawah tanah hingga -0.70m!
+        var curbMesh = CreateHollowRingMesh("Well_StoneCurb_Mesh", outerR: 1.25f, innerR: 0.88f, topY: 0.95f, bottomY: -0.70f, segments: 32, addInnerWall: true, addBottomFloor: true);
+        CreateMeshObject("Well_StoneCurb", wellRoot.transform, curbMesh, brickMat, new Color(0.48f, 0.46f, 0.44f), addMeshCollider: true);
 
-        // 4. Permukaan Air Jernih di Dalam Sumur
-        var water = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        water.name = "Well_Water";
-        water.transform.SetParent(wellRoot.transform);
-        water.transform.localPosition = new Vector3(0, 0.65f, 0);
-        water.transform.localScale = new Vector3(1.85f, 0.02f, 1.85f);
-        ApplyColor(water, new Color(0.12f, 0.45f, 0.68f));
-        Object.DestroyImmediate(water.GetComponent<Collider>());
+        // 3. Bibir Batu Pahat Atas Sumur Berlubang (Top Chiseled Stone Rim)
+        var rimMesh = CreateHollowRingMesh("Well_StoneRim_Mesh", outerR: 1.30f, innerR: 0.85f, topY: 0.99f, bottomY: 0.93f, segments: 32, addInnerWall: true, addBottomFloor: false);
+        CreateMeshObject("Well_StoneRim", wellRoot.transform, rimMesh, rockMat, new Color(0.55f, 0.53f, 0.50f));
+
+        // 4. Permukaan Air Jernih di Kedalaman Lubang Sumur (Water Surface)
+        // Terletak di kedalaman Y = 0.32m (67 cm di bawah bibir sumur), memberi ruang visual rongga lubang sumur yang sangat nyata!
+        var waterMesh = CreateCircularDiscMesh("Well_Water_Mesh", radius: 0.87f, yLevel: 0.32f, segments: 32);
+        CreateMeshObject("Well_Water", wellRoot.transform, waterMesh, waterMat, new Color(0.12f, 0.45f, 0.68f));
+
+        // Pendaran kilau lembut air di dalam lubang sumur
+        var waterLightGo = new GameObject("Well_WaterGlow");
+        waterLightGo.transform.SetParent(wellRoot.transform, false);
+        waterLightGo.transform.localPosition = new Vector3(0, 0.45f, 0);
+        var wl = waterLightGo.AddComponent<Light>();
+        wl.type = LightType.Point;
+        wl.color = new Color(0.2f, 0.65f, 0.95f);
+        wl.intensity = 0.6f;
+        wl.range = 2.5f;
+        wl.shadows = LightShadows.None;
 
         // 5. Dua Pilar Kayu Solid (Hand-Hewn Timber Posts)
-        var poleL = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        poleL.name = "Well_Pole_L";
-        poleL.transform.SetParent(wellRoot.transform);
-        poleL.transform.localPosition = new Vector3(-0.95f, 1.55f, 0);
-        poleL.transform.localScale = new Vector3(0.18f, 1.55f, 0.18f);
-        ApplyColor(poleL, new Color(0.30f, 0.18f, 0.10f));
-        Object.DestroyImmediate(poleL.GetComponent<Collider>());
+        GameObject MakeTimber(string name, Vector3 localPos, Vector3 localScale, Quaternion? localRot = null)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            go.transform.SetParent(wellRoot.transform, false);
+            go.transform.localPosition = localPos;
+            go.transform.localScale = localScale;
+            if (localRot.HasValue) go.transform.localRotation = localRot.Value;
+            if (woodMat) go.GetComponent<Renderer>().sharedMaterial = woodMat;
+            else ApplyColor(go, new Color(0.30f, 0.18f, 0.10f));
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+            return go;
+        }
 
-        var poleR = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        poleR.name = "Well_Pole_R";
-        poleR.transform.SetParent(wellRoot.transform);
-        poleR.transform.localPosition = new Vector3(0.95f, 1.55f, 0);
-        poleR.transform.localScale = new Vector3(0.18f, 1.55f, 0.18f);
-        ApplyColor(poleR, new Color(0.30f, 0.18f, 0.10f));
-        Object.DestroyImmediate(poleR.GetComponent<Collider>());
+        MakeTimber("Well_Pole_L", new Vector3(-1.05f, 1.725f, 0f), new Vector3(0.18f, 1.65f, 0.18f));
+        MakeTimber("Well_Pole_R", new Vector3( 1.05f, 1.725f, 0f), new Vector3(0.18f, 1.65f, 0.18f));
 
         // 6. Palang Kayu Penopang Atas (Main Timber Crossbeam)
-        var beam = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        beam.name = "Well_Crossbeam";
-        beam.transform.SetParent(wellRoot.transform);
-        beam.transform.localPosition = new Vector3(0, 2.45f, 0);
-        beam.transform.localScale = new Vector3(2.35f, 0.18f, 0.18f);
-        ApplyColor(beam, new Color(0.28f, 0.16f, 0.09f));
-        Object.DestroyImmediate(beam.GetComponent<Collider>());
+        MakeTimber("Well_Crossbeam", new Vector3(0f, 2.45f, 0f), new Vector3(2.50f, 0.18f, 0.18f));
 
-        // 7. Penggulung Tali Sumur (Wooden Pulley Spindle & Rope)
+        // Penyangga siku kayu 45 derajat (Diagonal Braces)
+        MakeTimber("Well_Brace_L", new Vector3(-0.78f, 2.25f, 0f), new Vector3(0.09f, 0.42f, 0.09f), Quaternion.Euler(0, 0, -45f));
+        MakeTimber("Well_Brace_R", new Vector3( 0.78f, 2.25f, 0f), new Vector3(0.09f, 0.42f, 0.09f), Quaternion.Euler(0, 0,  45f));
+
+        // 7. Penggulung Tali Sumur (Wooden Pulley Spindle & Crank)
         var spindle = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         spindle.name = "Well_Spindle";
-        spindle.transform.SetParent(wellRoot.transform);
-        spindle.transform.localPosition = new Vector3(0, 2.22f, 0);
+        spindle.transform.SetParent(wellRoot.transform, false);
+        spindle.transform.localPosition = new Vector3(0f, 2.22f, 0f);
         spindle.transform.localRotation = Quaternion.Euler(0, 0, 90f);
-        spindle.transform.localScale = new Vector3(0.18f, 0.45f, 0.18f);
-        ApplyColor(spindle, new Color(0.68f, 0.58f, 0.42f));
+        spindle.transform.localScale = new Vector3(0.15f, 0.60f, 0.15f);
+        if (woodMat) spindle.GetComponent<Renderer>().sharedMaterial = woodMat;
+        else ApplyColor(spindle, new Color(0.68f, 0.58f, 0.42f));
         Object.DestroyImmediate(spindle.GetComponent<Collider>());
 
-        // Tali yang Menggantung ke Bawah
+        // Gulungan tali di tengah poros
+        var coil = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        coil.name = "Well_RopeCoil";
+        coil.transform.SetParent(wellRoot.transform, false);
+        coil.transform.localPosition = new Vector3(0f, 2.22f, 0f);
+        coil.transform.localRotation = Quaternion.Euler(0, 0, 90f);
+        coil.transform.localScale = new Vector3(0.18f, 0.25f, 0.18f);
+        ApplyColor(coil, new Color(0.68f, 0.58f, 0.42f));
+        Object.DestroyImmediate(coil.GetComponent<Collider>());
+
+        // Engkol pemutar kerekan (Crank Arm & Handle)
+        var crankArm = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        crankArm.name = "Well_CrankArm";
+        crankArm.transform.SetParent(wellRoot.transform, false);
+        crankArm.transform.localPosition = new Vector3(1.15f, 2.12f, 0f);
+        crankArm.transform.localScale = new Vector3(0.03f, 0.24f, 0.03f);
+        if (metalMat) crankArm.GetComponent<Renderer>().sharedMaterial = metalMat;
+        else ApplyColor(crankArm, new Color(0.2f, 0.2f, 0.2f));
+        Object.DestroyImmediate(crankArm.GetComponent<Collider>());
+
+        var crankGrip = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        crankGrip.name = "Well_CrankGrip";
+        crankGrip.transform.SetParent(wellRoot.transform, false);
+        crankGrip.transform.localPosition = new Vector3(1.15f, 2.00f, 0.08f);
+        crankGrip.transform.localRotation = Quaternion.Euler(90f, 0, 0);
+        crankGrip.transform.localScale = new Vector3(0.04f, 0.08f, 0.04f);
+        if (woodMat) crankGrip.GetComponent<Renderer>().sharedMaterial = woodMat;
+        else ApplyColor(crankGrip, new Color(0.35f, 0.22f, 0.12f));
+        Object.DestroyImmediate(crankGrip.GetComponent<Collider>());
+
+        // Tali yang Menjulur Lurus ke Bawah Masuk ke Dalam Lubang Sumur
         var rope = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         rope.name = "Well_Rope";
-        rope.transform.SetParent(wellRoot.transform);
-        rope.transform.localPosition = new Vector3(0, 1.58f, 0);
-        rope.transform.localScale = new Vector3(0.04f, 0.62f, 0.04f);
-        ApplyColor(rope, new Color(0.65f, 0.55f, 0.40f));
+        rope.transform.SetParent(wellRoot.transform, false);
+        rope.transform.localPosition = new Vector3(0f, 1.40f, 0f);
+        rope.transform.localScale = new Vector3(0.035f, 0.80f, 0.035f);
+        ApplyColor(rope, new Color(0.68f, 0.58f, 0.42f));
         Object.DestroyImmediate(rope.GetComponent<Collider>());
 
-        // 8. Ember Timba Kayu (Wooden Bucket di Bibir Sumur)
-        var bucket = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        bucket.name = "Well_Bucket";
-        bucket.transform.SetParent(wellRoot.transform);
-        bucket.transform.localPosition = new Vector3(0.72f, 1.05f, 0.35f);
-        bucket.transform.localScale = new Vector3(0.32f, 0.20f, 0.32f);
-        ApplyColor(bucket, new Color(0.35f, 0.22f, 0.12f));
-        Object.DestroyImmediate(bucket.GetComponent<Collider>());
+        // 8. Ember Timba Kayu
+        // Ember 1: Menggantung di ujung tali tepat di dalam lubang sumur di atas air
+        MakeWoodenBucket(wellRoot.transform, new Vector3(0f, 0.48f, 0f), Quaternion.identity, woodMat, metalMat, darkMat);
 
-        // 9. Atap Segitiga Kayu Sirap (Gable Shingle Roof)
+        // Ember 2: Berdiri di atas bibir batu sumur untuk suasana pedesaan yang hidup
+        MakeWoodenBucket(wellRoot.transform, new Vector3(0.82f, 0.99f, 0.32f), Quaternion.Euler(0, 35f, 0), woodMat, metalMat, darkMat);
+
+        // 9. Atap Segitiga Genteng Sirap (Gable Shingle Roof)
         var roofL = GameObject.CreatePrimitive(PrimitiveType.Cube);
         roofL.name = "Well_Roof_L";
-        roofL.transform.SetParent(wellRoot.transform);
-        roofL.transform.localPosition = new Vector3(-0.55f, 2.85f, 0);
-        roofL.transform.localScale = new Vector3(1.35f, 0.08f, 2.1f);
+        roofL.transform.SetParent(wellRoot.transform, false);
+        roofL.transform.localPosition = new Vector3(-0.55f, 2.85f, 0f);
+        roofL.transform.localScale = new Vector3(1.35f, 0.08f, 2.20f);
         roofL.transform.localRotation = Quaternion.Euler(0, 0, 32f);
-        ApplyColor(roofL, new Color(0.26f, 0.15f, 0.08f));
+        if (roofMat) roofL.GetComponent<Renderer>().sharedMaterial = roofMat;
+        else ApplyColor(roofL, new Color(0.26f, 0.15f, 0.08f));
         Object.DestroyImmediate(roofL.GetComponent<Collider>());
 
         var roofR = GameObject.CreatePrimitive(PrimitiveType.Cube);
         roofR.name = "Well_Roof_R";
-        roofR.transform.SetParent(wellRoot.transform);
-        roofR.transform.localPosition = new Vector3(0.55f, 2.85f, 0);
-        roofR.transform.localScale = new Vector3(1.35f, 0.08f, 2.1f);
+        roofR.transform.SetParent(wellRoot.transform, false);
+        roofR.transform.localPosition = new Vector3(0.55f, 2.85f, 0f);
+        roofR.transform.localScale = new Vector3(1.35f, 0.08f, 2.20f);
         roofR.transform.localRotation = Quaternion.Euler(0, 0, -32f);
-        ApplyColor(roofR, new Color(0.26f, 0.15f, 0.08f));
+        if (roofMat) roofR.GetComponent<Renderer>().sharedMaterial = roofMat;
+        else ApplyColor(roofR, new Color(0.26f, 0.15f, 0.08f));
         Object.DestroyImmediate(roofR.GetComponent<Collider>());
 
         // Nok Puncak Atap (Roof Ridge Cap Beam)
-        var ridge = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        ridge.name = "Well_Roof_Ridge";
-        ridge.transform.SetParent(wellRoot.transform);
-        ridge.transform.localPosition = new Vector3(0, 3.22f, 0);
-        ridge.transform.localScale = new Vector3(0.12f, 0.12f, 2.15f);
-        ApplyColor(ridge, new Color(0.22f, 0.12f, 0.06f));
-        Object.DestroyImmediate(ridge.GetComponent<Collider>());
+        MakeTimber("Well_Roof_Ridge", new Vector3(0f, 3.22f, 0f), new Vector3(0.12f, 0.12f, 2.25f));
 
         // 10. Lentera Hangat Sumur (Amber Lantern)
-        AddPorchLantern(wellRoot.transform, new Vector3(0, 2.05f, 0), new Color(1f, 0.78f, 0.42f), 10f);
+        AddPorchLantern(wellRoot.transform, new Vector3(0f, 2.05f, 0f), new Color(1f, 0.78f, 0.42f), 10f);
     }
 
     /// <summary>
