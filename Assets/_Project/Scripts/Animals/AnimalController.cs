@@ -89,8 +89,8 @@ public class AnimalController : Interactable
 
     void Awake()
     {
-        // Anjing telah dinonaktifkan/dihapus dari desa atas permintaan user
-        if (animalType == AnimalType.Dog)
+        // Anjing dan kucing telah dinonaktifkan/dihapus dari desa atas permintaan user
+        if (animalType == AnimalType.Dog || animalType == AnimalType.Cat)
         {
             Destroy(gameObject);
             return;

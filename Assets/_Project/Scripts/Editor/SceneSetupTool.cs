@@ -95,7 +95,7 @@ public static class SceneSetupTool
                 "🔮 Kompleks Altar Mistis: Formasi 12 pilar batu kuno di utara desa\n" +
                 "🛡️ 8 Menara Pengawas Benteng + Pagar Kayu Melingkar Skala 80 Meter\n" +
                 "🌲 Hutan Rimba Keliling: 90+ Pohon cemara & ek bervariasi mengitari desa\n" +
-                "🐾 Ekosistem Fauna: Kucing Desa (Luna & Oliver), Serigala Rimba, & Elang Perkasa di Langit!\n" +
+                "🐾 Ekosistem Fauna: Serigala Rimba & Elang Perkasa di Langit!\n" +
                 "🏮 Lentera Malam: Lampu lentera hangat di tiap rumah & menara\n\n" +
                 "🗺️ EKSPANSI PETA BARU (500×500 meter):\n" +
                 "⛰️ Zona UTARA — Desa Pegunungan, Kuil Batu Kuno, Jembatan Kabut, 2 NPC Baru\n" +
@@ -1503,10 +1503,13 @@ public static class SceneSetupTool
         GameObject faunaRoot = GameObject.Find("--- FAUNA & ANIMALS ---");
         if (faunaRoot) Object.DestroyImmediate(faunaRoot);
 
-        // Hapus seluruh objek anjing jika masih ada di scene
+        // Hapus seluruh objek anjing & kucing jika masih ada di hierarki scene
         foreach (var obj in Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
         {
-            if (obj && (obj.name.StartsWith("Animal_Dog_") || obj.name == "Animal_Milo_Dog"))
+            if (!obj) continue;
+            string n = obj.name;
+            if (n.StartsWith("Animal_Dog_") || n == "Animal_Milo_Dog" ||
+                n.StartsWith("Animal_Cat_") || n == "Animal_Luna_Cat" || n == "Animal_Oliver_Cat")
             {
                 Object.DestroyImmediate(obj);
             }
@@ -1514,15 +1517,7 @@ public static class SceneSetupTool
 
         faunaRoot = new GameObject("--- FAUNA & ANIMALS ---");
 
-        // 1. Luna - Kucing Abu-Abu Desa (Di teras Log Cabin Warga Pemburu)
-        AnimalAssetSetup.SpawnCat(new Vector3(26f, 0f, -12f), Quaternion.Euler(0, 0f, 0), faunaRoot.transform,
-            "Luna", "Meow~ Luna mendengkur manja dan mengusapkan badannya ke kakimu.", false);
-
-        // 2. Oliver - Kucing Oranye Pasar (Di dekat gerobak pasar alun-alun)
-        AnimalAssetSetup.SpawnCat(new Vector3(7.5f, 0f, 2f), Quaternion.Euler(0, -60f, 0), faunaRoot.transform,
-            "Oliver", "Meow! Oliver si kucing oranye melompat manja dan menatapmu ramah.", true);
-
-        // 4. Kawanan Serigala Rimba (Di hutan lebat luar pagar desa)
+        // 1. Kawanan Serigala Rimba (Di hutan lebat luar pagar desa)
         // Alpha Wolf: Hutan Utara dekat Altar Kuno
         AnimalAssetSetup.SpawnWolf(new Vector3(2f, 0f, 72f), Quaternion.Euler(0, 180f, 0), faunaRoot.transform, "Serigala Rimba Alpha");
         // Beta Wolf 1: Hutan Barat
