@@ -321,7 +321,6 @@ public static class SceneSetupTool
         if (!managers.GetComponent<QuestManager>())    managers.AddComponent<QuestManager>();
         if (!managers.GetComponent<DialogueManager>()) managers.AddComponent<DialogueManager>();
         if (!managers.GetComponent<MusicManager>())    managers.AddComponent<MusicManager>();
-        if (!managers.GetComponent<NightLight>())      managers.AddComponent<NightLight>();
         if (!managers.GetComponent<CloudManager>())    managers.AddComponent<CloudManager>();
 
         var gm = managers.GetComponent<GameManager>();
@@ -432,11 +431,11 @@ public static class SceneSetupTool
         InstantiateArtModel("EA03_Prop_Town_Bench_01a", new Vector3(-13.5f, 0f, 3.5f), Quaternion.Euler(0, 135f, 0), Vector3.one, village.transform, slavicMat);
         InstantiateArtModel("EA03_Prop_Town_Bench_01a", new Vector3(-13.5f, 0f, -3.5f), Quaternion.Euler(0, 45f, 0), Vector3.one, village.transform, slavicMat);
 
-        // 4. Tiang Lentera Sudut Alun-Alun (4 Lampu Jalan di 4 Sudut Luar Plaza)
-        AddStreetLamp(village.transform, new Vector3(-9.5f, 0,  9.5f));
-        AddStreetLamp(village.transform, new Vector3( 9.5f, 0,  9.5f));
-        AddStreetLamp(village.transform, new Vector3(-9.5f, 0, -9.5f));
-        AddStreetLamp(village.transform, new Vector3( 9.5f, 0, -9.5f));
+        // 4. Tiang Lentera Sudut Alun-Alun (4 Lampu Gantung Kayu Tradisional di 4 Sudut Plaza)
+        AddTraditionalVillageLamp(village.transform, new Vector3(-9.5f, 0,  9.5f),  135f);
+        AddTraditionalVillageLamp(village.transform, new Vector3( 9.5f, 0,  9.5f), -135f);
+        AddTraditionalVillageLamp(village.transform, new Vector3(-9.5f, 0, -9.5f),   45f);
+        AddTraditionalVillageLamp(village.transform, new Vector3( 9.5f, 0, -9.5f),  -45f);
 
         // ═════════════════════════════════════════════════════════════════
         //  C. TATA LETAK 11 GAYA BANGUNAN DESA (TERSTRUKTUR & HARMONIS)
@@ -651,31 +650,126 @@ public static class SceneSetupTool
     }
 
     /// <summary>
-    /// Membangun tiang lentera jalan klasik (Street Lamp)
+    /// Membangun tiang lentera gantung kayu tradisional pedesaan (Rustic Timber Hanging Lantern Post)
+    /// Dilengkapi pondasi batu kasar, tiang kayu gelondongan berklem besi tempa,
+    /// lengan gantung kayu bersiku 45 derajat, rantai besi, dan sangkar lentera berpendar hangat.
+    /// </summary>
+    static void AddTraditionalVillageLamp(Transform parent, Vector3 pos, float yRotation = 0f)
+    {
+        var lampGo = new GameObject("TraditionalVillageLamp");
+        lampGo.transform.SetParent(parent);
+        lampGo.transform.position = pos;
+        lampGo.transform.rotation = Quaternion.Euler(0f, yRotation, 0f);
+
+        // Muat material tematik berkualitas
+        var woodMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/HouseMaterials/M_House_Wood.mat");
+        var darkMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/HouseMaterials/M_House_Dark.mat");
+        var metalMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/HouseMaterials/M_House_Metal.mat");
+        var lampMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/HouseMaterials/M_House_Lamp.mat");
+        var stoneMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/MedievalVillage/Materials/M_Village_Cobblestone_Road.mat");
+
+        // Helper lokal untuk membuat elemen tiang tanpa collider bawaan
+        GameObject MakePart(string name, PrimitiveType type, Vector3 localPos, Vector3 localScale, Material mat, Color fallbackColor)
+        {
+            var go = GameObject.CreatePrimitive(type);
+            go.name = name;
+            go.transform.SetParent(lampGo.transform);
+            go.transform.localPosition = localPos;
+            go.transform.localScale = localScale;
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+            if (mat != null)
+            {
+                var r = go.GetComponent<Renderer>();
+                if (r != null) r.sharedMaterial = mat;
+            }
+            else
+            {
+                ApplyColor(go, fallbackColor);
+            }
+            return go;
+        }
+
+        // 1. Pondasi Batu Kasar (Stone Footing / Pedestal) di atas tanah
+        MakePart("StoneBase", PrimitiveType.Cylinder, new Vector3(0, 0.18f, 0), new Vector3(0.46f, 0.18f, 0.46f), stoneMat, new Color(0.48f, 0.46f, 0.42f));
+        MakePart("BaseRing", PrimitiveType.Cylinder, new Vector3(0, 0.36f, 0), new Vector3(0.24f, 0.04f, 0.24f), metalMat, new Color(0.18f, 0.18f, 0.18f));
+
+        // 2. Tiang Kayu Gelondongan Utama (Weathered Timber Post)
+        MakePart("TimberPost", PrimitiveType.Cylinder, new Vector3(0, 1.45f, 0), new Vector3(0.18f, 1.10f, 0.18f), woodMat, new Color(0.26f, 0.16f, 0.09f));
+
+        // 3. Klem Besi Tempa Pengikat Kayu (Upper Forged Iron Band)
+        MakePart("IronCollarUpper", PrimitiveType.Cylinder, new Vector3(0, 2.30f, 0), new Vector3(0.21f, 0.04f, 0.21f), metalMat, new Color(0.18f, 0.18f, 0.18f));
+
+        // 4. Mahkota Puncak Tiang (Post Top Finial)
+        MakePart("PostCap", PrimitiveType.Cube, new Vector3(0, 2.58f, 0), new Vector3(0.22f, 0.08f, 0.22f), darkMat, new Color(0.20f, 0.12f, 0.07f));
+
+        // 5. Lengan Gantung Kayu Horisontal (Gallows Beam Arm) menjulur ke depan (+Z)
+        MakePart("GallowsArm", PrimitiveType.Cube, new Vector3(0, 2.50f, 0.42f), new Vector3(0.12f, 0.12f, 0.84f), woodMat, new Color(0.26f, 0.16f, 0.09f));
+        MakePart("ArmEndCap", PrimitiveType.Cube, new Vector3(0, 2.50f, 0.85f), new Vector3(0.14f, 0.14f, 0.04f), darkMat, new Color(0.20f, 0.12f, 0.07f));
+
+        // 6. Penyangga Siku Kayu 45 Derajat (Diagonal Support Strut)
+        var strut = MakePart("DiagonalStrut", PrimitiveType.Cube, new Vector3(0, 2.26f, 0.24f), new Vector3(0.09f, 0.09f, 0.42f), woodMat, new Color(0.26f, 0.16f, 0.09f));
+        strut.transform.localRotation = Quaternion.Euler(45f, 0f, 0f);
+
+        // 7. Pengait & Rantai Besi Tempa (Forged Iron Hook & Suspension Chain)
+        MakePart("IronHook", PrimitiveType.Cube, new Vector3(0, 2.41f, 0.72f), new Vector3(0.04f, 0.08f, 0.04f), metalMat, new Color(0.18f, 0.18f, 0.18f));
+        MakePart("ChainLink1", PrimitiveType.Cylinder, new Vector3(0, 2.33f, 0.72f), new Vector3(0.03f, 0.05f, 0.03f), metalMat, new Color(0.18f, 0.18f, 0.18f));
+        MakePart("ChainLink2", PrimitiveType.Cylinder, new Vector3(0, 2.24f, 0.72f), new Vector3(0.03f, 0.05f, 0.03f), metalMat, new Color(0.18f, 0.18f, 0.18f));
+
+        // 8. Sangkar Lentera Tradisional Gantung (Hanging Traditional Village Lantern)
+        float lz = 0.72f;
+        // Ring gantung atas lentera
+        MakePart("LanternRing", PrimitiveType.Cylinder, new Vector3(0, 2.19f, lz), new Vector3(0.08f, 0.02f, 0.08f), metalMat, new Color(0.18f, 0.18f, 0.18f));
+        // Atap limas pelindung cuaca (Pyramid Canopy Roof)
+        MakePart("RoofTop", PrimitiveType.Cube, new Vector3(0, 2.16f, lz), new Vector3(0.24f, 0.04f, 0.24f), metalMat, new Color(0.18f, 0.18f, 0.18f));
+        MakePart("RoofEaves", PrimitiveType.Cube, new Vector3(0, 2.12f, lz), new Vector3(0.36f, 0.03f, 0.36f), metalMat, new Color(0.22f, 0.22f, 0.22f));
+
+        // Alas lentera (Base Tray)
+        MakePart("LanternBase", PrimitiveType.Cube, new Vector3(0, 1.83f, lz), new Vector3(0.30f, 0.04f, 0.30f), metalMat, new Color(0.22f, 0.22f, 0.22f));
+        MakePart("BaseFinial", PrimitiveType.Cylinder, new Vector3(0, 1.79f, lz), new Vector3(0.06f, 0.04f, 0.06f), metalMat, new Color(0.18f, 0.18f, 0.18f));
+
+        // 4 Pilar Sudut Rangka Besi (4 Corner Struts)
+        float[] cOffsets = { -0.12f, 0.12f };
+        for (int i = 0; i < 2; i++)
+        {
+            for (int j = 0; j < 2; j++)
+            {
+                MakePart($"Strut_{i}_{j}", PrimitiveType.Cube, new Vector3(cOffsets[i], 1.975f, lz + cOffsets[j]), new Vector3(0.022f, 0.27f, 0.022f), metalMat, new Color(0.18f, 0.18f, 0.18f));
+            }
+        }
+
+        // Inti Kaca Berpendar Lentera (Emissive Amber Glass Core)
+        var glassCore = MakePart("GlassCore", PrimitiveType.Cylinder, new Vector3(0, 1.975f, lz), new Vector3(0.18f, 0.13f, 0.18f), lampMat, new Color(1f, 0.85f, 0.45f));
+        var glassRend = glassCore.GetComponent<Renderer>();
+
+        // 9. Lampu Titik Amber Hangat (Warm Amber Point Light)
+        var lightGo = new GameObject("LanternPointLight");
+        lightGo.transform.SetParent(lampGo.transform);
+        lightGo.transform.localPosition = new Vector3(0, 1.975f, lz);
+
+        var pLight = lightGo.AddComponent<Light>();
+        pLight.type = LightType.Point;
+        pLight.color = new Color(1f, 0.74f, 0.38f); // Cahaya lilin/minyak hangat
+        pLight.intensity = 2.2f;
+        pLight.range = 12f;
+        pLight.shadows = LightShadows.Soft;
+
+        // 10. NightLight System (Otomatis redup di siang hari, berpendar & berkerlip alami saat senja/malam)
+        var nl = lampGo.AddComponent<NightLight>();
+        nl.Configure(pLight, glassRend, new Color(1f, 0.74f, 0.38f), 2.2f, true);
+
+        // 11. Capsule Collider pada tiang agar pemain dapat menabrak tiang secara realistis
+        var col = lampGo.AddComponent<CapsuleCollider>();
+        col.center = new Vector3(0, 1.35f, 0);
+        col.height = 2.7f;
+        col.radius = 0.25f;
+    }
+
+    /// <summary>
+    /// Overload retro-kompatibel untuk tiang lentera jalan
     /// </summary>
     static void AddStreetLamp(Transform parent, Vector3 pos)
     {
-        var lampGo = new GameObject("StreetLamp");
-        lampGo.transform.SetParent(parent);
-        lampGo.transform.position = pos;
-
-        var post = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        post.name = "LampPost";
-        post.transform.SetParent(lampGo.transform);
-        post.transform.localPosition = new Vector3(0, 1.6f, 0);
-        post.transform.localScale = new Vector3(0.16f, 1.6f, 0.16f);
-        ApplyColor(post, new Color(0.22f, 0.18f, 0.15f));
-        Object.DestroyImmediate(post.GetComponent<Collider>());
-
-        var lantern = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        lantern.name = "LanternHead";
-        lantern.transform.SetParent(lampGo.transform);
-        lantern.transform.localPosition = new Vector3(0, 3.2f, 0);
-        lantern.transform.localScale = new Vector3(0.4f, 0.5f, 0.4f);
-        ApplyColor(lantern, new Color(1f, 0.85f, 0.4f));
-        Object.DestroyImmediate(lantern.GetComponent<Collider>());
-
-        AddPorchLantern(lampGo.transform, new Vector3(0, 3.1f, 0), new Color(1f, 0.75f, 0.35f), 12f);
+        AddTraditionalVillageLamp(parent, pos, 0f);
     }
 
     // ─────────────────────────────────────────────────────────────────────

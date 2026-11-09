@@ -13,13 +13,30 @@ public class NightLight : MonoBehaviour
     float target;
     float current;
 
+    public void Configure(Light light, Renderer emissive = null, Color? emission = null, float intensity = 2f, bool enableFlicker = true)
+    {
+        lightSource = light;
+        emissiveRenderer = emissive;
+        if (emission.HasValue) emissionColor = emission.Value;
+        intensityOn = intensity;
+        flicker = enableFlicker;
+    }
+
     void Start()
     {
         var c = DayNightCycle.Instance;
-        c.OnPhaseChanged += OnPhase;
-        bool nightNow = c.Phase == TimePhase.Dusk || c.Phase == TimePhase.Night;
-        current = target = nightNow ? intensityOn : 0f;
-        Apply(current);
+        if (c != null)
+        {
+            c.OnPhaseChanged += OnPhase;
+            bool nightNow = c.Phase == TimePhase.Dusk || c.Phase == TimePhase.Night;
+            current = target = nightNow ? intensityOn : 0f;
+            Apply(current);
+        }
+        else
+        {
+            current = target = intensityOn;
+            Apply(current);
+        }
     }
 
     void OnDestroy()
