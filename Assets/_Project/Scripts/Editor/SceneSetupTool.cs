@@ -2401,19 +2401,11 @@ public static class SceneSetupTool
         GameObject faunaRoot = GameObject.Find("--- FAUNA & ANIMALS ---");
         if (faunaRoot) Object.DestroyImmediate(faunaRoot);
 
-        // Hapus seluruh objek anjing & kucing jika masih ada di hierarki scene
-        foreach (var obj in Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
-        {
-            if (!obj) continue;
-            string n = obj.name;
-            if (n.StartsWith("Animal_Dog_") || n == "Animal_Milo_Dog" ||
-                n.StartsWith("Animal_Cat_") || n == "Animal_Luna_Cat" || n == "Animal_Oliver_Cat")
-            {
-                Object.DestroyImmediate(obj);
-            }
-        }
-
         faunaRoot = new GameObject("--- FAUNA & ANIMALS ---");
+
+        // 0. Anjing Setia Desa (Milo - Model & Walk Cycle dari dog_walk.py)
+        // Ditempatkan di Alun-Alun Pusat dekat Sumur Desa agar langsung menyambut pemain
+        ProceduralDogBuilder.BuildDog(faunaRoot.transform, new Vector3(-3.5f, 0f, 3.5f), Quaternion.Euler(0, 135f, 0), "Milo");
 
         // 1. Kawanan Serigala Rimba (Di hutan lebat luar pagar desa)
         // Alpha Wolf: Hutan Utara dekat Altar Kuno

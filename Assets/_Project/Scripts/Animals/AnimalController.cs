@@ -87,10 +87,13 @@ public class AnimalController : Interactable
         get { return navAgent != null && navAgent.enabled && navAgent.isOnNavMesh; }
     }
 
+    public float CurrentSpeed => currentSpeed;
+    public bool IsMoving => currentSpeed > 0.15f;
+
     void Awake()
     {
-        // Anjing dan kucing telah dinonaktifkan/dihapus dari desa atas permintaan user
-        if (animalType == AnimalType.Dog || animalType == AnimalType.Cat)
+        // Kucing tetap dinonaktifkan kecuali diaktifkan kembali
+        if (animalType == AnimalType.Cat)
         {
             Destroy(gameObject);
             return;
