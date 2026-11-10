@@ -4,25 +4,36 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 #endif
 
-// Anjing prosedural yang berjalan maju/mundur seperti hewan sungguhan.
+// Anjing prosedural yang jalan-jalan sendiri (Wander), atau bisa mengikuti target / dikontrol keyboard.
 // Tempel ke GameObject kosong lalu Play. Kaki bergerak sesuai kecepatan, jadi tidak meluncur.
 public class DogWalker : MonoBehaviour
 {
-    public enum ControlMode { FollowTarget, Keyboard }
+    public enum ControlMode { Wander, FollowTarget, Keyboard }
 
-    [Header("Kontrol")]
-    public ControlMode mode = ControlMode.FollowTarget;
-    public Transform target;               // yang diikuti (mis. pemain)
-    public float followDistance = 2.5f;    // lebih jauh dari ini: anjing maju
-    public float backDistance = 1.2f;      // lebih dekat dari ini: anjing mundur
-    public float walkSpeed = 1.2f;         // m/detik saat berjalan
-    public float runSpeed = 3.0f;          // m/detik saat target jauh
+    [Header("Mode")]
+    public ControlMode mode = ControlMode.Wander;
+    public Transform target;               // hanya dipakai di mode FollowTarget
+
+    [Header("Jalan-jalan (Wander)")]
+    public float wanderRadius = 8f;        // jarak maksimal dari titik awal
+    public float minPause = 1.5f;          // lama berhenti (detik)
+    public float maxPause = 5f;
+    public float arriveDistance = 0.5f;
+    [Range(0f, 1f)] public float sniffChance = 0.45f;   // peluang mengendus saat berhenti
+    public bool avoidObstacles = true;
+    public LayerMask obstacleMask = ~0;
+
+    [Header("Gerak")]
+    public float walkSpeed = 1.2f;         // m/detik
+    public float runSpeed = 3.0f;          // dipakai mode FollowTarget
     public float turnSpeed = 120f;         // derajat/detik
-    public float acceleration = 4f;        // percepatan/perlambatan
+    public float acceleration = 4f;
+    public float followDistance = 2.5f;
+    public float backDistance = 1.2f;
 
     [Header("Animasi")]
-    public float strideLength = 0.55f;     // jarak (ukuran lokal) per satu siklus langkah. Kecilkan jika kaki terlihat meluncur ke depan
-    public bool snapToGround = true;       // menempel ke tanah dengan raycast
+    public float strideLength = 0.55f;     // kecilkan jika kaki terlihat meluncur ke depan
+    public bool snapToGround = true;
     public LayerMask groundMask = ~0;
     public bool createGround = false;
 
@@ -39,14 +50,18 @@ public class DogWalker : MonoBehaviour
     readonly Dictionary<Color, Material> mats = new Dictionary<Color, Material>();
     Vector3 rootRest;
     Shader shader;
-    float phase;          // fase siklus langkah (bisa maju atau mundur)
-    float speed;          // kecepatan saat ini (negatif = mundur)
-    float amp;            // 0 = diam, 1 = berjalan penuh
-    float idleTime;
+    float phase, speed, amp, idleTime;
+
+    // keadaan jalan-jalan
+    Vector3 home, waypoint;
+    bool hasWaypoint;
+    float pauseTimer, walkTimer, cruise, lookTimer, headYaw, headYawGoal, headPitch, headPitchGoal;
+    bool sniffing;
 
     static Vector3 V(float x, float y, float z) { return new Vector3(x, z, y); }   // Blender -> Unity
     static Vector3 V(Vector3 b) { return new Vector3(b.x, b.z, b.y); }
     static Vector3 B(float x, float y, float z) { return new Vector3(x, y, z); }
+    float Scale { get { return Mathf.Max(0.05f, Mathf.Abs(transform.lossyScale.y)); } }
 
     void Start()
     {
@@ -59,6 +74,10 @@ public class DogWalker : MonoBehaviour
         if (createGround) BuildGround();
         rootRest = pivot["root"].localPosition;
 
+        home = transform.position;
+        cruise = walkSpeed;
+        pauseTimer = Random.Range(0.5f, 2f);   // mulai dengan berhenti sebentar
+
         if (mode == ControlMode.FollowTarget && target == null)
         {
             try
@@ -66,8 +85,8 @@ public class DogWalker : MonoBehaviour
                 var p = GameObject.FindGameObjectWithTag("Player");
                 if (p != null) target = p.transform;
             }
-            catch (UnityException) { /* tag Player belum ada */ }
-            if (target == null) mode = ControlMode.Keyboard;
+            catch (UnityException) { }
+            if (target == null) mode = ControlMode.Wander;
         }
     }
 
@@ -163,7 +182,7 @@ public class DogWalker : MonoBehaviour
         g.GetComponent<Renderer>().sharedMaterial = Mat(new Color(0.16f, 0.19f, 0.14f));
     }
 
-    // ------------------------------------------------------------ kontrol
+    // ------------------------------------------------------------ keputusan gerak
     void ReadKeyboard(out float v, out float h)
     {
         v = 0f; h = 0f;
@@ -180,38 +199,135 @@ public class DogWalker : MonoBehaviour
 #endif
     }
 
-    // Menghasilkan kecepatan tujuan (negatif = mundur) dan arah belok (-1..1)
-    void Decide(out float wantSpeed, out float turn)
+    void Decide(float dt, out float wantSpeed, out float turn)
     {
         wantSpeed = 0f; turn = 0f;
-        if (mode == ControlMode.Keyboard || target == null)
+        switch (mode)
         {
-            float v, h;
-            ReadKeyboard(out v, out h);
-            wantSpeed = v * walkSpeed;
-            turn = h;
-            return;
+            case ControlMode.Keyboard:
+            {
+                float v, h;
+                ReadKeyboard(out v, out h);
+                wantSpeed = v * walkSpeed;
+                turn = h;
+                break;
+            }
+            case ControlMode.FollowTarget:
+                DecideFollow(out wantSpeed, out turn);
+                break;
+            default:
+                DecideWander(dt, out wantSpeed, out turn);
+                break;
         }
+    }
 
+    void DecideFollow(out float wantSpeed, out float turn)
+    {
+        wantSpeed = 0f; turn = 0f;
+        if (target == null) return;
         Vector3 to = target.position - transform.position;
         to.y = 0f;
         float dist = to.magnitude;
         if (dist < 0.001f) return;
-
         float angle = Vector3.SignedAngle(transform.forward, to, Vector3.up);
         turn = Mathf.Clamp(angle / 30f, -1f, 1f);
-
         if (dist > followDistance)
         {
-            // jangan berlari lurus sebelum badan menghadap target
             float facing = Mathf.Clamp01(1f - Mathf.Abs(angle) / 90f);
             float far = Mathf.Clamp01((dist - followDistance) / 3f);
             wantSpeed = Mathf.Lerp(walkSpeed, runSpeed, far) * facing;
         }
         else if (dist < backDistance)
         {
-            wantSpeed = -walkSpeed * 0.6f;      // mundur sambil tetap menghadap target
+            wantSpeed = -walkSpeed * 0.6f;
         }
+    }
+
+    bool Blocked()
+    {
+        if (!avoidObstacles) return false;
+        float sc = Scale;
+        Vector3 origin = transform.position + Vector3.up * 0.5f * sc;
+        RaycastHit hit;
+        if (Physics.Raycast(origin, transform.forward, out hit, 1.1f * sc, obstacleMask, QueryTriggerInteraction.Ignore))
+            return hit.normal.y < 0.6f;     // dinding/benda tegak, bukan lantai miring
+        return false;
+    }
+
+    void PickWaypoint(bool away)
+    {
+        Vector3 dir; float dist;
+        if (away)
+        {
+            float side = Random.value < 0.5f ? -1f : 1f;
+            dir = Quaternion.AngleAxis(Random.Range(120f, 180f) * side, Vector3.up) * transform.forward;
+            dist = Random.Range(2f, 4f) * Scale;
+        }
+        else
+        {
+            dir = Quaternion.AngleAxis(Random.Range(0f, 360f), Vector3.up) * Vector3.forward;
+            dist = Random.Range(wanderRadius * 0.3f, wanderRadius);
+        }
+        Vector3 p = transform.position + dir * dist;
+        Vector3 off = p - home; off.y = 0f;
+        if (off.magnitude > wanderRadius) p = home + off.normalized * wanderRadius;
+        waypoint = p;
+        hasWaypoint = true;
+        walkTimer = 0f;
+        cruise = Random.Range(0.7f, 1.15f) * walkSpeed;
+    }
+
+    void StartPause(float min, float max)
+    {
+        hasWaypoint = false;
+        pauseTimer = Random.Range(min, max);
+        sniffing = Random.value < sniffChance;
+        lookTimer = 0f;
+    }
+
+    void DecideWander(float dt, out float wantSpeed, out float turn)
+    {
+        wantSpeed = 0f; turn = 0f;
+
+        if (pauseTimer > 0f)
+        {
+            pauseTimer -= dt;
+            lookTimer -= dt;
+            if (lookTimer <= 0f)
+            {
+                lookTimer = Random.Range(1f, 2.2f);
+                headYawGoal = Random.Range(-35f, 35f);
+            }
+            headPitchGoal = sniffing ? 22f + 3f * Mathf.Sin(Time.time * 12f) : 0f;
+            return;
+        }
+
+        headYawGoal = 0f; headPitchGoal = 0f;
+        if (!hasWaypoint) PickWaypoint(false);
+
+        walkTimer += dt;
+        Vector3 to = waypoint - transform.position;
+        to.y = 0f;
+        float dist = to.magnitude;
+
+        if (dist < arriveDistance * Scale || walkTimer > 20f)
+        {
+            StartPause(minPause, maxPause);
+            return;
+        }
+
+        if (Blocked())
+        {
+            StartPause(0.3f, 0.9f);     // berhenti sebentar lalu cari arah lain
+            PickWaypoint(true);
+            hasWaypoint = true;
+            return;
+        }
+
+        float angle = Vector3.SignedAngle(transform.forward, to, Vector3.up);
+        turn = Mathf.Clamp(angle / 30f, -1f, 1f);
+        float facing = Mathf.Clamp01(1f - Mathf.Abs(angle) / 70f);   // berbelok dulu baru melangkah
+        wantSpeed = cruise * facing;
     }
 
     // ------------------------------------------------------------ gerak + animasi
@@ -221,7 +337,7 @@ public class DogWalker : MonoBehaviour
         float dt = Time.deltaTime;
 
         float wantSpeed, turn;
-        Decide(out wantSpeed, out turn);
+        Decide(dt, out wantSpeed, out turn);
 
         speed = Mathf.MoveTowards(speed, wantSpeed, acceleration * dt);
         transform.Rotate(0f, turn * turnSpeed * dt, 0f);
@@ -238,13 +354,12 @@ public class DogWalker : MonoBehaviour
             }
         }
 
-        // fase langkah mengikuti jarak tempuh: maju = fase naik, mundur = fase turun
-        float worldStride = Mathf.Max(0.05f, strideLength * Mathf.Abs(transform.lossyScale.y));
-        phase += speed * dt / worldStride;
-
-        float targetAmp = Mathf.Clamp01(Mathf.Abs(speed) / 0.35f);
-        amp = Mathf.MoveTowards(amp, targetAmp, 6f * dt);
+        phase += speed * dt / (strideLength * Scale);
+        amp = Mathf.MoveTowards(amp, Mathf.Clamp01(Mathf.Abs(speed) / 0.35f), 6f * dt);
         idleTime += dt;
+
+        headYaw = Mathf.Lerp(headYaw, headYawGoal, 3f * dt);
+        headPitch = Mathf.Lerp(headPitch, headPitchGoal, 4f * dt);
 
         Animate(Mathf.Repeat(phase, 1f));
     }
@@ -253,7 +368,6 @@ public class DogWalker : MonoBehaviour
 
     void Animate(float t)
     {
-        // urutan jejak kaki: belakang kiri, depan kiri, belakang kanan, depan kanan
         Leg("BL", t, 0.00f, 22f, 45f);
         Leg("FL", t, 0.25f, 26f, 55f);
         Leg("BR", t, 0.50f, 22f, 45f);
@@ -263,12 +377,15 @@ public class DogWalker : MonoBehaviour
         pivot["root"].localPosition = rootRest + Vector3.up * bob;
         pivot["spine"].localRotation = Quaternion.Euler(0, 2.5f * Mathf.Sin(TAU * t) * amp, 0);
         pivot["neck"].localRotation = RotX(3f * Mathf.Sin(TAU * 2f * t + 0.6f) * amp);
-        pivot["head"].localRotation = RotX(-3f * Mathf.Sin(TAU * 2f * t + 0.6f) * amp);
 
-        // ekor tetap mengibas pelan saat diam, lebih cepat saat berjalan
-        float wag = Mathf.Sin(idleTime * Mathf.Lerp(3f, 9f, amp));
+        // kepala: goyangan jalan + menoleh dan mengendus saat berhenti
+        pivot["head"].localRotation = RotX(-3f * Mathf.Sin(TAU * 2f * t + 0.6f) * amp)
+                                      * RotX(-headPitch) * Quaternion.Euler(0, headYaw, 0);
+
+        float rate = Mathf.Lerp(3f, 9f, amp);
+        float wag = Mathf.Sin(idleTime * rate);
         pivot["tail1"].localRotation = Quaternion.Euler(0, Mathf.Lerp(12f, 22f, amp) * wag, 0);
-        pivot["tail2"].localRotation = Quaternion.Euler(0, Mathf.Lerp(10f, 18f, amp) * Mathf.Sin(idleTime * Mathf.Lerp(3f, 9f, amp) - 0.8f), 0);
+        pivot["tail2"].localRotation = Quaternion.Euler(0, Mathf.Lerp(10f, 18f, amp) * Mathf.Sin(idleTime * rate - 0.8f), 0);
     }
 
     void Leg(string leg, float t, float ph, float swingDeg, float flexDeg)
@@ -277,5 +394,12 @@ public class DogWalker : MonoBehaviour
         pivot[leg + "_up"].localRotation = RotX(swingDeg * Mathf.Sin(p) * amp);
         float lift = Mathf.Max(0f, Mathf.Cos(p));
         pivot[leg + "_lo"].localRotation = RotX(-flexDeg * lift * lift * amp);
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = new Color(0.2f, 0.9f, 0.4f, 0.8f);
+        Gizmos.DrawWireSphere(Application.isPlaying ? home : transform.position, wanderRadius);
+        if (Application.isPlaying && hasWaypoint) Gizmos.DrawSphere(waypoint + Vector3.up * 0.1f, 0.12f);
     }
 }
