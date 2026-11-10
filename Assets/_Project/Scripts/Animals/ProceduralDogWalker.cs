@@ -121,11 +121,11 @@ public class ProceduralDogWalker : MonoBehaviour
             // Anggukan leher & kepala berirama (Neck & Head Bob)
             if (neckBone)
             {
-                neckBone.localRotation = initNeckRot * Quaternion.Euler(3.5f * Mathf.Sin(TAU * 2f * t + 0.6f), 0, 0);
+                neckBone.localRotation = initNeckRot * Quaternion.Euler(-3.0f * Mathf.Sin(TAU * 2f * t + 0.6f), 0, 0);
             }
             if (headBone)
             {
-                headBone.localRotation = initHeadRot * Quaternion.Euler(-3.5f * Mathf.Sin(TAU * 2f * t + 0.6f), 0, 0);
+                headBone.localRotation = initHeadRot * Quaternion.Euler(3.0f * Mathf.Sin(TAU * 2f * t + 0.6f), 0, 0);
             }
 
             // Kibasan ekor riang saat berjalan (Tail Wag: 22 deg)
@@ -157,7 +157,7 @@ public class ProceduralDogWalker : MonoBehaviour
             if (neckBone) neckBone.localRotation = Quaternion.Slerp(neckBone.localRotation, initNeckRot, lerpSpeed);
             if (headBone) headBone.localRotation = Quaternion.Slerp(headBone.localRotation, initHeadRot, lerpSpeed);
 
-            // Kibasan ekor ramah & bernapas saat diam
+            // Kibasan ekor ramah saat diam
             if (tail1Bone)
             {
                 tail1Bone.localRotation = initTail1Rot * Quaternion.Euler(0, 14f * Mathf.Sin(Time.time * 3.2f), 0);
@@ -175,11 +175,18 @@ public class ProceduralDogWalker : MonoBehaviour
         if (!up || !lo) return;
 
         float p = TAU * (t - phase);
-        float swing = swingDeg * Mathf.Sin(p);
+        // Di Unity (sumbu +Z adalah arah maju, kaki menjuntai ke bawah pada sumbu -Y):
+        // Rotasi pitch negatif (-X) mengayunkan kaki maju ke depan (+Z).
+        // Pada fase ayun maju (sin(p) > 0), kaki melangkah maju ke depan.
+        float swing = -swingDeg * Mathf.Sin(p);
+
+        // Pada fase layang di udara (cos(p) > 0), lutut / sendi tarsus menekuk ke belakang (-Z)
+        // dan mengangkat telapak kaki agar tidak terseret tanah.
         float lift = Mathf.Max(0f, Mathf.Cos(p));
-        float flex = -flexDeg * lift * lift;
+        float flex = flexDeg * lift * lift;
 
         up.localRotation = initUp * Quaternion.Euler(swing, 0f, 0f);
         lo.localRotation = initLo * Quaternion.Euler(flex, 0f, 0f);
     }
 }
+

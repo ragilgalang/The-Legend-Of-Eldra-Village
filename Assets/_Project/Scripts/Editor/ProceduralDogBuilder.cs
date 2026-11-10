@@ -187,6 +187,9 @@ public static class ProceduralDogBuilder
         ctrl.moveSpeed = 1.8f;
         ctrl.turnSpeed = 220f;
         ctrl.turnSmoothness = 5.0f;
+        ctrl.autoDetectFacing = false;
+        ctrl.flipFacing = false;
+        ctrl.visualRotationOffset = Vector3.zero;
         ctrl.petMessage = $"Guk! {dogName} mengibaskan ekornya riang dan kini menemanimu menjelajahi desa Eldara!";
         ctrl.canFollowPlayer = true;
         ctrl.companionDuration = 60.0f;
@@ -213,3 +216,4 @@ public static class ProceduralDogBuilder
     }
 }
 #endif
+

@@ -2404,8 +2404,8 @@ public static class SceneSetupTool
         faunaRoot = new GameObject("--- FAUNA & ANIMALS ---");
 
         // 0. Anjing Setia Desa (Milo - Model & Walk Cycle dari dog_walk.py)
-        // Ditempatkan di Alun-Alun Pusat dekat Sumur Desa agar langsung menyambut pemain
-        ProceduralDogBuilder.BuildDog(faunaRoot.transform, new Vector3(-3.5f, 0f, 3.5f), Quaternion.Euler(0, 135f, 0), "Milo");
+        // Ditempatkan di Alun-Alun Pusat di depan pemain & dekat Sumur Desa agar langsung terlihat jelas
+        ProceduralDogBuilder.BuildDog(faunaRoot.transform, new Vector3(2.2f, 0f, -3.8f), Quaternion.Euler(0, -135f, 0), "Milo");
 
         // 1. Kawanan Serigala Rimba (Di hutan lebat luar pagar desa)
         // Alpha Wolf: Hutan Utara dekat Altar Kuno

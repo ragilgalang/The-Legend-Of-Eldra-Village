@@ -172,37 +172,39 @@ public class AnimalController : Interactable
     private void ApplyVisualFacing()
     {
         // RESET ke identity terlebih dahulu untuk mencegah akumulasi rotasi ganda.
-        // Data scene (.unity) mungkin sudah menyimpan rotasi lama dari patch sebelumnya.
         visualTransform.localRotation = Quaternion.identity;
+
+        // Anjing prosedural (DogRig dari dog_walk.py) sudah dibangun menghadap +Z maju secara presisi
+        bool isProceduralDog = GetComponentInChildren<ProceduralDogWalker>(true) != null;
+        if (isProceduralDog)
+        {
+            float yaw = flipFacing ? 180f : 0f;
+            visualTransform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            return;
+        }
 
         Quaternion extra;
 
         if (autoDetectFacing)
         {
             float yaw;
-            if (animalType == AnimalType.Dog || animalType == AnimalType.Wolf)
+            if (animalType == AnimalType.Wolf)
             {
-                // Model Dog.fbx dan Wolf.fbx memanjang di sumbu Z, dengan kepala di -Z lokal Blender.
-                // Dibutuhkan rotasi 180° agar moncong/kepala menghadap +Z (arah maju Unity) dan tidak berjalan mundur.
+                // Wolf.fbx dari Kenney memanjang di sumbu Z, kepala di -Z lokal
                 yaw = 180f;
             }
             else if (animalType == AnimalType.Cat)
             {
-                // Model Cat.fbx memanjang di sumbu X, dengan kepala di -X lokal Blender.
-                // Dibutuhkan rotasi -90° agar kepala menghadap +Z.
+                // Cat.fbx memanjang di sumbu X
                 yaw = -90f;
+            }
+            else if (TryDetectBodyAxis(out bool alongX))
+            {
+                yaw = alongX ? -90f : 0f;
             }
             else
             {
-                // Fallback otomatis berdasarkan deteksi sumbu terpanjang
-                if (TryDetectBodyAxis(out bool alongX))
-                {
-                    yaw = alongX ? -90f : 180f;
-                }
-                else
-                {
-                    yaw = visualRotationOffset.y;
-                }
+                yaw = visualRotationOffset.y;
             }
 
             if (flipFacing) yaw += 180f;
@@ -210,14 +212,12 @@ public class AnimalController : Interactable
         }
         else
         {
-            // Fallback: pakai visualRotationOffset yang diatur secara manual di Inspector.
             float yaw = visualRotationOffset.y + (flipFacing ? 180f : 0f);
             extra = Quaternion.Euler(visualRotationOffset.x, yaw, visualRotationOffset.z);
         }
 
         visualTransform.localRotation = extra;
-
-        Debug.Log($"[AnimalController] {animalName} ({animalType}): ApplyVisualFacing → localRotation = {extra.eulerAngles}", gameObject);
+        if (autoDetectFacing) CorrectFacingByHead();
     }
 
     /// <summary>
