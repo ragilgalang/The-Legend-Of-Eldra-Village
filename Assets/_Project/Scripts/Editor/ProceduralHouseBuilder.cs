@@ -70,12 +70,8 @@ public static class ProceduralHouseBuilder
 
     public static void EnsureMaterials()
     {
-        if (!AssetDatabase.IsValidFolder("Assets/_Project/Art"))
-            AssetDatabase.CreateFolder("Assets", "_Project/Art");
-        if (!AssetDatabase.IsValidFolder(FolderHouses))
-            AssetDatabase.CreateFolder("Assets/_Project/Art", "ProceduralHouses");
-        if (!AssetDatabase.IsValidFolder(FolderMats))
-            AssetDatabase.CreateFolder("Assets/_Project/Art", "HouseMaterials");
+        EnsureFolder(FolderHouses);
+        EnsureFolder(FolderMats);
 
         var litShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
 
@@ -123,6 +119,17 @@ public static class ProceduralHouseBuilder
         AssetDatabase.SaveAssets();
     }
 
+    /// <summary>Buat folder beserta seluruh folder induknya (CreateFolder hanya menerima satu level).</summary>
+    private static void EnsureFolder(string path)
+    {
+        if (AssetDatabase.IsValidFolder(path)) return;
+
+        string parent = System.IO.Path.GetDirectoryName(path).Replace('\\', '/');
+        string leaf = System.IO.Path.GetFileName(path);
+        if (!AssetDatabase.IsValidFolder(parent)) EnsureFolder(parent);
+        AssetDatabase.CreateFolder(parent, leaf);
+    }
+
     private static Material GetOrCreateMat(string name, Shader shader, Color color, float smoothness, float metallic = 0f, bool isTransparent = false)
     {
         string path = $"{FolderMats}/{name}.mat";
@@ -140,7 +147,10 @@ public static class ProceduralHouseBuilder
         if (isTransparent)
         {
             mat.SetFloat("_Surface", 1); // 1 = Transparent in URP Lit
+            mat.SetFloat("_Blend", 0);   // Alpha blending
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); // tanpa keyword ini URP tetap merender opaque
             mat.SetOverrideTag("RenderType", "Transparent");
+            mat.SetShaderPassEnabled("ShadowCaster", false); // kaca & air tidak membuat bayangan pekat
             mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
             mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             mat.SetInt("_ZWrite", 0);
@@ -237,7 +247,7 @@ public static class ProceduralHouseBuilder
         go.transform.localPosition = pos;
         go.transform.localRotation = Quaternion.Euler(0, ryDeg, 0);
 
-        string meshKey = $"Cone_{r:F1}_{h:F1}_{sides}";
+        string meshKey = $"Cone_{r:F2}_{h:F2}_{sides}";
         string meshPath = $"{FolderHouses}/Mesh_{meshKey}.asset";
         var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
         if (!mesh)
@@ -312,7 +322,7 @@ public static class ProceduralHouseBuilder
         go.transform.localPosition = pos;
         go.transform.localRotation = Quaternion.Euler(0, ryDeg, 0);
 
-        string meshKey = $"Gable_{baseWidth:F1}_{height:F1}_{thickness:F2}";
+        string meshKey = $"Gable_{baseWidth:F2}_{height:F2}_{thickness:F2}";
         string meshPath = $"{FolderHouses}/Mesh_{meshKey}.asset";
         var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
         if (!mesh)
@@ -374,7 +384,7 @@ public static class ProceduralHouseBuilder
         var go = new GameObject("HipRoof");
         go.transform.SetParent(parent.transform, false);
 
-        string meshKey = $"HipRoof_{hx:F1}_{hz:F1}_{ridgeLen:F1}_{yPeak - yBase:F1}";
+        string meshKey = $"HipRoof_{hx:F2}_{hz:F2}_{ridgeLen:F2}_{yBase:F2}_{yPeak:F2}";
         string meshPath = $"{FolderHouses}/Mesh_{meshKey}.asset";
         var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
         if (!mesh)
@@ -1188,4 +1198,3 @@ public static class ProceduralHouseBuilder
     }
 }
 #endif
-
