@@ -8,7 +8,6 @@ using UnityEngine;
 /// Dikonversi langsung dari script Blender eagle_fly.py.
 /// Tempel ke GameObject kosong lalu Play, atau gunakan lewat SceneSetupTool/AnimalAssetSetup.
 /// </summary>
-[ExecuteAlways]
 public class EagleFlyer : MonoBehaviour
 {
     [Header("Lintasan Terbang")]
@@ -52,21 +51,60 @@ public class EagleFlyer : MonoBehaviour
         EnsureBuilt();
     }
 
+    bool TryBindExistingRig()
+    {
+        var bank = transform.Find("bank");
+        if (!bank) return false;
+        var body = bank.Find("body");
+        if (!body) return false;
+        var neck = body.Find("neck");
+        var head = neck ? neck.Find("head") : null;
+        var tail = body.Find("tail");
+
+        var shR = body.Find("shR");
+        var elR = shR ? shR.Find("elR") : null;
+        var wrR = elR ? elR.Find("wrR") : null;
+
+        var shL = body.Find("shL");
+        var elL = shL ? shL.Find("elL") : null;
+        var wrL = elL ? elL.Find("wrL") : null;
+
+        if (!neck || !head || !tail || !shR || !elR || !wrR || !shL || !elL || !wrL)
+            return false;
+
+        pivots["path"] = transform;
+        pivots["bank"] = bank;
+        pivots["body"] = body;
+        pivots["neck"] = neck;
+        pivots["head"] = head;
+        pivots["tail"] = tail;
+        pivots["shR"] = shR;
+        pivots["elR"] = elR;
+        pivots["wrR"] = wrR;
+        pivots["shL"] = shL;
+        pivots["elL"] = elL;
+        pivots["wrL"] = wrL;
+
+        bodyRestLocalPos = body.localPosition;
+        isBuilt = true;
+        return true;
+    }
+
     public void EnsureBuilt()
     {
-        if (isBuilt && pivots.ContainsKey("body") && pivots["body"] != null) return;
+        if (isBuilt && pivots.ContainsKey("shR") && pivots["shR"] != null) return;
+        if (TryBindExistingRig()) return;
         BuildEagle();
     }
 
     [ContextMenu("Rebuild Eagle")]
     public void BuildEagle()
     {
-        // Bersihkan child lama jika ada
         pivots.Clear();
         pivotWorldBlender.Clear();
         mats.Clear();
 
-        // Hapus model lama (seperti Visual FBX lama atau part lama)
+        // Hapus model lama (seperti part lama dengan abnormal bounds)
         var toDestroy = new List<GameObject>();
         for (int i = 0; i < transform.childCount; i++)
         {
@@ -112,7 +150,7 @@ public class EagleFlyer : MonoBehaviour
                 float d = Mathf.Abs(u - 0.5f) * 2f;
                 float rachis = Mathf.Exp(-Mathf.Pow((u - 0.5f) / 0.05f, 2f));
                 float barb = 0.06f * Mathf.Sin((v * 90f + d * 12f) * Mathf.PI);
-                float g = Mathf.Clamp01(0.78f + 0.16f * rachis + barb + 0.12f * Mathf.Pow(v, 3f));
+                float g = Mathf.Clamp01(0.78f + 0.16f * rachis + barb + 0.12f * Mathf.Pow(Mathf.Clamp01(v), 3f));
                 px[y * w + x] = new Color(g, g, g, 1f);
             }
         }
@@ -180,7 +218,6 @@ public class EagleFlyer : MonoBehaviour
 
     void BuildRigHierarchy()
     {
-        // Root path diwakili oleh transform GameObject ini sendiri
         pivots["path"] = transform;
         pivotWorldBlender["path"] = Vector3.zero;
 
@@ -300,7 +337,9 @@ public class EagleFlyer : MonoBehaviour
 
             Vector3 refVec = Mathf.Abs(t.z) > 0.9f ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 0f, 1f);
             Vector3 nn = Vector3.Cross(t, refVec).normalized;
-            Vector3 bn = Vector3.Cross(t, nn);
+            if (nn.sqrMagnitude < 1e-4f) nn = Vector3.up;
+            Vector3 bn = Vector3.Cross(t, nn).normalized;
+            if (bn.sqrMagnitude < 1e-4f) bn = Vector3.right;
 
             for (int j = 0; j < seg; j++)
             {
@@ -364,13 +403,22 @@ public class EagleFlyer : MonoBehaviour
         for (int i = 0; i <= nu; i++)
         {
             float u = (float)i / nu;
-            float w = W * Mathf.Pow(Mathf.Sin(Mathf.PI * Mathf.Pow(Mathf.Max(u, 1e-4f), 0.75f)), 0.6f);
+            float inner = Mathf.PI * Mathf.Pow(Mathf.Clamp01(Mathf.Max(u, 1e-4f)), 0.75f);
+            float sinVal = Mathf.Sin(inner);
+            float w = sinVal > 0f ? W * Mathf.Pow(sinVal, 0.6f) : 0f;
+            if (float.IsNaN(w) || float.IsInfinity(w)) w = 0f;
+
             for (int j = 0; j <= nv; j++)
             {
                 float v = -1f + 2f * j / nv;
                 float bx = v * w;
                 float by = u * L;
                 float bz = -droop * L * u * u + 0.003f * (1f - Mathf.Abs(v));
+
+                if (float.IsNaN(bx) || float.IsInfinity(bx)) bx = 0f;
+                if (float.IsNaN(by) || float.IsInfinity(by)) by = 0f;
+                if (float.IsNaN(bz) || float.IsInfinity(bz)) bz = 0f;
+
                 verts.Add(V(bx, by, bz));
                 uvs.Add(new Vector2((float)j / nv, u));
             }
@@ -411,7 +459,6 @@ public class EagleFlyer : MonoBehaviour
         float dy = d.y / len;
 
         Mesh fMesh = BuildFeatherMesh(L, W, droop);
-        // Panjang bulu memanjang searah d pada bidang horizontal Unity (dx, 0, dy)
         Quaternion rot = Quaternion.LookRotation(new Vector3(dx, 0f, dy).normalized, Vector3.up);
 
         AddPart(parent, fMesh, mat, root, rot);
@@ -421,7 +468,11 @@ public class EagleFlyer : MonoBehaviour
     {
         var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         var col = go.GetComponent<Collider>();
-        if (col) DestroyImmediate(col);
+        if (col)
+        {
+            if (Application.isPlaying) Destroy(col);
+            else DestroyImmediate(col);
+        }
 
         go.name = "ell";
         go.transform.SetParent(pivots[parent], false);
@@ -648,7 +699,7 @@ public class EagleFlyer : MonoBehaviour
             return;
         }
 
-        float time = Application.isPlaying ? Time.time : (float)Time.realtimeSinceStartup;
+        float time = Time.time;
         float animTime = time * animSpeed;
 
         // Parameter sudut & fase dari script Blender
@@ -657,7 +708,7 @@ public class EagleFlyer : MonoBehaviour
 
         // Envelope kepakan vs melayang (env(t) di eagle_fly.py):
         // Pola: mengepak ~2.4 kepakan, lalu melayang indah di udara (thermal soaring)
-        float u = Mathf.Repeat(animTime, glideCycleDuration) / glideCycleDuration;
+        float u = Mathf.Repeat(animTime, Mathf.Max(0.1f, glideCycleDuration)) / Mathf.Max(0.1f, glideCycleDuration);
         float e = continuousFlapping ? 1f : (SmoothStepCurve(u, 0.02f, 0.10f) * (1f - SmoothStepCurve(u, 0.60f, 0.72f)));
 
         // 1. Posisi & Orientasi Lingkaran Terbang
@@ -715,4 +766,3 @@ public class EagleFlyer : MonoBehaviour
         pivots["tail"].localRotation = Quaternion.Euler(-(4f + e * 6f * Mathf.Sin(ph + 0.9f)), 0f, 0f);
     }
 }
-

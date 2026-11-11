@@ -7,7 +7,6 @@ using UnityEngine;
 /// - dynamic banking (kemiringan ke dalam)
 /// - Bulu berlapis (primer, sekunder, coverts, ekor) dan paruh melengkung
 /// </summary>
-[ExecuteAlways]
 public class EagleController : MonoBehaviour
 {
     [Header("Model & Kinematika Prosedural (eagle_fly.py)")]
