@@ -33,7 +33,6 @@ public class EagleFlyer : MonoBehaviour
     readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
 
     Shader shader;
-    Texture2D featherTexture;
     Vector3 bodyRestLocalPos;
     bool isBuilt = false;
 
@@ -92,67 +91,56 @@ public class EagleFlyer : MonoBehaviour
         if (shader == null) shader = Shader.Find("HDRP/Lit");
         if (shader == null) shader = Shader.Find("Standard");
 
-        // Tekstur helai bulu realistis (rachis tengah & barb miring)
-        int w = 32, h = 128;
-        featherTexture = new Texture2D(w, h, TextureFormat.RGBA32, false)
-        {
-            name = "EagleFeatherTex",
-            wrapMode = TextureWrapMode.Clamp,
-            filterMode = FilterMode.Bilinear
-        };
-        var px = new Color[w * h];
-        for (int y = 0; y < h; y++)
-        {
-            float v = (float)y / (h - 1);
-            for (int x = 0; x < w; x++)
-            {
-                float u = (float)x / (w - 1);
-                float d = Mathf.Abs(u - 0.5f) * 2f;
-                float rachis = Mathf.Exp(-Mathf.Pow((u - 0.5f) / 0.05f, 2f));
-                float barb = 0.06f * Mathf.Sin((v * 90f + d * 12f) * Mathf.PI);
-                float g = Mathf.Clamp01(0.78f + 0.16f * rachis + barb + 0.12f * Mathf.Pow(Mathf.Clamp01(v), 3f));
-                px[y * w + x] = new Color(g, g, g, 1f);
-            }
-        }
-        featherTexture.SetPixels(px);
-        featherTexture.Apply();
-
         Color Hex(string hx)
         {
             ColorUtility.TryParseHtmlString("#" + hx, out Color c);
             return QualitySettings.activeColorSpace == ColorSpace.Linear ? c.linear : c;
         }
 
-        Material MakeMat(string name, Color col, float roughness = 0.8f, float spec = 0.2f, Texture2D tex = null)
+        Material MakeMat(string name, Color col, float roughness = 1.0f)
         {
             var m = new Material(shader) { name = name };
             m.color = col;
             if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", col);
-            if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 1.0f - roughness);
-            if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", 1.0f - roughness);
-            if (m.HasProperty("_SpecularHighlights")) m.SetFloat("_SpecularHighlights", spec > 0.3f ? 1f : 0f);
-            if (tex != null)
-            {
-                if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", tex);
-                if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", tex);
-            }
+            if (m.HasProperty("_Color")) m.SetColor("_Color", col);
+
+            // Bulu elang alami bersifat matte dan tidak memantulkan kilauan silau
+            float smoothness = Mathf.Clamp01(1.0f - roughness);
+            if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", smoothness);
+            if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", smoothness);
+            if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0f);
+
+            // Matikan total kilau spekular dan pantulan lingkungan (skybox)
+            if (m.HasProperty("_SpecularHighlights")) m.SetFloat("_SpecularHighlights", 0f);
+            m.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+
+            if (m.HasProperty("_EnvironmentReflections")) m.SetFloat("_EnvironmentReflections", 0f);
+            m.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+
+            // Geometri bulu memiliki permukaan atas dan bawah terpisah dengan normal valid
+            if (m.HasProperty("_Cull")) m.SetFloat("_Cull", 2f); // Back culling standard
+
+            // Pastikan tidak ada emisi cahaya sama sekali
+            if (m.HasProperty("_EmissionColor")) m.SetColor("_EmissionColor", Color.black);
+            m.DisableKeyword("_EMISSION");
+
             mats[name] = m;
             return m;
         }
 
-        MakeMat("body", Hex("3a2412"), 0.85f);
-        MakeMat("pants", Hex("5a3b1f"), 0.90f);
-        MakeMat("white", Hex("f0efe9"), 0.85f);
-        MakeMat("yellow", Hex("f0b514"), 0.50f, 0.40f);
-        MakeMat("black", Hex("0a0a0a"), 0.35f);
-        MakeMat("eye", Hex("f2d255"), 0.20f, 0.60f);
-        MakeMat("lead", Hex("4a3019"), 0.85f);
-        MakeMat("sec", Hex("2b1a0e"), 0.80f, 0.20f, featherTexture);
-        MakeMat("prim", Hex("241509"), 0.80f, 0.20f, featherTexture);
-        MakeMat("gc", Hex("3d2814"), 0.80f, 0.20f, featherTexture);
-        MakeMat("mc", Hex("4d321b"), 0.80f, 0.20f, featherTexture);
-        MakeMat("lc", Hex("5e4025"), 0.80f, 0.20f, featherTexture);
-        MakeMat("tail", Hex("f7f6f0"), 0.80f, 0.20f, featherTexture);
+        MakeMat("body", Hex("2e1c0e"), 1.0f);    // Bulu badan cokelat tua pekat
+        MakeMat("pants", Hex("3d2613"), 1.0f);   // Bulu paha cokelat tanah alami
+        MakeMat("white", Hex("c8c5bc"), 1.0f);   // Kepala putih gading lembut (tidak silau / anti bloom)
+        MakeMat("yellow", Hex("b8820c"), 0.85f); // Paruh & cakar kuning keemasan matte (smoothness 0.15)
+        MakeMat("black", Hex("101010"), 0.90f);  // Ujung cakar hitam
+        MakeMat("eye", Hex("a07212"), 0.50f);    // Mata elang amber (smoothness 0.5)
+        MakeMat("lead", Hex("331f0f"), 1.0f);    // Tepi depan sayap
+        MakeMat("sec", Hex("22140a"), 1.0f);     // Bulu sekunder gelap pekat
+        MakeMat("prim", Hex("140a04"), 1.0f);    // Bulu primer hitam kecokelatan
+        MakeMat("gc", Hex("2a190c"), 1.0f);      // Coverts besar
+        MakeMat("mc", Hex("331e0e"), 1.0f);      // Coverts tengah
+        MakeMat("lc", Hex("3d2512"), 1.0f);      // Coverts kecil
+        MakeMat("tail", Hex("d0cdc4"), 1.0f);    // Ekor putih gading lembut (tidak silau)
     }
 
     // ------------------------------------------------------------ Rig Hierarchy (Pivots)
@@ -362,6 +350,7 @@ public class EagleFlyer : MonoBehaviour
         var uvs = new List<Vector2>();
         var tris = new List<int>();
 
+        // 1. Simpul Sisi Atas (Dorsal / Permukaan Atas)
         for (int i = 0; i <= nu; i++)
         {
             float u = (float)i / nu;
@@ -386,6 +375,9 @@ public class EagleFlyer : MonoBehaviour
             }
         }
 
+        int topVertCount = verts.Count;
+
+        // Segitiga Sisi Atas (Normal mengarah ke atas / langit)
         for (int i = 0; i < nu; i++)
         {
             for (int j = 0; j < nv; j++)
@@ -395,11 +387,49 @@ public class EagleFlyer : MonoBehaviour
                 int b0 = a + nv + 1;
                 int b1 = a + nv + 2;
 
-                // Sisi atas bulu
                 tris.Add(a); tris.Add(b1); tris.Add(a1);
                 tris.Add(a); tris.Add(b0); tris.Add(b1);
+            }
+        }
 
-                // Sisi bawah bulu (agar bulu terlihat penuh dan solid dari bawah saat terbang di atas pemain)
+        // 2. Simpul Sisi Bawah (Ventral / Permukaan Bawah Sayap)
+        // Dibuat sebagai simpul terpisah dengan offset ketebalan tipis
+        // agar normal sisi bawah mengarah ke bawah (ke arah tanah/pemain)
+        // dan TIDAK saling meniadakan dengan normal sisi atas (mencegah normal (0,0,0) yang memicu NaN dan bloom).
+        for (int i = 0; i <= nu; i++)
+        {
+            float u = (float)i / nu;
+            float inner = Mathf.PI * Mathf.Pow(Mathf.Clamp01(Mathf.Max(u, 1e-4f)), 0.75f);
+            float sinVal = Mathf.Sin(inner);
+            float w = sinVal > 0f ? W * Mathf.Pow(sinVal, 0.6f) : 0f;
+            if (float.IsNaN(w) || float.IsInfinity(w)) w = 0f;
+
+            for (int j = 0; j <= nv; j++)
+            {
+                float v = -1f + 2f * j / nv;
+                float bx = v * w;
+                float by = u * L;
+                float bz = -droop * L * u * u + 0.003f * (1f - Mathf.Abs(v)) - 0.0015f;
+
+                if (float.IsNaN(bx) || float.IsInfinity(bx)) bx = 0f;
+                if (float.IsNaN(by) || float.IsInfinity(by)) by = 0f;
+                if (float.IsNaN(bz) || float.IsInfinity(bz)) bz = 0f;
+
+                verts.Add(V(bx, by, bz));
+                uvs.Add(new Vector2((float)j / nv, u));
+            }
+        }
+
+        // Segitiga Sisi Bawah (Winding terbalik agar normal mengarah ke bawah)
+        for (int i = 0; i < nu; i++)
+        {
+            for (int j = 0; j < nv; j++)
+            {
+                int a = topVertCount + i * (nv + 1) + j;
+                int a1 = a + 1;
+                int b0 = a + nv + 1;
+                int b1 = a + nv + 2;
+
                 tris.Add(a); tris.Add(a1); tris.Add(b1);
                 tris.Add(a); tris.Add(b1); tris.Add(b0);
             }
