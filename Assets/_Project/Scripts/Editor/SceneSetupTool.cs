@@ -27,6 +27,9 @@ public static class SceneSetupTool
             return;
         }
 
+        // Seed tetap: menjalankan ulang setup menghasilkan tata letak yang sama (tidak "mengocok" desa tiap kali).
+        Random.InitState(20260611);
+
         // Pastikan scene yang aktif adalah SampleScene, bukan scene baru kosong (Untitled)
         string sampleScenePath = "Assets/Scenes/SampleScene.unity";
         var activeScene = EditorSceneManager.GetActiveScene();
@@ -96,8 +99,8 @@ public static class SceneSetupTool
                 "🏰 Desa Eldara Skala Penuh Berhasil Dibangun!",
                 "Selamat datang di Desa Eldara versi ekspansif!\n\n" +
                 "Fitur yang telah dibangun:\n" +
-                "☀️ Matahari 3D menyala melengkung di langit (terbit di timur, tenggelam di barat)\n" +
-                "🌙 Bulan perak terbit di sisi seberang saat malam tiba\n" +
+                "☀️ Siklus siang-malam: cahaya matahari bergerak terbit di timur, tenggelam di barat\n" +
+                "🌫️ Warna kabut ikut berubah mengikuti waktu\n" +
                 "☁️ 22+ Awan 3D melayang dinamis ditiup angin & berubah warna fajar-siang-senja\n" +
                 "🏡 11 Gaya Rumah Kayu Realistis: Rumah Gadang, Joglo, Minka Jepang, Log Cabin, Chalet Alpen, A-Frame, Rumah Panggung, Barn, Treehouse, Pondok Danau, & Villa Modern\n" +
                 "👥 5 Karakter NPC 3D Stylized (Porting Blender): Kepala Desa (Merchant), Petani (Farmer), Pandai Besi & Penjaga Benteng (Guard), Dukun (Wizard), & Gadis Desa (Woman) — Lengkap dengan rute patroli mandiri & animasi berjalan prosedural!\n" +
@@ -127,7 +130,7 @@ public static class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
     static void SetupEnvironment()
     {
-        // Ground plane luas (250 x 250 meter)
+        // Ground plane luas (Plane 10 m x skala 50 = 500 x 500 meter)
         GameObject ground = GameObject.Find("Ground");
         if (!ground)
         {
@@ -228,7 +231,7 @@ public static class SceneSetupTool
         soDnc.FindProperty("sunColor").gradientValue = grad;
         soDnc.ApplyModifiedProperties();
 
-        // Pastikan visual bola Matahari dan Bulan terpasang di langit
+        // Terapkan posisi matahari awal (jam startHour) & bersihkan bola matahari/bulan lama
         dnc.EnsureCelestialVisuals();
     }
 
@@ -3270,8 +3273,10 @@ public static class SceneSetupTool
 
     static void EnsureTagExists(string tag)
     {
-        var tagManager = new SerializedObject(
-            AssetDatabase.LoadMainAssetAtPath("ProjectSettings/TagManager.asset"));
+        var tagAssets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
+        if (tagAssets == null || tagAssets.Length == 0) return;
+
+        var tagManager = new SerializedObject(tagAssets[0]);
         var tagsProp = tagManager.FindProperty("tags");
 
         for (int i = 0; i < tagsProp.arraySize; i++)
@@ -3286,6 +3291,8 @@ public static class SceneSetupTool
     static void CreateSimpleDialogue(string npcName, string text, NpcDialogue npcDlg)
     {
         string folder = "Assets/_Project/Dialogues";
+        if (!AssetDatabase.IsValidFolder("Assets/_Project"))
+            AssetDatabase.CreateFolder("Assets", "_Project");
         if (!AssetDatabase.IsValidFolder(folder))
             AssetDatabase.CreateFolder("Assets/_Project", "Dialogues");
 
