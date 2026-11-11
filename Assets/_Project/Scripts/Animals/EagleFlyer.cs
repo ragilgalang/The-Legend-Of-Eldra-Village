@@ -51,49 +51,9 @@ public class EagleFlyer : MonoBehaviour
         EnsureBuilt();
     }
 
-    bool TryBindExistingRig()
-    {
-        var bank = transform.Find("bank");
-        if (!bank) return false;
-        var body = bank.Find("body");
-        if (!body) return false;
-        var neck = body.Find("neck");
-        var head = neck ? neck.Find("head") : null;
-        var tail = body.Find("tail");
-
-        var shR = body.Find("shR");
-        var elR = shR ? shR.Find("elR") : null;
-        var wrR = elR ? elR.Find("wrR") : null;
-
-        var shL = body.Find("shL");
-        var elL = shL ? shL.Find("elL") : null;
-        var wrL = elL ? elL.Find("wrL") : null;
-
-        if (!neck || !head || !tail || !shR || !elR || !wrR || !shL || !elL || !wrL)
-            return false;
-
-        pivots["path"] = transform;
-        pivots["bank"] = bank;
-        pivots["body"] = body;
-        pivots["neck"] = neck;
-        pivots["head"] = head;
-        pivots["tail"] = tail;
-        pivots["shR"] = shR;
-        pivots["elR"] = elR;
-        pivots["wrR"] = wrR;
-        pivots["shL"] = shL;
-        pivots["elL"] = elL;
-        pivots["wrL"] = wrL;
-
-        bodyRestLocalPos = body.localPosition;
-        isBuilt = true;
-        return true;
-    }
-
     public void EnsureBuilt()
     {
         if (isBuilt && pivots.ContainsKey("shR") && pivots["shR"] != null) return;
-        if (TryBindExistingRig()) return;
         BuildEagle();
     }
 
@@ -104,7 +64,7 @@ public class EagleFlyer : MonoBehaviour
         pivotWorldBlender.Clear();
         mats.Clear();
 
-        // Hapus model lama (seperti part lama dengan abnormal bounds)
+        // Hapus model lama agar selalu bersih
         var toDestroy = new List<GameObject>();
         for (int i = 0; i < transform.childCount; i++)
         {
@@ -199,6 +159,7 @@ public class EagleFlyer : MonoBehaviour
     void Pivot(string name, string parent, Vector3 blenderPos)
     {
         var go = new GameObject(name);
+        go.hideFlags = HideFlags.DontSave;
         Vector3 parentBlenderPos = Vector3.zero;
         if (string.IsNullOrEmpty(parent))
         {
@@ -244,6 +205,7 @@ public class EagleFlyer : MonoBehaviour
     GameObject AddPart(string parent, Mesh mesh, Material mat, Vector3 blenderPos = default, Quaternion localRot = default)
     {
         var go = new GameObject(mesh.name);
+        go.hideFlags = HideFlags.DontSave;
         go.transform.SetParent(pivots[parent], false);
         Vector3 pp = pivotWorldBlender[parent];
         go.transform.localPosition = V(blenderPos - pp);
@@ -467,6 +429,7 @@ public class EagleFlyer : MonoBehaviour
     void Ell(string parent, Vector3 center, Vector3 radii, Material mat, float rx = 0f, float rz = 0f)
     {
         var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        go.hideFlags = HideFlags.DontSave;
         var col = go.GetComponent<Collider>();
         if (col)
         {
@@ -714,10 +677,10 @@ public class EagleFlyer : MonoBehaviour
         // 1. Posisi & Orientasi Lingkaran Terbang
         if (updatePosition)
         {
-            Vector3 orbitPos = flightCenter + new Vector3(
-                orbitRadius * Mathf.Cos(th),
-                orbitHeight - flightCenter.y + 0.25f * Mathf.Sin(2f * th),
-                orbitRadius * Mathf.Sin(th)
+            Vector3 orbitPos = new Vector3(
+                flightCenter.x + orbitRadius * Mathf.Cos(th),
+                orbitHeight + 0.25f * Mathf.Sin(2f * th),
+                flightCenter.z + orbitRadius * Mathf.Sin(th)
             );
             transform.position = orbitPos;
             transform.rotation = Quaternion.Euler(0f, -th * Mathf.Rad2Deg, 0f);

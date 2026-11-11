@@ -44,74 +44,28 @@ public class DayNightCycle : MonoBehaviour
 
     public void EnsureCelestialVisuals()
     {
-        if (!followTarget)
+        // Bersihkan objek bola/cincin matahari visual lama di scene agar tidak menghalangi pemandangan desa dan elang terbang
+        var oldSun = GameObject.Find("Visual_Sun_Orb");
+        if (oldSun)
         {
-            var p = GameObject.FindWithTag("Player");
-            if (p) followTarget = p.transform;
+            if (Application.isPlaying) Destroy(oldSun);
+            else DestroyImmediate(oldSun);
         }
-
-        // Buat bola visual Matahari jika belum ada
-        if (!sunVisual)
+        var oldCorona = GameObject.Find("Sun_Corona");
+        if (oldCorona)
         {
-            var existingSun = GameObject.Find("Visual_Sun_Orb");
-            if (existingSun) sunVisual = existingSun.transform;
-            else
-            {
-                var sunGo = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                sunGo.name = "Visual_Sun_Orb";
-                sunGo.transform.SetParent(transform);
-                sunGo.transform.localScale = Vector3.one * 16f; // Bola matahari besar di langit
-                var col = sunGo.GetComponent<Collider>();
-                if (col) DestroyImmediate(col);
-
-                var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
-                var mat = new Material(shader);
-                mat.name = "M_Sun_Glow";
-                Color sunGlow = new Color(1f, 0.92f, 0.55f, 1f);
-                mat.SetColor("_BaseColor", sunGlow);
-                mat.color = sunGlow;
-                sunGo.GetComponent<Renderer>().sharedMaterial = mat;
-
-                // Cincin pendaran cahaya (Corona Glow Ring)
-                var halo = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                halo.name = "Sun_Corona";
-                halo.transform.SetParent(sunGo.transform, false);
-                halo.transform.localScale = Vector3.one * 2.2f;
-                var hCol = halo.GetComponent<Collider>();
-                if (hCol) DestroyImmediate(hCol);
-                halo.GetComponent<Renderer>().sharedMaterial = mat;
-
-                sunVisual = sunGo.transform;
-            }
+            if (Application.isPlaying) Destroy(oldCorona);
+            else DestroyImmediate(oldCorona);
         }
-
-        // Buat bola visual Bulan jika belum ada
-        if (!moonVisual)
+        var oldMoon = GameObject.Find("Visual_Moon_Orb");
+        if (oldMoon)
         {
-            var existingMoon = GameObject.Find("Visual_Moon_Orb");
-            if (existingMoon) moonVisual = existingMoon.transform;
-            else
-            {
-                var moonGo = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                moonGo.name = "Visual_Moon_Orb";
-                moonGo.transform.SetParent(transform);
-                moonGo.transform.localScale = Vector3.one * 10f; // Bola bulan perak di langit
-                var col = moonGo.GetComponent<Collider>();
-                if (col) DestroyImmediate(col);
-
-                var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
-                var mat = new Material(shader);
-                mat.name = "M_Moon_Glow";
-                Color moonGlow = new Color(0.85f, 0.92f, 1.0f, 1f);
-                mat.SetColor("_BaseColor", moonGlow);
-                mat.color = moonGlow;
-                moonGo.GetComponent<Renderer>().sharedMaterial = mat;
-
-                moonVisual = moonGo.transform;
-            }
+            if (Application.isPlaying) Destroy(oldMoon);
+            else DestroyImmediate(oldMoon);
         }
+        sunVisual = null;
+        moonVisual = null;
 
-        // Posisikan matahari dan bulan langsung tinggi di langit (bukan tertinggal di tanah (0,0,0) saat di editor)
         UpdateCelestialPositions();
     }
 
@@ -120,29 +74,12 @@ public class DayNightCycle : MonoBehaviour
         float t = Hour / 24f;
         if (t <= 0.0001f) t = 0.35f; // Default siang (jam ~08:30) jika belum berjalan
 
-        Vector3 centerPos = followTarget ? followTarget.position : (Camera.main ? Camera.main.transform.position : Vector3.zero);
-        centerPos.y = 0f;
-
         if (sun)
         {
             // Perputaran rotasi sudut matahari di langit (Terbit di Timur, Terbenam di Barat)
             sun.transform.rotation = Quaternion.Euler(t * 360f - 90f, 170f, 0);
             if (sunColor != null) sun.color = sunColor.Evaluate(t);
             if (sunIntensity != null && sunIntensity.length > 0) sun.intensity = sunIntensity.Evaluate(t);
-
-            // Pergerakan bola Matahari di langit mengikuti busur orbit matahari (tinggi di angkasa)
-            if (sunVisual)
-            {
-                sunVisual.position = centerPos - sun.transform.forward * celestialDistance;
-                sunVisual.LookAt(centerPos);
-            }
-
-            // Pergerakan bola Bulan di sisi seberang orbit (terbit saat malam)
-            if (moonVisual)
-            {
-                moonVisual.position = centerPos + sun.transform.forward * celestialDistance;
-                moonVisual.LookAt(centerPos);
-            }
         }
     }
 
