@@ -2410,6 +2410,17 @@ public static class SceneSetupTool
         // Ditempatkan di Alun-Alun Pusat di depan pemain & dekat Sumur Desa agar langsung terlihat jelas
         ProceduralDogBuilder.BuildDog(faunaRoot.transform, new Vector3(2.2f, 0f, -3.8f), Quaternion.Euler(0, -135f, 0), "Milo");
 
+        // 0b. Kucing Desa — Luna & Oliver
+        // Model: "Rigged and animated Cat" oleh Blend Swap #86110, CC-BY 3.0
+        // Luna — Kucing abu-abu setia, berputar di dekat sumur alun-alun
+        AnimalAssetSetup.SpawnCat(new Vector3(-3.5f, 0f, 2f),
+            Quaternion.Euler(0, 45f, 0), faunaRoot.transform,
+            "Luna", "Meoow~ Rubuh aku dong, petualang!", altColor: false);
+        // Oliver — Kucing oranye liar yang sering tidur di dekat lentera (pojok alun-alun)
+        AnimalAssetSetup.SpawnCat(new Vector3(9f, 0f, 9f),
+            Quaternion.Euler(0, -120f, 0), faunaRoot.transform,
+            "Oliver", "Purrr... kamu menggangguku tidur!", altColor: true);
+
         // 1. Kawanan Serigala Rimba (Di hutan lebat luar pagar desa)
         // Alpha Wolf: Hutan Utara dekat Altar Kuno
         AnimalAssetSetup.SpawnWolf(new Vector3(2f, 0f, 72f), Quaternion.Euler(0, 180f, 0), faunaRoot.transform, "Serigala Rimba Alpha");
