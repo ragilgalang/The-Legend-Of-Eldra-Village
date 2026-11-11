@@ -479,35 +479,25 @@ public static class AnimalAssetSetup
     {
         PreflightSetup();
 
-        var modelPrefab = LoadAnimalModel("Eagle");
-        if (!modelPrefab) return null;
-
         var eagleRoot = new GameObject("Animal_Eagle_Aquila");
         eagleRoot.transform.SetParent(parent);
         eagleRoot.transform.position = flightCenter;
 
-        var visual = Object.Instantiate(modelPrefab, eagleRoot.transform);
-        visual.name = "Visual";
-        visual.transform.localPosition = Vector3.zero;
-        visual.transform.localRotation = Quaternion.identity;
-        // Skala rentang sayap elang perkasa ~2.0m
-        visual.transform.localScale = Vector3.one * 0.45f;
-
-        ApplyAnimalMaterials(visual, "Eagle");
-
-        var anim = visual.GetComponent<Animator>();
-        if (!anim) anim = visual.AddComponent<Animator>();
-        anim.applyRootMotion = false;
-        var avatar = LoadAnimalAvatar("Eagle");
-        if (avatar != null) anim.avatar = avatar;
-        var ac = GetAnimatorController("Eagle");
-        if (ac != null) anim.runtimeAnimatorController = ac;
+        // Model & Kinematika Prosedural Realistis dari eagle_fly.py
+        var flyer = eagleRoot.AddComponent<EagleFlyer>();
+        flyer.flightCenter = flightCenter;
+        flyer.orbitRadius = 38.0f;
+        flyer.orbitHeight = flightCenter.y;
+        flyer.bankAngle = 18.0f;
+        flyer.orbitDuration = 14.0f;
+        flyer.eagleScale = 1.4f;
+        flyer.EnsureBuilt();
 
         var ctrl = eagleRoot.AddComponent<EagleController>();
         ctrl.flightCenter = flightCenter;
-        ctrl.orbitRadius = 42.0f;
-        ctrl.flightSpeed = 12.5f;
-        ctrl.bankAngle = 22.0f;
+        ctrl.orbitRadius = 38.0f;
+        ctrl.bankAngle = 18.0f;
+        ctrl.useProceduralEagle = true;
 
         return eagleRoot;
     }

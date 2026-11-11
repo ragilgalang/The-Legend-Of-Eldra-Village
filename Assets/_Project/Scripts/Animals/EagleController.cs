@@ -2,19 +2,23 @@ using UnityEngine;
 
 /// <summary>
 /// Kontroler AI Elang Perkasa (Eagle) Desa Eldara.
-/// Elang terbang melayang melingkar di angkasa desa (Sky Soaring Path):
-/// - Radius orbit melingkar luas di atas Balai Desa dan Menara Pertahanan
-/// - Dynamic banking (sayap miring alami ke dalam lingkaran belokan)
-/// - Siklus kepakan sayap realistis: mengepak aktif (flapping) naik-turun dan melayang anggun (thermal soaring)
-/// - Sinkronisasi kecepatan Animator sehingga sayap mengepak nyata naik turun seperti burung
+/// Mengintegrasikan model prosedural dan kinematika realistis dari eagle_fly.py:
+/// - Sayap mengepak naik turun dan melayang bebas (thermal soaring)
+/// - dynamic banking (kemiringan ke dalam)
+/// - Bulu berlapis (primer, sekunder, coverts, ekor) dan paruh melengkung
 /// </summary>
+[ExecuteAlways]
 public class EagleController : MonoBehaviour
 {
+    [Header("Model & Kinematika Prosedural (eagle_fly.py)")]
+    [Tooltip("Jika true, menggunakan model elang dan kinematika terbang prosedural dari eagle_fly.py")]
+    public bool useProceduralEagle = true;
+
     [Header("Parameter Terbang")]
-    public Vector3 flightCenter = new Vector3(0f, 24f, 5f);
-    public float orbitRadius = 42.0f;
+    public Vector3 flightCenter = new Vector3(0f, 26f, 0f);
+    public float orbitRadius = 38.0f;
     public float flightSpeed = 12.0f;
-    public float bankAngle = 20.0f;
+    public float bankAngle = 18.0f;
 
     [Header("Variasi Ketinggian")]
     public float altitudeVariation = 3.5f;
@@ -37,9 +41,30 @@ public class EagleController : MonoBehaviour
     private bool isFlapping = true;
     private Transform modelTransform;
     private Animator animator;
+    private EagleFlyer proceduralFlyer;
 
     void Awake()
     {
+        if (useProceduralEagle)
+        {
+            proceduralFlyer = GetComponent<EagleFlyer>();
+            if (!proceduralFlyer)
+            {
+                proceduralFlyer = gameObject.AddComponent<EagleFlyer>();
+            }
+            proceduralFlyer.flightCenter = flightCenter;
+            proceduralFlyer.orbitRadius = orbitRadius;
+            proceduralFlyer.orbitHeight = flightCenter.y;
+            proceduralFlyer.bankAngle = bankAngle;
+            proceduralFlyer.continuousFlapping = continuousFlapping;
+            proceduralFlyer.EnsureBuilt();
+
+            // Nonaktifkan model FBX lama jika ada
+            var oldVisual = transform.Find("Visual");
+            if (oldVisual) oldVisual.gameObject.SetActive(false);
+            return;
+        }
+
         modelTransform = transform.childCount > 0 ? transform.GetChild(0) : transform;
         animator = GetComponentInChildren<Animator>();
         currentAngle = Random.Range(0f, 360f);
@@ -47,6 +72,8 @@ public class EagleController : MonoBehaviour
 
     void Start()
     {
+        if (useProceduralEagle) return;
+
         if (!animator) animator = GetComponentInChildren<Animator>();
         if (animator != null)
         {
@@ -61,6 +88,12 @@ public class EagleController : MonoBehaviour
 
     void Update()
     {
+        if (useProceduralEagle)
+        {
+            // Semua animasi kepakan sayap, kemiringan badan (banking), dan lintasan melingkar
+            // ditangani secara analitis & prosedural oleh EagleFlyer dari eagle_fly.py
+            return;
+        }
         // 1. Perbarui sudut orbit
         float angularSpeed = (flightSpeed / orbitRadius) * Mathf.Rad2Deg;
         currentAngle += angularSpeed * Time.deltaTime;
