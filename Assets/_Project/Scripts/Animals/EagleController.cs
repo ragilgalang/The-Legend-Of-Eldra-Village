@@ -46,16 +46,22 @@ public class EagleController : MonoBehaviour
     {
         if (useProceduralEagle)
         {
+            // Ambil EagleFlyer yang sudah dipasang oleh AnimalAssetSetup (atau tambah jika belum ada)
+            // JANGAN AddComponent jika sudah ada — mencegah double-build yang menyebabkan mesh ganda
             proceduralFlyer = GetComponent<EagleFlyer>();
             if (!proceduralFlyer)
             {
                 proceduralFlyer = gameObject.AddComponent<EagleFlyer>();
             }
-            proceduralFlyer.flightCenter = flightCenter;
-            proceduralFlyer.orbitRadius = orbitRadius;
-            proceduralFlyer.orbitHeight = flightCenter.y;
-            proceduralFlyer.bankAngle = bankAngle;
+
+            // Sinkronkan parameter terbang dari EagleController ke EagleFlyer
+            proceduralFlyer.flightCenter      = flightCenter;
+            proceduralFlyer.orbitRadius       = orbitRadius;
+            proceduralFlyer.orbitHeight       = flightCenter.y;
+            proceduralFlyer.bankAngle         = bankAngle;
             proceduralFlyer.continuousFlapping = continuousFlapping;
+
+            // EnsureBuilt hanya membangun jika belum pernah dibangun (idempoten)
             proceduralFlyer.EnsureBuilt();
 
             // Nonaktifkan model FBX lama jika ada
