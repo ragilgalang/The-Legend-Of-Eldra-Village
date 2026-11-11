@@ -224,6 +224,15 @@ public class DogWalker : MonoBehaviour
     void DecideFollow(out float wantSpeed, out float turn)
     {
         wantSpeed = 0f; turn = 0f;
+        if (target == null)
+        {
+            try
+            {
+                var p = GameObject.FindGameObjectWithTag("Player");
+                if (p != null) target = p.transform;
+            }
+            catch (UnityException) { }
+        }
         if (target == null) return;
         Vector3 to = target.position - transform.position;
         to.y = 0f;
@@ -250,7 +259,10 @@ public class DogWalker : MonoBehaviour
         Vector3 origin = transform.position + Vector3.up * 0.5f * sc;
         RaycastHit hit;
         if (Physics.Raycast(origin, transform.forward, out hit, 1.1f * sc, obstacleMask, QueryTriggerInteraction.Ignore))
+        {
+            if (hit.transform == transform || hit.transform.IsChildOf(transform)) return false;
             return hit.normal.y < 0.6f;     // dinding/benda tegak, bukan lantai miring
+        }
         return false;
     }
 
@@ -318,9 +330,17 @@ public class DogWalker : MonoBehaviour
 
         if (Blocked())
         {
-            StartPause(0.3f, 0.9f);     // berhenti sebentar lalu cari arah lain
-            PickWaypoint(true);
-            hasWaypoint = true;
+            // Jika terhalang, segera pilih arah berbalik dan putar badan menjauh dari dinding (jangan pause di tempat tanpa memutar)
+            if (!hasWaypoint || walkTimer > 0.4f)
+            {
+                PickWaypoint(true);
+            }
+            Vector3 toAway = waypoint - transform.position;
+            toAway.y = 0f;
+            float awayAngle = Vector3.SignedAngle(transform.forward, toAway, Vector3.up);
+            turn = Mathf.Clamp(awayAngle / 25f, -1f, 1f);
+            if (Mathf.Abs(turn) < 0.25f) turn = 1f; // Pastikan berputar jika waypoint persis di belakang
+            wantSpeed = 0f; // Berhenti maju ke arah dinding, tapi biarkan badan berputar menjauh
             return;
         }
 
@@ -348,9 +368,12 @@ public class DogWalker : MonoBehaviour
             RaycastHit hit;
             if (Physics.Raycast(transform.position + Vector3.up * 2f, Vector3.down, out hit, 6f, groundMask, QueryTriggerInteraction.Ignore))
             {
-                Vector3 p = transform.position;
-                p.y = hit.point.y;
-                transform.position = p;
+                if (hit.transform != transform && !hit.transform.IsChildOf(transform) && hit.normal.y > 0.55f)
+                {
+                    Vector3 p = transform.position;
+                    p.y = hit.point.y;
+                    transform.position = p;
+                }
             }
         }
 
