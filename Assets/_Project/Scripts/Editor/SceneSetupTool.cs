@@ -109,7 +109,7 @@ public static class SceneSetupTool
                 "☀️ Siklus siang-malam: cahaya matahari bergerak terbit di timur, tenggelam di barat\n" +
                 "🌫️ Warna kabut ikut berubah mengikuti waktu\n" +
                 "☁️ 22+ Awan 3D melayang dinamis ditiup angin & berubah warna fajar-siang-senja\n" +
-                "🏡 11 Gaya Rumah Kayu Realistis: Rumah Gadang, Joglo, Minka Jepang, Log Cabin, Chalet Alpen, A-Frame, Rumah Panggung, Barn, Treehouse, Pondok Danau, & Villa Modern\n" +
+                "🏡 Generator Desa Prosedural (DesaGenerator): Balai Desa megah di pusat, jalan salib + lingkar + samping, rumah menghadap jalan, petak sawah padi, lampu jalan, & pohon peneduh\n" +
                 "👥 5 Karakter NPC 3D Stylized (Porting Blender): Kepala Desa (Merchant), Petani (Farmer), Pandai Besi & Penjaga Benteng (Guard), Dukun (Wizard), & Gadis Desa (Woman) — Lengkap dengan rute patroli mandiri & animasi berjalan prosedural!\n" +
                 "🎪 Alun-Alun Pasar: Gerobak pedagang, peti, tong kayu, bangku, & rambu desa\n" +
                 "🌾 Kawasan Pertanian: Lumbung gandum, kandang ternak, & pagar kebun\n" +
@@ -283,11 +283,11 @@ public static class SceneSetupTool
         if (!cc) cc = player.AddComponent<CharacterController>();
         cc.height = 2f; cc.radius = 0.5f; cc.center = Vector3.zero;
 
-        // Reset posisi dan rotasi player secara mutlak di ruang terbuka alun-alun (menghadap ke Utara)
+        // Reset posisi dan rotasi player secara mutlak di pelataran alun-alun depan Balai Desa (menghadap Balai Desa)
         bool ccActive = cc.enabled;
         cc.enabled = false;
-        player.transform.position = new Vector3(0f, 1.05f, -6f);
-        player.transform.rotation = Quaternion.identity;
+        player.transform.position = new Vector3(0f, 1.05f, 10.5f);
+        player.transform.rotation = Quaternion.Euler(0, 180f, 0);
         cc.enabled = ccActive;
 
         playerCtrl = player.GetComponent<PlayerController>();
@@ -361,7 +361,7 @@ public static class SceneSetupTool
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  5. DESA SKALA PENUH (VILLAGE DISTRICTS & PROPS)
+    //  5. DESA PROSEDURAL (DESAGENERATOR)
     // ─────────────────────────────────────────────────────────────────────
     static void SetupExpansiveVillage(Material slavicMat)
     {
@@ -369,209 +369,22 @@ public static class SceneSetupTool
         if (village) Object.DestroyImmediate(village);
 
         village = new GameObject("Village");
+        village.transform.position = Vector3.zero;
 
-        // ═════════════════════════════════════════════════════════════════
-        //  A. SISTEM JALAN KOTA MEDIEVAL (COBBLESTONE BOULEVARD & CONNECTORS)
-        // ═════════════════════════════════════════════════════════════════
-
-        // Material jalan batu paving medieval (PBR Cobblestone)
-        var roadMat = GetOrCreateVillageRoadMaterial();
-
-        // 1. Alun-Alun Paving Pusat (Central Plaza 18 meter)
-        CreateCircularPlaza(village.transform, "Central_Plaza_Stone", Vector3.zero, 9.0f, roadMat, 2.5f);
-
-        var roadsParent = new GameObject("Village_Road_Network");
-        roadsParent.transform.SetParent(village.transform);
-
-        // 2. Jalur Utama Utara (North Avenue, X = 0, Z = 8.8 s/d 32 menuju Balai Desa, lebar 4.2m)
-        CreateContinuousPavedRoad(roadsParent.transform, "Road_North_Avenue",
-            new Vector3(0, 0, 8.8f), new Vector3(0, 0, 32f), 4.2f, roadMat, 2.5f);
-
-        // Pelataran Promenade Balai Desa & Pusat Adat (North Civic Plaza, Z = 32, X = -28 s/d +28, lebar 5.5m)
-        CreateContinuousPavedRoad(roadsParent.transform, "Plaza_North_Civic",
-            new Vector3(-28f, 0, 32f), new Vector3(28f, 0, 32f), 5.5f, roadMat, 2.5f);
-
-        // Jalan Setapak Pintu Rumah Gadang & Pendopo Joglo ke Pelataran Civic
-        CreateContinuousPavedRoad(roadsParent.transform, "Walkway_Civic_Gadang",
-            new Vector3(-22f, 0, 32f), new Vector3(-22f, 0, 35f), 3.0f, roadMat, 2.5f);
-        CreateContinuousPavedRoad(roadsParent.transform, "Walkway_Civic_Joglo",
-            new Vector3(22f, 0, 32f), new Vector3(22f, 0, 35f), 3.0f, roadMat, 2.5f);
-
-        // 3. Jalur Utama Selatan (South Avenue, X = 0, Z = -8.8 s/d -50 menuju Gerbang Benteng, lebar 4.2m)
-        CreateContinuousPavedRoad(roadsParent.transform, "Road_South_Avenue",
-            new Vector3(0, 0, -8.8f), new Vector3(0, 0, -50f), 4.2f, roadMat, 2.5f);
-
-        // Jalan Setapak Penginapan A-Frame & Minka Dukun ke South Avenue
-        CreateContinuousPavedRoad(roadsParent.transform, "Walkway_South_AFrame",
-            new Vector3(-2.1f, 0, -30f), new Vector3(-14f, 0, -30f), 2.8f, roadMat, 2.5f);
-        CreateContinuousPavedRoad(roadsParent.transform, "Walkway_South_Minka",
-            new Vector3(2.1f, 0, -30f), new Vector3(14f, 0, -30f), 2.8f, roadMat, 2.5f);
-
-        // 4. Jalur Utama Barat (West Avenue, Z = 0, X = -8.8 s/d -54 menuju Pertanian & Danau, lebar 4.2m)
-        CreateContinuousPavedRoad(roadsParent.transform, "Road_West_Avenue",
-            new Vector3(-8.8f, 0, 0), new Vector3(-54f, 0, 0), 4.2f, roadMat, 2.5f);
-
-        // Jalan Setapak Rumah-Rumah Distrik Barat ke West Avenue
-        CreateContinuousPavedRoad(roadsParent.transform, "Walkway_West_FarmNorth",
-            new Vector3(-22f, 0, 2.1f), new Vector3(-22f, 0, 11f), 2.8f, roadMat, 2.5f);
-        CreateContinuousPavedRoad(roadsParent.transform, "Walkway_West_BarnNorth",
-            new Vector3(-40f, 0, 2.1f), new Vector3(-40f, 0, 11f), 2.8f, roadMat, 2.5f);
-        CreateContinuousPavedRoad(roadsParent.transform, "Walkway_West_ChaletSouth",
-            new Vector3(-22f, 0, -2.1f), new Vector3(-22f, 0, -11f), 2.8f, roadMat, 2.5f);
-        CreateContinuousPavedRoad(roadsParent.transform, "Walkway_West_LakeSouth",
-            new Vector3(-40f, 0, -2.1f), new Vector3(-40f, 0, -11f), 2.8f, roadMat, 2.5f);
-
-        // 5. Jalur Utama Timur (East Avenue, Z = 0, X = 8.8 s/d 54 menuju Pandai Besi & Pengrajin, lebar 4.2m)
-        CreateContinuousPavedRoad(roadsParent.transform, "Road_East_Avenue",
-            new Vector3(8.8f, 0, 0), new Vector3(54f, 0, 0), 4.2f, roadMat, 2.5f);
-
-        // Jalan Setapak Rumah-Rumah Distrik Timur ke East Avenue
-        CreateContinuousPavedRoad(roadsParent.transform, "Walkway_East_SmithNorth",
-            new Vector3(22f, 0, 2.1f), new Vector3(22f, 0, 11f), 2.8f, roadMat, 2.5f);
-        CreateContinuousPavedRoad(roadsParent.transform, "Walkway_East_StorageNorth",
-            new Vector3(38f, 0, 2.1f), new Vector3(38f, 0, 11f), 2.8f, roadMat, 2.5f);
-        CreateContinuousPavedRoad(roadsParent.transform, "Walkway_East_CabinSouth",
-            new Vector3(22f, 0, -2.1f), new Vector3(22f, 0, -11f), 2.8f, roadMat, 2.5f);
-        CreateContinuousPavedRoad(roadsParent.transform, "Walkway_East_ModernSouth",
-            new Vector3(38f, 0, -2.1f), new Vector3(38f, 0, -11f), 2.8f, roadMat, 2.5f);
-
-        // ═════════════════════════════════════════════════════════════════
-        //  B. ALUN-ALUN PUSAT: SUMUR DESA KUNO & PASAR TERBUKA
-        // ═════════════════════════════════════════════════════════════════
-
-        // 1. Sumur Desa Kuno di Tengah Alun-Alun (Center Well Landmark)
-        BuildVillageWell(village.transform, new Vector3(0f, 0f, 0f));
-
-        // 2. Area Pasar Terbuka (Ditempatkan di sisi timur alun-alun di persimpangan jalan)
-        InstantiateArtModel("Prop_Wagon", new Vector3(12.5f, 0f, 3.5f), Quaternion.Euler(0, -15f, 0), Vector3.one, village.transform);
-        InstantiateArtModel("Prop_Wagon", new Vector3(12.5f, 0f, -3.5f), Quaternion.Euler(0, 20f, 0), Vector3.one, village.transform);
-        InstantiateArtModel("EA03_Prop_Container_Crate_01a", new Vector3(14.5f, 0f, 2f), Quaternion.Euler(0, 15f, 0), Vector3.one, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Container_Crate_02a", new Vector3(15f, 0f, 3.2f), Quaternion.Euler(0, 80f, 0), Vector3.one, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Container_Crate_03a", new Vector3(14.8f, 0.75f, 2.5f), Quaternion.Euler(0, 35f, 0), Vector3.one * 0.9f, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Container_Barrel_01d", new Vector3(16f, 0f, -2f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Container_Barrel_01d", new Vector3(16.7f, 0f, -2.6f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Vegetable_Basket_02", new Vector3(11.5f, 0f, 2.5f), Quaternion.identity, Vector3.one, village.transform, slavicMat);
-
-        // 3. Bangku Santai Warga di Sudut Barat Alun-Alun
-        InstantiateArtModel("EA03_Prop_Town_Bench_01a", new Vector3(-10.5f, 0f, 2.5f), Quaternion.Euler(0, 90f, 0), Vector3.one, village.transform, slavicMat);
-        InstantiateArtModel("EA03_Prop_Town_Bench_01a", new Vector3(-10.5f, 0f, -2.5f), Quaternion.Euler(0, 90f, 0), Vector3.one, village.transform, slavicMat);
-
-        // 4. Tiang Lentera Sudut Alun-Alun (4 Lampu Gantung Kayu Tradisional di 4 Sudut Plaza)
-        AddTraditionalVillageLamp(village.transform, new Vector3(-8.5f, 0,  8.5f),  135f);
-        AddTraditionalVillageLamp(village.transform, new Vector3( 8.5f, 0,  8.5f), -135f);
-        AddTraditionalVillageLamp(village.transform, new Vector3(-8.5f, 0, -8.5f),   45f);
-        AddTraditionalVillageLamp(village.transform, new Vector3( 8.5f, 0, -8.5f),  -45f);
-
-        // ═════════════════════════════════════════════════════════════════
-        //  C. TATA LETAK BANGUNAN DESA (4 DISTRIK SELAYAKNYA DESA NYATA)
-        // ═════════════════════════════════════════════════════════════════
-
-        // ── DISTRIK 1: UTARA — BALAI DESA & PUSAT ADAT PEMERINTAHAN ─────────
-        // Menghadap ke Selatan ke arah Promenade Civic & Alun-Alun
-
-        // 1. Balai Desa Eldara (Megah di ujung North Avenue, menghadap Selatan lurus ke Alun-Alun)
-        var hall = InstantiateArtModel("EA03_Town_Building_Administrative _01a",
-            new Vector3(0f, 0f, 38f), Quaternion.Euler(0, 180f, 0),
-            new Vector3(1.15f, 1.15f, 1.15f), village.transform, slavicMat);
-        if (hall) { hall.name = "Bld_TownHall"; AddPorchLantern(hall.transform, new Vector3(0, 3.2f, -4f), range: 12f); }
-
-        // 2. Rumah Gadang (Rumah Kepala Desa Adat - Sayap Barat Laut, menghadap Selatan ke promenade)
-        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Gadang,
-            new Vector3(-22f, 0f, 36f), Quaternion.Euler(0, 180f, 0),
-            village.transform, "House_KepalaDesa_Gadang");
-
-        // 3. Balai Pertemuan Pendopo Joglo (Sayap Timur Laut, menghadap Selatan ke promenade)
-        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Joglo,
-            new Vector3(22f, 0f, 36f), Quaternion.Euler(0, 180f, 0),
-            village.transform, "Pavilion_Joglo");
-
-        // ── DISTRIK 2: BARAT — KAWASAN PERTANIAN & DANAU ────────────────────
-        // Menghadap ke Jalan Barat (West Avenue Z = 0)
-
-        // 4. Rumah Petani Panggung (Sisi Utara Jalan Barat, menghadap Selatan ke jalan)
-        var farmHouse = ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Panggung,
-            new Vector3(-22f, 0f, 15f), Quaternion.Euler(0, 180f, 0),
-            village.transform, "House_Petani_Panggung");
-        if (farmHouse)
-        {
-            InstantiateArtModel("EA03_Prop_Container_Bale_01a",   new Vector3(-18f, 0f, 10f), Quaternion.identity,          Vector3.one, village.transform, slavicMat);
-            InstantiateArtModel("EA03_Prop_Container_Bale_01a",   new Vector3(-18f, 0.9f, 10.2f), Quaternion.Euler(0,40f,0), Vector3.one, village.transform, slavicMat);
-            InstantiateArtModel("EA03_Prop_Vegetable_Basket_02",  new Vector3(-17f, 0f, 11.5f), Quaternion.identity,         Vector3.one, village.transform, slavicMat);
-        }
-
-        // 5. Lumbung Gandum Besar / Barn (Sisi Utara Jalan Barat, sebelah barat rumah petani, menghadap Selatan)
-        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Barn,
-            new Vector3(-40f, 0f, 15f), Quaternion.Euler(0, 180f, 0),
-            village.transform, "Barn_Gandum");
-
-        // 6. Rumah Warga Lembah / Chalet (Sisi Selatan Jalan Barat, menghadap Utara ke jalan)
-        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Chalet,
-            new Vector3(-22f, 0f, -15f), Quaternion.Euler(0, 0f, 0),
-            village.transform, "House_WargaBarat_Chalet");
-
-        // 7. Pondok Tepi Danau (Sisi Selatan Jalan Barat, sebelah barat Chalet, menghadap Utara ke jalan)
-        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Danau,
-            new Vector3(-40f, 0f, -15f), Quaternion.Euler(0, 0f, 0),
-            village.transform, "House_PondokDanau");
-
-        // ── DISTRIK 3: TIMUR — KAWASAN PANDAI BESI & PENGRAJIN ──────────────
-        // Menghadap ke Jalan Timur (East Avenue Z = 0)
-
-        // 8. Bengkel Pandai Besi (Sisi Utara Jalan Timur, menghadap Selatan ke jalan)
-        var smith = BuildModularHouse(village.transform, "House_PandaiBesi",
-            new Vector3(22f, 0f, 15f), 180f, "wood", false, false);
-        if (smith)
-        {
-            InstantiateArtModel("EA03_Prop_Tool_Stump_02a",          new Vector3(18f, 0f, 10f),     Quaternion.identity,     Vector3.one, village.transform, slavicMat);
-            InstantiateArtModel("EA03_Prop_Tool_Pick_01a",           new Vector3(18.3f,0.4f,10.2f), Quaternion.Euler(45,0,0),Vector3.one, village.transform, slavicMat);
-            InstantiateArtModel("EA03_Prop_Forester_CutOutTrees_03", new Vector3(28f, 0f, 10f),     Quaternion.identity,     Vector3.one, village.transform, slavicMat);
-        }
-
-        // 9. Gudang Logistik Pandai Besi (Sisi Utara Jalan Timur, sebelah timur bengkel, menghadap Selatan)
-        BuildModularHouse(village.transform, "Storage_PandaiBesi",
-            new Vector3(38f, 0f, 15f), 180f, "wood", false, false, small: true);
-
-        // 10. Rumah Pengrajin / Log Cabin (Sisi Selatan Jalan Timur, menghadap Utara ke jalan)
-        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Cabin,
-            new Vector3(22f, 0f, -15f), Quaternion.Euler(0, 0f, 0),
-            village.transform, "House_WargaTimur_Cabin");
-
-        // 11. Villa Kayu Pengrajin Modern (Sisi Selatan Jalan Timur, sebelah timur Cabin, menghadap Utara)
-        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Modern,
-            new Vector3(38f, 0f, -15f), Quaternion.Euler(0, 0f, 0),
-            village.transform, "Villa_Modern");
-
-        // ── DISTRIK 4: SELATAN — KAWASAN PEMUKIMAN & GERBANG BENTENG ────────
-        // Mengapit Jalan Selatan (South Avenue X = 0)
-
-        // 12. Pondok Singgah Pengelana / A-Frame (Sisi Barat Jalan Selatan, menghadap Timur ke jalan)
-        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.AFrame,
-            new Vector3(-16f, 0f, -30f), Quaternion.Euler(0, 90f, 0),
-            village.transform, "House_AFrame_Singgah");
-
-        // 13. Pondok Dukun Mistis Minka (Sisi Timur Jalan Selatan, menghadap Barat ke jalan)
-        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Minka,
-            new Vector3(16f, 0f, -30f), Quaternion.Euler(0, -90f, 0),
-            village.transform, "House_Dukun_Minka");
-
-        // 14. Pos Penjaga Gerbang Barat (Sisi Barat Gerbang Selatan, menghadap Utara)
-        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Cabin,
-            new Vector3(-14f, 0f, -46f), Quaternion.Euler(0, 0f, 0),
-            village.transform, "House_Gerbang_Kiri");
-
-        // 15. Pos Penjaga Gerbang Timur (Sisi Timur Gerbang Selatan, menghadap Utara)
-        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Panggung,
-            new Vector3(14f, 0f, -46f), Quaternion.Euler(0, 0f, 0),
-            village.transform, "House_Gerbang_Kanan");
-
-        // ── DISTRIK LUAR — POS RIMBA ──────────────────────────────────────
-        // 16. Treehouse Pengawas (Pojok Timur Laut di dahan rimba, menghadap Barat Daya ke desa)
-        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Pohon,
-            new Vector3(55f, 0f, 38f), Quaternion.Euler(0, -135f, 0),
-            village.transform, "Treehouse_Pengawas");
-
-        // ── D. PAGAR PEKARANGAN & BATAS KAVLING DESA ──────────────────────
-        BuildVillageYardFences(village.transform, slavicMat);
+        // Pasang DesaGenerator untuk menghasilkan tata letak desa prosedural:
+        // Balai desa di pusat, jalan salib + jalan lingkar + jalan samping,
+        // rumah di kiri-kanan jalan, lampu jalan, sawah bertingkat, dan pohon peneduh.
+        var gen = village.AddComponent<DesaGenerator>();
+        gen.seed = 7;
+        gen.panjangJalan = 84f;
+        gen.jarakRumah = 10f;
+        gen.jumlahPohon = 22;
+        gen.jumlahSawah = 14;
+        gen.malam = false;
+        gen.bangunSaatMulai = false;
+        gen.aturKamera = false; // Biarkan CameraRig RPG mengontrol kamera pemain
+        gen.tambahCollider = true;
+        gen.Bangun();
     }
 
     /// <summary>
@@ -1848,58 +1661,55 @@ public static class SceneSetupTool
         )[]
         {
             // 1. Kepala Desa / Saudagar Terkemuka (Merchant: Baret beludru, jubah merah emas, ransel ekspedisi)
-            // Di pelataran Balai Desa (0, 0, 32), menyusuri Promenade Utara ke Rumah Gadang dan Pendopo Joglo
+            // Di teras Balai Desa (0, 0.9, 6), menyusuri tangga Balai Desa dan Alun-Alun
             ("NPC_KepalaDesa",
              ProceduralNpcBuilder.NpcStyle.Merchant,
-             new Vector3(0f, 0f, 32f), 180f,
+             new Vector3(0f, 0.9f, 6.0f), 180f,
              "Selamat datang, petualang! Desa Eldara dalam bahaya besar. Saat matahari terbenam, pasukan monster akan menyerbu dari rimba kegelapan hutan. Persiapkan persenjataan dan dirikan menara panah!",
              new Vector3[] {
-                 new Vector3(  0f, 0f, 32f), // Pelataran Balai Desa
-                 new Vector3(-22f, 0f, 32f), // Halaman Depan Rumah Gadang
-                 new Vector3( 22f, 0f, 32f), // Pelataran Pendopo Joglo
-                 new Vector3(  0f, 0f, 18f), // North Avenue
-                 new Vector3(  0f, 0f,  8f)  // Pintu Masuk Alun-Alun Utara
+                 new Vector3(0f, 0.9f,  6.0f), // Teras Balai Desa
+                 new Vector3(0f, 0.14f, 10.0f), // Pelataran Alun-Alun
+                 new Vector3(0f, 0.14f, 18.0f), // Jalan Utama Utara
+                 new Vector3(0f, 0.14f, 10.0f)  // Kembali ke Alun-Alun
              }),
 
             // 2. Petani Ladang (Farmer: Caping jerami lebar, rompi kerja, kumis melengkung, & garpu rumput)
-            // Di depan Rumah Petani (-22, 0, 11), menyusuri Jalan Barat ke Lumbung Gandum
+            // Di persimpangan jalan lingkar barat laut dekat petak sawah
             ("NPC_Petani",
              ProceduralNpcBuilder.NpcStyle.Farmer,
-             new Vector3(-22f, 0f, 11f), 180f,
+             new Vector3(-20f, 0.14f, 20f), 180f,
              "Aduh gawat, kawanan serigala buas kemarin malam merusak pagar gandumku! Tolong tebang balok kayu di tepi hutan rimba untuk memperbaiki lumbung kami.",
              new Vector3[] {
-                 new Vector3(-22f, 0f, 11f), // Depan Tangga Panggung
-                 new Vector3(-22f, 0f,  0f), // Persimpangan Jalan Barat
-                 new Vector3(-40f, 0f,  0f), // Depan Lumbung Gandum
-                 new Vector3(-40f, 0f, 11f), // Pintu Masuk Lumbung
-                 new Vector3(-10f, 0f,  0f)  // Pintu Masuk Alun-Alun Barat
+                 new Vector3(-20f, 0.14f, 20f), // Persimpangan Jalan Barat-Lingkar
+                 new Vector3(-42f, 0.14f, 20f), // Jalur Sawah Barat
+                 new Vector3(-42f, 0.14f, 42f), // Ujung Sawah Utara
+                 new Vector3(-20f, 0.14f, 20f)  // Kembali ke Jalan Lingkar
              }),
 
             // 3. Pandai Besi & Ahli Senjata (Guard/Smith: Zirah baja tempa, sabuk kulit, & pedang baja)
-            // Di depan Bengkel Tempa (22, 0, 11), menyusuri Jalan Timur ke Gudang Logistik
+            // Di persimpangan jalan timur & jalan lingkar
             ("NPC_PandaiBesi",
              ProceduralNpcBuilder.NpcStyle.Guard,
-             new Vector3(22f, 0f, 11f), 180f,
+             new Vector3(20f, 0.14f, 0f), 180f,
              "Salam, ksatria! Aku butuh bijih besi murni dan batu keras dari area tambang timur. Bawakan padaku, dan aku akan merakit menara panah yang kokoh!",
              new Vector3[] {
-                 new Vector3(22f, 0f, 11f), // Depan Paron Tempa Bengkel
-                 new Vector3(22f, 0f,  0f), // Persimpangan Jalan Timur
-                 new Vector3(38f, 0f,  0f), // Depan Gudang Logistik
-                 new Vector3(38f, 0f, 11f), // Pintu Masuk Gudang Logistik
-                 new Vector3(10f, 0f,  0f)  // Pintu Masuk Alun-Alun Timur
+                 new Vector3(20f, 0.14f,  0f), // Jalan Lingkar Timur
+                 new Vector3(42f, 0.14f,  0f), // Jalan Samping Timur
+                 new Vector3(20f, 0.14f, 20f), // Jalan Lingkar Timur Laut
+                 new Vector3(20f, 0.14f,  0f)  // Kembali ke Jalan Utama Timur
              }),
 
             // 4. Dukun Mistis Pelindung Segel (Wizard: Topi kerucut sihir, janggut putih, & tongkat kristal)
-            // Di depan Minka (14, 0, -30), bermeditasi di pelataran taman dan jalan selatan
+            // Di jalan lingkar selatan
             ("NPC_Dukun",
              ProceduralNpcBuilder.NpcStyle.Wizard,
-             new Vector3(14f, 0f, -30f), -90f,
+             new Vector3(0f, 0.14f, -20f), 0f,
              "Altar Segel Kuno di utara berdenyut dengan energi gelap... Jika kamu berani mengaktifkannya saat malam tiba, Raja Monster akan terpanggil. Pastikan menara bentengmu sudah siap!",
              new Vector3[] {
-                 new Vector3(14f, 0f, -30f), // Gerbang Minka Jepang
-                 new Vector3( 0f, 0f, -30f), // Persimpangan Jalan Selatan
-                 new Vector3( 0f, 0f, -11f), // Pintu Masuk Alun-Alun Selatan
-                 new Vector3(14f, 0f, -30f)  // Kembali ke Minka
+                 new Vector3( 0f, 0.14f, -20f), // Jalan Lingkar Selatan
+                 new Vector3(20f, 0.14f, -20f), // Sudut Tenggara Lingkar
+                 new Vector3( 0f, 0.14f, -12f), // Pintu Masuk Alun-Alun Selatan
+                 new Vector3( 0f, 0.14f, -20f)  // Kembali ke Selatan
              }),
 
             // 5. Gadis Desa Ramah (Woman: Gaun zamrud, kepang rambut panjang, celemek putih)
@@ -2542,17 +2352,17 @@ public static class SceneSetupTool
         faunaRoot = new GameObject("--- FAUNA & ANIMALS ---");
 
         // 0. Anjing Setia Desa (Milo - Model & Walk Cycle dari dog_walk.py)
-        // Ditempatkan di Alun-Alun Pusat di depan pemain & dekat Sumur Desa agar langsung terlihat jelas
-        ProceduralDogBuilder.BuildDog(faunaRoot.transform, new Vector3(2.2f, 0f, -3.8f), Quaternion.Euler(0, -135f, 0), "Milo");
+        // Ditempatkan di Alun-Alun Pusat di depan pemain agar langsung terlihat jelas
+        ProceduralDogBuilder.BuildDog(faunaRoot.transform, new Vector3(3f, 0.14f, 10f), Quaternion.Euler(0, -135f, 0), "Milo");
 
         // 0b. Kucing Desa — Luna & Oliver
         // Model: "Rigged and animated Cat" oleh Blend Swap #86110, CC-BY 3.0
-        // Luna — Kucing abu-abu setia, berputar di dekat sumur alun-alun
-        AnimalAssetSetup.SpawnCat(new Vector3(-3.5f, 0f, 2f),
+        // Luna — Kucing abu-abu setia di teras Balai Desa
+        AnimalAssetSetup.SpawnCat(new Vector3(-4f, 0.6f, 6.5f),
             Quaternion.Euler(0, 45f, 0), faunaRoot.transform,
             "Luna", "Meoow~ Rubuh aku dong, petualang!", altColor: false);
-        // Oliver — Kucing oranye liar yang sering tidur di dekat lentera (pojok alun-alun)
-        AnimalAssetSetup.SpawnCat(new Vector3(9f, 0f, 9f),
+        // Oliver — Kucing oranye liar yang sering tidur di dekat tiang lampu alun-alun
+        AnimalAssetSetup.SpawnCat(new Vector3(8f, 0.14f, 8f),
             Quaternion.Euler(0, -120f, 0), faunaRoot.transform,
             "Oliver", "Purrr... kamu menggangguku tidur!", altColor: true);
 
