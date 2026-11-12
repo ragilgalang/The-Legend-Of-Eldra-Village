@@ -83,6 +83,10 @@ public static class SceneSetupTool
         //     Desa Nelayan Barat, Tebing Tambang Timur (total peta 500x500m)
         SetupExpandedWorld(slavicMat, grassTuftMat);
 
+        // 9d. MEGA EKSPANSI PETA — 4 Zona Lanjutan (total peta 1000x1000m):
+        //     Puncak Salju Utara, Hutan Peri Selatan, Kuil Laut Barat, Ngarai Api Timur
+        SetupMegaExpansion(slavicMat, grassTuftMat);
+
         // 10. Titik Invasi Monster Malam (4 Arah Hutan Liar)
         SetupEnemySpawners();
 
@@ -112,13 +116,20 @@ public static class SceneSetupTool
                 "🌲 Hutan Rimba Keliling: 90+ Pohon cemara & ek bervariasi mengitari desa\n" +
                 "🐾 Ekosistem Fauna: Serigala Rimba & Elang Perkasa di Langit!\n" +
                 "🏮 Lentera Malam: Lampu lentera hangat di tiap rumah & menara\n\n" +
-                "🗺️ EKSPANSI PETA BARU (500×500 meter):\n" +
+                "🗺️ EKSPANSI PETA GELOMBANG 1 (500×500 meter):\n" +
                 "⛰️ Zona UTARA — Desa Pegunungan, Kuil Batu Kuno, Jembatan Kabut, 2 NPC Baru\n" +
                 "🌿 Zona SELATAN — Rawa Misterius, Perkemahan Goblin, Kolam Racun, NPC Penyihir Rawa\n" +
                 "⛵ Zona BARAT — Desa Nelayan, Dermaga Sungai Perak, Perahu Rakit, Kapten Nelayan\n" +
                 "💎 Zona TIMUR — Tebing Tambang Kristal, Gua Gelap, Formasi Kristal, 2 NPC Penambang\n" +
                 "🛤️ 4 Jalan Cobblestone Penghubung Antar-Zona\n" +
                 "🐺 6 Serigala Tambahan di Tiap Zona Baru\n\n" +
+                "🗺️ MEGA EKSPANSI PETA GELOMBANG 2 (1000×1000 meter):\n" +
+                "🏔️ Zona PUNCAK SALJU UTARA — Kuil Es Kuno, Penjaga Salju, Kristal Beku, Jembatan Batu\n" +
+                "🌸 Zona HUTAN PERI SELATAN — Pohon Bercahaya, Lingkaran Peri, Reruntuhan Mistis, NPC Peri\n" +
+                "🌊 Zona KUIL LAUT BARAT — Kuil Tenggelam, Kolam Besar, Patung Dewa Laut, NPC Penjaga\n" +
+                "🌋 Zona NGARAI API TIMUR — Kawah Vulkanik, Lava, Obsidian Tower, NPC Penjaga Api\n" +
+                "🛤️ 4 Koridor Jalan Tambahan ke Zona Mega\n" +
+                "👾 Musuh Elite di tiap Zona Mega\n\n" +
                 "Tekan ▶ Play untuk mulai menjelajahi dunia barumu!",
                 "Bagus Sekali, Mainkan!"
             );
@@ -130,7 +141,7 @@ public static class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
     static void SetupEnvironment()
     {
-        // Ground plane luas (Plane 10 m x skala 50 = 500 x 500 meter)
+        // Ground plane luas (Plane 10 m x skala 100 = 1000 x 1000 meter)
         GameObject ground = GameObject.Find("Ground");
         if (!ground)
         {
@@ -138,7 +149,7 @@ public static class SceneSetupTool
             ground.name = "Ground";
             ground.transform.position = Vector3.zero;
         }
-        ground.transform.localScale = new Vector3(50f, 1f, 50f);
+        ground.transform.localScale = new Vector3(100f, 1f, 100f);
 
         // Material Rumput Bertekstur PBR dengan Normal Map
         string grassMatPath = "Assets/_Project/Art/SlavicWorld/Materials/M_Ground_Grass.mat";
@@ -2434,10 +2445,10 @@ public static class SceneSetupTool
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  9c. EKSPANSI PETA — 4 ZONA BARU (Total dunia 500x500m)
+    //  9c. EKSPANSI PETA GELOMBANG 1 — 4 ZONA BARU (Total dunia 500x500m)
     // ─────────────────────────────────────────────────────────────────────
     /// <summary>
-    /// Membangun 4 zona dunia baru di luar hutan desa:
+    /// Membangun 4 zona dunia (Gelombang 1) di luar hutan desa:
     /// - UTARA  (Z=160-220): Desa Pegunungan, Kuil Batu Kuno, Jembatan Kabut
     /// - SELATAN (Z=-160 s/d -220): Rawa Misterius, Perkemahan Goblin Bayangan
     /// - BARAT  (X=-155 s/d -220): Desa Nelayan Tepi Sungai, Dermaga, Perahu Rakit
@@ -2959,6 +2970,674 @@ public static class SceneSetupTool
             ApplyColor(spMarker, new Color(0.85f, 0.1f, 0.1f));
             Object.DestroyImmediate(spMarker.GetComponent<Collider>());
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  9d. MEGA EKSPANSI PETA — 4 ZONA LANJUTAN (Total dunia 1000x1000m)
+    // ─────────────────────────────────────────────────────────────────────
+    /// <summary>
+    /// 4 Zona Mega di luar 4 Zona Ekspansi pertama (Z/X 220-480):
+    /// - UTARA JAUH   (Z=280-480): Puncak Salju — Kuil Es Kuno, Penjaga Salju, Kristal Beku
+    /// - SELATAN JAUH (Z=-280 s/d -480): Hutan Peri — Pohon Bercahaya, Lingkaran Peri, Reruntuhan
+    /// - BARAT JAUH   (X=-280 s/d -480): Kuil Laut — Kolam Besar, Patung Dewa, NPC Penjaga
+    /// - TIMUR JAUH   (X=280-480): Ngarai Api — Kawah Vulkanik, Obsidian Tower, NPC Api
+    /// </summary>
+    static void SetupMegaExpansion(Material slavicMat, Material grassMat)
+    {
+        GameObject megaRoot = GameObject.Find("--- MEGA EXPANSION ---");
+        if (megaRoot) Object.DestroyImmediate(megaRoot);
+        megaRoot = new GameObject("--- MEGA EXPANSION ---");
+
+        var barkMat       = AssetMaterialSetup.SetupProceduralBarkMaterial(birch: false);
+        var birchBarkMat  = AssetMaterialSetup.SetupProceduralBarkMaterial(birch: true);
+        var summerLeafMat = AssetMaterialSetup.SetupProceduralFoliageMaterial("SUMMER");
+        var autumnLeafMat = AssetMaterialSetup.SetupProceduralFoliageMaterial("AUTUMN");
+        var roadMat       = GetOrCreateVillageRoadMaterial();
+
+        // ══════════════════════════════════════════════════════════════════
+        // KORIDOR JALAN MEGA — Perpanjang 4 jalan utama ke luar zona 1
+        // ══════════════════════════════════════════════════════════════════
+        var megaRoads = new GameObject("MegaRoad_Network");
+        megaRoads.transform.SetParent(megaRoot.transform);
+
+        // Koridor Utara (Z 220→480)
+        CreateContinuousPavedRoad(megaRoads.transform, "MegaRoad_North_A",
+            new Vector3(0f, 0f, 220f), new Vector3(0f, 0f, 350f), 3.8f, roadMat, 2.5f);
+        CreateContinuousPavedRoad(megaRoads.transform, "MegaRoad_North_B",
+            new Vector3(0f, 0f, 350f), new Vector3(0f, 0f, 480f), 3.8f, roadMat, 2.5f);
+
+        // Koridor Selatan (Z -220→-480)
+        CreateContinuousPavedRoad(megaRoads.transform, "MegaRoad_South_A",
+            new Vector3(0f, 0f, -220f), new Vector3(0f, 0f, -350f), 3.8f, roadMat, 2.5f);
+        CreateContinuousPavedRoad(megaRoads.transform, "MegaRoad_South_B",
+            new Vector3(0f, 0f, -350f), new Vector3(0f, 0f, -480f), 3.8f, roadMat, 2.5f);
+
+        // Koridor Barat (X -220→-480)
+        CreateContinuousPavedRoad(megaRoads.transform, "MegaRoad_West_A",
+            new Vector3(-220f, 0f, 0f), new Vector3(-350f, 0f, 0f), 3.8f, roadMat, 2.5f);
+        CreateContinuousPavedRoad(megaRoads.transform, "MegaRoad_West_B",
+            new Vector3(-350f, 0f, 0f), new Vector3(-480f, 0f, 0f), 3.8f, roadMat, 2.5f);
+
+        // Koridor Timur (X 220→480)
+        CreateContinuousPavedRoad(megaRoads.transform, "MegaRoad_East_A",
+            new Vector3(220f, 0f, 0f), new Vector3(350f, 0f, 0f), 3.8f, roadMat, 2.5f);
+        CreateContinuousPavedRoad(megaRoads.transform, "MegaRoad_East_B",
+            new Vector3(350f, 0f, 0f), new Vector3(480f, 0f, 0f), 3.8f, roadMat, 2.5f);
+
+        // ══════════════════════════════════════════════════════════════════
+        // ZONA MEGA-UTARA — PUNCAK SALJU (Z=280 - 480)
+        // ══════════════════════════════════════════════════════════════════
+        {
+            var snowRoot = new GameObject("Zone_FarNorth_SnowPeak");
+            snowRoot.transform.SetParent(megaRoot.transform);
+            var snowCenter = new Vector3(0f, 0f, 380f);
+
+            // Material salju & es
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var snowMat = new Material(shader);
+            snowMat.SetColor("_BaseColor", new Color(0.92f, 0.96f, 1f));
+            snowMat.SetFloat("_Smoothness", 0.15f);
+            var iceMat = new Material(shader);
+            iceMat.SetColor("_BaseColor", new Color(0.65f, 0.88f, 1f, 0.85f));
+            iceMat.SetFloat("_Smoothness", 0.9f);
+            iceMat.SetFloat("_Metallic", 0.1f);
+            var stoneMat = new Material(shader);
+            stoneMat.SetColor("_BaseColor", new Color(0.5f, 0.52f, 0.56f));
+            stoneMat.SetFloat("_Smoothness", 0.08f);
+
+            // Tanah salju
+            var snowGround = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            snowGround.name = "SnowGround";
+            snowGround.transform.SetParent(snowRoot.transform);
+            snowGround.transform.position = snowCenter;
+            snowGround.transform.localScale = new Vector3(20f, 1f, 20f);
+            snowGround.GetComponent<Renderer>().sharedMaterial = snowMat;
+            Object.DestroyImmediate(snowGround.GetComponent<Collider>());
+
+            // Pegunungan salju (5 gunung berbeda ukuran)
+            var mountains = new (Vector3 offset, Vector3 scale)[]
+            {
+                (new Vector3(  0f, 0f,  40f), new Vector3(50f, 90f, 50f)),
+                (new Vector3( 60f, 0f,  10f), new Vector3(35f, 65f, 35f)),
+                (new Vector3(-55f, 0f,  20f), new Vector3(40f, 70f, 40f)),
+                (new Vector3( 30f, 0f, -30f), new Vector3(28f, 50f, 28f)),
+                (new Vector3(-25f, 0f, -40f), new Vector3(32f, 55f, 32f)),
+            };
+            foreach (var (off, sc) in mountains)
+            {
+                var mt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                mt.name = "SnowMountain";
+                mt.transform.SetParent(snowRoot.transform);
+                mt.transform.position = snowCenter + off;
+                mt.transform.localScale = sc;
+                mt.GetComponent<Renderer>().sharedMaterial = snowMat;
+                Object.DestroyImmediate(mt.GetComponent<Collider>());
+            }
+
+            // Kuil Es Kuno (5 pilar es + atap)
+            var templeCenter = snowCenter + new Vector3(0f, 0f, 10f);
+            var templeRoot = new GameObject("IceTemple");
+            templeRoot.transform.SetParent(snowRoot.transform);
+            templeRoot.transform.position = templeCenter;
+            for (int i = 0; i < 6; i++)
+            {
+                float angle = i * 60f * Mathf.Deg2Rad;
+                var pillar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                pillar.name = $"IceTemple_Pillar_{i}";
+                pillar.transform.SetParent(templeRoot.transform);
+                pillar.transform.localPosition = new Vector3(Mathf.Cos(angle) * 7f, 5f, Mathf.Sin(angle) * 7f);
+                pillar.transform.localScale = new Vector3(1.2f, 5f, 1.2f);
+                pillar.GetComponent<Renderer>().sharedMaterial = iceMat;
+                Object.DestroyImmediate(pillar.GetComponent<Collider>());
+            }
+            // Altar es tengah
+            var altar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            altar.name = "IceTemple_Altar";
+            altar.transform.SetParent(templeRoot.transform);
+            altar.transform.localPosition = new Vector3(0f, 1f, 0f);
+            altar.transform.localScale = new Vector3(4f, 2f, 4f);
+            altar.GetComponent<Renderer>().sharedMaterial = iceMat;
+            Object.DestroyImmediate(altar.GetComponent<Collider>());
+            // Langkah-langkah kuil
+            for (int s = 0; s < 3; s++)
+            {
+                var step = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                step.name = $"IceTemple_Step_{s}";
+                step.transform.SetParent(templeRoot.transform);
+                float sz = 10f - s * 2f;
+                step.transform.localPosition = new Vector3(0f, s * 0.5f - 0.75f, 0f);
+                step.transform.localScale = new Vector3(sz, 0.5f, sz);
+                step.GetComponent<Renderer>().sharedMaterial = stoneMat;
+                Object.DestroyImmediate(step.GetComponent<Collider>());
+            }
+
+            // Formasi kristal beku (8 kristal runcing)
+            for (int k = 0; k < 8; k++)
+            {
+                float ang = k * 45f * Mathf.Deg2Rad;
+                float r   = Random.Range(15f, 30f);
+                float h   = Random.Range(4f, 10f);
+                var crystal = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                crystal.name = $"FrozenCrystal_{k}";
+                crystal.transform.SetParent(snowRoot.transform);
+                crystal.transform.position = snowCenter + new Vector3(Mathf.Cos(ang) * r, h * 0.5f, Mathf.Sin(ang) * r);
+                crystal.transform.localScale = new Vector3(1f, h, 1f);
+                crystal.transform.rotation = Quaternion.Euler(Random.Range(-15f, 15f), 0, Random.Range(-15f, 15f));
+                crystal.GetComponent<Renderer>().sharedMaterial = iceMat;
+                Object.DestroyImmediate(crystal.GetComponent<Collider>());
+            }
+
+            // Jembatan batu menuju kuil (dari Z=280 ke Z=320)
+            for (int b = 0; b < 5; b++)
+            {
+                var plank = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                plank.name = $"SnowBridge_Plank_{b}";
+                plank.transform.SetParent(snowRoot.transform);
+                plank.transform.position = new Vector3(0f, 0.2f, 290f + b * 7f);
+                plank.transform.localScale = new Vector3(5f, 0.4f, 6f);
+                plank.GetComponent<Renderer>().sharedMaterial = stoneMat;
+                Object.DestroyImmediate(plank.GetComponent<Collider>());
+            }
+
+            // Pohon pinus bersalju (20 pohon)
+            for (int t = 0; t < 20; t++)
+            {
+                float tx = Random.Range(-80f, 80f);
+                float tz = Random.Range(-60f, 60f);
+                ProceduralTreeBuilder.BuildTree(
+                    snowRoot.transform,
+                    snowCenter + new Vector3(tx, 0f, tz),
+                    Random.Range(5f, 10f), barkMat, summerLeafMat, false);
+            }
+
+            // Cahaya biru redup (aura dingin)
+            var coldLight = new GameObject("SnowPeak_AmbientLight");
+            coldLight.transform.SetParent(snowRoot.transform);
+            coldLight.transform.position = snowCenter + new Vector3(0f, 25f, 0f);
+            var cl = coldLight.AddComponent<Light>();
+            cl.type = LightType.Point;
+            cl.color = new Color(0.6f, 0.8f, 1f);
+            cl.intensity = 1.2f;
+            cl.range = 180f;
+
+            // NPC Penjaga Salju
+            SpawnNPC(snowRoot.transform, "NPC_PenjagaSalju",
+                snowCenter + new Vector3(-8f, 0f, 5f), Quaternion.Euler(0, 160f, 0),
+                new Color(0.72f, 0.78f, 0.85f),
+                "Hati-hati, pengembara! Kuil Es ini menyimpan bahaya purba...");
+
+            // Spawn musuh elite zona salju
+            SpawnEnemyMarker(snowRoot.transform, "Elite_FrostGuardian_1", snowCenter + new Vector3( 12f, 0f, 15f));
+            SpawnEnemyMarker(snowRoot.transform, "Elite_FrostGuardian_2", snowCenter + new Vector3(-12f, 0f, 15f));
+            SpawnEnemyMarker(snowRoot.transform, "Elite_FrostGuardian_3", snowCenter + new Vector3(  0f, 0f, 30f));
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // ZONA MEGA-SELATAN — HUTAN PERI (Z=-280 s/d -480)
+        // ══════════════════════════════════════════════════════════════════
+        {
+            var fairyRoot = new GameObject("Zone_FarSouth_FairyForest");
+            fairyRoot.transform.SetParent(megaRoot.transform);
+            var fairyCenter = new Vector3(0f, 0f, -380f);
+
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var fairyMossMat = new Material(shader);
+            fairyMossMat.SetColor("_BaseColor", new Color(0.1f, 0.55f, 0.2f));
+            fairyMossMat.SetFloat("_Smoothness", 0.3f);
+            var glowMat = new Material(shader);
+            glowMat.SetColor("_BaseColor", new Color(0.9f, 1f, 0.5f));
+            glowMat.SetColor("_EmissionColor", new Color(0.3f, 0.7f, 0.1f) * 2.5f);
+            glowMat.EnableKeyword("_EMISSION");
+            var ruinStoneMat = new Material(shader);
+            ruinStoneMat.SetColor("_BaseColor", new Color(0.35f, 0.38f, 0.3f));
+            ruinStoneMat.SetFloat("_Smoothness", 0.05f);
+
+            // Tanah berlumut hijau tua
+            var fairyGround = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            fairyGround.name = "FairyGround";
+            fairyGround.transform.SetParent(fairyRoot.transform);
+            fairyGround.transform.position = fairyCenter;
+            fairyGround.transform.localScale = new Vector3(20f, 1f, 20f);
+            fairyGround.GetComponent<Renderer>().sharedMaterial = fairyMossMat;
+            Object.DestroyImmediate(fairyGround.GetComponent<Collider>());
+
+            // Pohon bercahaya besar (15 pohon raksasa)
+            for (int t = 0; t < 15; t++)
+            {
+                float tx = Random.Range(-85f, 85f);
+                float tz = Random.Range(-70f, 70f);
+                var treePos = fairyCenter + new Vector3(tx, 0f, tz);
+                ProceduralTreeBuilder.BuildTree(fairyRoot.transform, treePos,
+                    Random.Range(9f, 18f), barkMat, summerLeafMat, false);
+                // Tambah cahaya peri di setiap pohon
+                var glowGo = new GameObject($"FairyGlow_{t}");
+                glowGo.transform.SetParent(fairyRoot.transform);
+                glowGo.transform.position = treePos + new Vector3(0f, 4f, 0f);
+                var gl = glowGo.AddComponent<Light>();
+                gl.type = LightType.Point;
+                gl.color = new Color(
+                    Random.Range(0.3f, 1f),
+                    Random.Range(0.6f, 1f),
+                    Random.Range(0.2f, 0.8f));
+                gl.intensity = 0.8f;
+                gl.range = 12f;
+            }
+
+            // Lingkaran Peri (Fairy Ring) — 12 jamur bercahaya melingkar
+            for (int m = 0; m < 12; m++)
+            {
+                float ang = m * 30f * Mathf.Deg2Rad;
+                var mushroom = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                mushroom.name = $"FairyMushroom_{m}";
+                mushroom.transform.SetParent(fairyRoot.transform);
+                mushroom.transform.position = fairyCenter + new Vector3(Mathf.Cos(ang) * 8f, 0.4f, Mathf.Sin(ang) * 8f);
+                mushroom.transform.localScale = new Vector3(0.5f, 0.4f, 0.5f);
+                mushroom.GetComponent<Renderer>().sharedMaterial = glowMat;
+                Object.DestroyImmediate(mushroom.GetComponent<Collider>());
+                // Tutup jamur
+                var cap = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                cap.name = $"FairyMushroomCap_{m}";
+                cap.transform.SetParent(fairyRoot.transform);
+                cap.transform.position = fairyCenter + new Vector3(Mathf.Cos(ang) * 8f, 1.1f, Mathf.Sin(ang) * 8f);
+                cap.transform.localScale = new Vector3(1.1f, 0.55f, 1.1f);
+                var capMat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+                capMat.SetColor("_BaseColor", new Color(Random.Range(0.6f, 1f), 0.1f, Random.Range(0.1f, 0.4f)));
+                capMat.SetColor("_EmissionColor", capMat.GetColor("_BaseColor") * 1.5f);
+                capMat.EnableKeyword("_EMISSION");
+                cap.GetComponent<Renderer>().sharedMaterial = capMat;
+                Object.DestroyImmediate(cap.GetComponent<Collider>());
+            }
+            // Altar Lingkaran Peri
+            var fairyAltar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            fairyAltar.name = "FairyAltar";
+            fairyAltar.transform.SetParent(fairyRoot.transform);
+            fairyAltar.transform.position = fairyCenter + new Vector3(0f, 0.5f, 0f);
+            fairyAltar.transform.localScale = new Vector3(2.5f, 0.5f, 2.5f);
+            fairyAltar.GetComponent<Renderer>().sharedMaterial = glowMat;
+            Object.DestroyImmediate(fairyAltar.GetComponent<Collider>());
+
+            // Reruntuhan batu kuno (4 tembok runtuh)
+            var ruinOffsets = new Vector3[]
+            {
+                new Vector3( 20f, 0f,  18f), new Vector3(-22f, 0f,  15f),
+                new Vector3( 18f, 0f, -20f), new Vector3(-18f, 0f, -18f),
+            };
+            foreach (var ro in ruinOffsets)
+            {
+                for (int rb = 0; rb < 3; rb++)
+                {
+                    var rBlock = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    rBlock.name = "FairyRuin_Block";
+                    rBlock.transform.SetParent(fairyRoot.transform);
+                    rBlock.transform.position = fairyCenter + ro + new Vector3(rb * 1.4f, Random.Range(0.5f, 1.5f), 0f);
+                    rBlock.transform.localScale = new Vector3(1.2f, Random.Range(1f, 2.5f), 1.2f);
+                    rBlock.transform.rotation = Quaternion.Euler(0f, Random.Range(-15f, 15f), Random.Range(-10f, 10f));
+                    rBlock.GetComponent<Renderer>().sharedMaterial = ruinStoneMat;
+                    Object.DestroyImmediate(rBlock.GetComponent<Collider>());
+                }
+            }
+
+            // Cahaya hijau keemasan (atmosfer peri)
+            var fairyLight = new GameObject("FairyForest_AmbientLight");
+            fairyLight.transform.SetParent(fairyRoot.transform);
+            fairyLight.transform.position = fairyCenter + new Vector3(0f, 30f, 0f);
+            var fl = fairyLight.AddComponent<Light>();
+            fl.type = LightType.Point;
+            fl.color = new Color(0.4f, 1f, 0.5f);
+            fl.intensity = 1.5f;
+            fl.range = 200f;
+
+            // NPC Peri Hutan
+            SpawnNPC(fairyRoot.transform, "NPC_PeriHutan",
+                fairyCenter + new Vector3(5f, 0f, -5f), Quaternion.Euler(0, 30f, 0),
+                new Color(0.7f, 1f, 0.7f),
+                "Selamat datang di Hutan Peri, pengembara! Jangan ganggu Lingkaran Peri...");
+
+            // Spawn musuh penjaga hutan peri
+            SpawnEnemyMarker(fairyRoot.transform, "Elite_FairyGuardian_1", fairyCenter + new Vector3(-15f, 0f, -10f));
+            SpawnEnemyMarker(fairyRoot.transform, "Elite_FairyGuardian_2", fairyCenter + new Vector3( 15f, 0f, -10f));
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // ZONA MEGA-BARAT — KUIL LAUT (X=-280 s/d -480)
+        // ══════════════════════════════════════════════════════════════════
+        {
+            var seaRoot = new GameObject("Zone_FarWest_SeaTemple");
+            seaRoot.transform.SetParent(megaRoot.transform);
+            var seaCenter = new Vector3(-380f, 0f, 0f);
+
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var waterMat = new Material(shader);
+            waterMat.SetColor("_BaseColor", new Color(0.05f, 0.4f, 0.7f, 0.75f));
+            waterMat.SetFloat("_Smoothness", 0.95f);
+            waterMat.SetFloat("_Metallic", 0.1f);
+            if (waterMat.HasProperty("_Surface")) waterMat.SetFloat("_Surface", 1f); // transparent
+            waterMat.renderQueue = 3000;
+            var coralMat = new Material(shader);
+            coralMat.SetColor("_BaseColor", new Color(1f, 0.4f, 0.3f));
+            coralMat.SetFloat("_Smoothness", 0.3f);
+            var tempStoneMat = new Material(shader);
+            tempStoneMat.SetColor("_BaseColor", new Color(0.4f, 0.5f, 0.55f));
+            tempStoneMat.SetFloat("_Smoothness", 0.5f);
+            var godMat = new Material(shader);
+            godMat.SetColor("_BaseColor", new Color(0.8f, 0.65f, 0.2f));
+            godMat.SetFloat("_Metallic", 0.6f);
+            godMat.SetFloat("_Smoothness", 0.7f);
+
+            // Kolam besar kuil laut
+            var pool = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            pool.name = "SeaTemple_Pool";
+            pool.transform.SetParent(seaRoot.transform);
+            pool.transform.position = seaCenter + new Vector3(0f, -0.4f, 0f);
+            pool.transform.localScale = new Vector3(80f, 0.4f, 80f);
+            pool.GetComponent<Renderer>().sharedMaterial = waterMat;
+            Object.DestroyImmediate(pool.GetComponent<Collider>());
+
+            // Kuil di tengah kolam (platform bertingkat)
+            for (int lvl = 0; lvl < 4; lvl++)
+            {
+                float sz = 22f - lvl * 4.5f;
+                var platform = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                platform.name = $"SeaTemple_Platform_{lvl}";
+                platform.transform.SetParent(seaRoot.transform);
+                platform.transform.position = seaCenter + new Vector3(0f, lvl * 2.5f - 0.3f, 0f);
+                platform.transform.localScale = new Vector3(sz, 1.2f, sz);
+                platform.GetComponent<Renderer>().sharedMaterial = tempStoneMat;
+                Object.DestroyImmediate(platform.GetComponent<Collider>());
+            }
+
+            // Patung Dewa Laut (3 patung di platform atas)
+            var godPositions = new Vector3[]
+            {
+                new Vector3(0f, 11f, 0f),
+                new Vector3(5f, 10.5f, 0f),
+                new Vector3(-5f, 10.5f, 0f),
+            };
+            foreach (var gp in godPositions)
+            {
+                var godBody = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                godBody.name = "SeaGod_Statue";
+                godBody.transform.SetParent(seaRoot.transform);
+                godBody.transform.position = seaCenter + gp;
+                godBody.transform.localScale = new Vector3(1.5f, 2.5f, 1.5f);
+                godBody.GetComponent<Renderer>().sharedMaterial = godMat;
+                Object.DestroyImmediate(godBody.GetComponent<Collider>());
+            }
+
+            // 8 Pilar kuil mengelilingi platform
+            for (int p = 0; p < 8; p++)
+            {
+                float ang = p * 45f * Mathf.Deg2Rad;
+                var pillar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                pillar.name = $"SeaTemple_Pillar_{p}";
+                pillar.transform.SetParent(seaRoot.transform);
+                pillar.transform.position = seaCenter + new Vector3(Mathf.Cos(ang) * 11f, 5.5f, Mathf.Sin(ang) * 11f);
+                pillar.transform.localScale = new Vector3(1.5f, 5.5f, 1.5f);
+                pillar.GetComponent<Renderer>().sharedMaterial = tempStoneMat;
+                Object.DestroyImmediate(pillar.GetComponent<Collider>());
+            }
+
+            // Karang dan formasi bawah laut mengelilingi kolam (karang terumbu)
+            for (int c = 0; c < 15; c++)
+            {
+                float ang = c * 24f * Mathf.Deg2Rad;
+                float r   = Random.Range(42f, 55f);
+                var coral = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                coral.name = $"CoralReef_{c}";
+                coral.transform.SetParent(seaRoot.transform);
+                coral.transform.position = seaCenter + new Vector3(Mathf.Cos(ang) * r, Random.Range(-0.5f, 1.5f), Mathf.Sin(ang) * r);
+                coral.transform.localScale = new Vector3(Random.Range(1.5f, 4f), Random.Range(1f, 3f), Random.Range(1.5f, 4f));
+                coral.GetComponent<Renderer>().sharedMaterial = coralMat;
+                Object.DestroyImmediate(coral.GetComponent<Collider>());
+            }
+
+            // Jembatan kayu ke kuil (dari X=-220 ke kolam)
+            for (int b = 0; b < 10; b++)
+            {
+                var plank = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                plank.name = $"SeaBridge_Plank_{b}";
+                plank.transform.SetParent(seaRoot.transform);
+                plank.transform.position = seaCenter + new Vector3(45f - b * 5f, 0.15f, 0f);
+                plank.transform.localScale = new Vector3(4f, 0.3f, 5f);
+                plank.GetComponent<Renderer>().sharedMaterial = tempStoneMat;
+                Object.DestroyImmediate(plank.GetComponent<Collider>());
+            }
+
+            // Cahaya biru laut dari bawah
+            var seaLight = new GameObject("SeaTemple_Light");
+            seaLight.transform.SetParent(seaRoot.transform);
+            seaLight.transform.position = seaCenter + new Vector3(0f, 5f, 0f);
+            var sL = seaLight.AddComponent<Light>();
+            sL.type = LightType.Point;
+            sL.color = new Color(0.1f, 0.5f, 1f);
+            sL.intensity = 2.5f;
+            sL.range = 100f;
+
+            // NPC Penjaga Kuil Laut
+            SpawnNPC(seaRoot.transform, "NPC_PenjagaKuilLaut",
+                seaCenter + new Vector3(32f, 0f, 5f), Quaternion.Euler(0, -90f, 0),
+                new Color(0.4f, 0.6f, 0.8f),
+                "Kuil Dewa Laut ini sudah berdiri ribuan tahun. Hormati tempat ini, wahai pengembara.");
+
+            AnimalAssetSetup.SpawnWolf(seaCenter + new Vector3(38f, 0f, -8f),
+                Quaternion.Euler(0, 90f, 0), seaRoot.transform, "Penjaga Kuil Barat");
+
+            // Spawn musuh elite kuil laut
+            SpawnEnemyMarker(seaRoot.transform, "Elite_SeaGuardian_1", seaCenter + new Vector3(-8f, 10f, -8f));
+            SpawnEnemyMarker(seaRoot.transform, "Elite_SeaGuardian_2", seaCenter + new Vector3( 8f, 10f,  8f));
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // ZONA MEGA-TIMUR — NGARAI API (X=280-480)
+        // ══════════════════════════════════════════════════════════════════
+        {
+            var fireRoot = new GameObject("Zone_FarEast_FireCanyon");
+            fireRoot.transform.SetParent(megaRoot.transform);
+            var fireCenter = new Vector3(380f, 0f, 0f);
+
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var lavaMat = new Material(shader);
+            lavaMat.SetColor("_BaseColor", new Color(1f, 0.25f, 0f));
+            lavaMat.SetColor("_EmissionColor", new Color(1f, 0.15f, 0f) * 3f);
+            lavaMat.EnableKeyword("_EMISSION");
+            lavaMat.SetFloat("_Smoothness", 0.6f);
+            var obsidianMat = new Material(shader);
+            obsidianMat.SetColor("_BaseColor", new Color(0.08f, 0.05f, 0.1f));
+            obsidianMat.SetFloat("_Metallic", 0.4f);
+            obsidianMat.SetFloat("_Smoothness", 0.75f);
+            var ashMat = new Material(shader);
+            ashMat.SetColor("_BaseColor", new Color(0.25f, 0.22f, 0.2f));
+            ashMat.SetFloat("_Smoothness", 0.02f);
+            var emberMat = new Material(shader);
+            emberMat.SetColor("_BaseColor", new Color(1f, 0.5f, 0f));
+            emberMat.SetColor("_EmissionColor", new Color(1f, 0.3f, 0f) * 4f);
+            emberMat.EnableKeyword("_EMISSION");
+
+            // Tanah abu vulkanik
+            var ashGround = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            ashGround.name = "AshGround";
+            ashGround.transform.SetParent(fireRoot.transform);
+            ashGround.transform.position = fireCenter;
+            ashGround.transform.localScale = new Vector3(20f, 1f, 20f);
+            ashGround.GetComponent<Renderer>().sharedMaterial = ashMat;
+            Object.DestroyImmediate(ashGround.GetComponent<Collider>());
+
+            // Kawah lava utama (di tengah)
+            var crater = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            crater.name = "VolcanoCrater";
+            crater.transform.SetParent(fireRoot.transform);
+            crater.transform.position = fireCenter + new Vector3(0f, -1f, 10f);
+            crater.transform.localScale = new Vector3(35f, 1f, 35f);
+            crater.GetComponent<Renderer>().sharedMaterial = lavaMat;
+            Object.DestroyImmediate(crater.GetComponent<Collider>());
+
+            // Dinding kawah (12 batu besar mengelilingi)
+            for (int r = 0; r < 12; r++)
+            {
+                float ang = r * 30f * Mathf.Deg2Rad;
+                var rock = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                rock.name = $"CraterWall_{r}";
+                rock.transform.SetParent(fireRoot.transform);
+                rock.transform.position = fireCenter + new Vector3(10f + Mathf.Cos(ang) * 20f, Random.Range(1f, 6f), 10f + Mathf.Sin(ang) * 20f);
+                rock.transform.localScale = new Vector3(Random.Range(4f, 9f), Random.Range(3f, 7f), Random.Range(4f, 9f));
+                rock.GetComponent<Renderer>().sharedMaterial = obsidianMat;
+                Object.DestroyImmediate(rock.GetComponent<Collider>());
+            }
+
+            // Obsidian Tower (menara gelap 3 lantai)
+            var towerCenter = fireCenter + new Vector3(-18f, 0f, -10f);
+            for (int fl = 0; fl < 3; fl++)
+            {
+                float sz = 7f - fl * 1.5f;
+                var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                floor.name = $"ObsidianTower_Floor_{fl}";
+                floor.transform.SetParent(fireRoot.transform);
+                floor.transform.position = towerCenter + new Vector3(0f, fl * 5f + 2.5f, 0f);
+                floor.transform.localScale = new Vector3(sz, 5f, sz);
+                floor.GetComponent<Renderer>().sharedMaterial = obsidianMat;
+                Object.DestroyImmediate(floor.GetComponent<Collider>());
+            }
+            // Puncak Obsidian Tower (kristal api)
+            var towerTop = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            towerTop.name = "ObsidianTower_Top";
+            towerTop.transform.SetParent(fireRoot.transform);
+            towerTop.transform.position = towerCenter + new Vector3(0f, 18f, 0f);
+            towerTop.transform.localScale = new Vector3(4f, 4f, 4f);
+            towerTop.GetComponent<Renderer>().sharedMaterial = lavaMat;
+            Object.DestroyImmediate(towerTop.GetComponent<Collider>());
+
+            // Kolom api/lahar (5 pilar lava)
+            var lavaPillarPos = new Vector3[]
+            {
+                new Vector3(10f, 0f, -15f), new Vector3(-8f, 0f, 25f),
+                new Vector3(22f, 0f,  18f), new Vector3(5f,  0f, 32f),
+                new Vector3(-20f,0f, -20f),
+            };
+            foreach (var lp in lavaPillarPos)
+            {
+                float lh = Random.Range(3f, 8f);
+                var lavaPillar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                lavaPillar.name = "LavaPillar";
+                lavaPillar.transform.SetParent(fireRoot.transform);
+                lavaPillar.transform.position = fireCenter + lp + new Vector3(0f, lh * 0.5f, 0f);
+                lavaPillar.transform.localScale = new Vector3(2f, lh, 2f);
+                lavaPillar.GetComponent<Renderer>().sharedMaterial = lavaMat;
+                Object.DestroyImmediate(lavaPillar.GetComponent<Collider>());
+            }
+
+            // Formasi batu obsidian runcing (10 batu)
+            for (int ob = 0; ob < 10; ob++)
+            {
+                float tx = Random.Range(-70f, 70f);
+                float tz = Random.Range(-60f, 60f);
+                var spike = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                spike.name = $"ObsidianSpike_{ob}";
+                spike.transform.SetParent(fireRoot.transform);
+                float sh = Random.Range(5f, 14f);
+                spike.transform.position = fireCenter + new Vector3(tx, sh * 0.5f, tz);
+                spike.transform.localScale = new Vector3(Random.Range(1f, 2.5f), sh, Random.Range(1f, 2.5f));
+                spike.transform.rotation = Quaternion.Euler(Random.Range(-20f, 20f), 0f, Random.Range(-20f, 20f));
+                spike.GetComponent<Renderer>().sharedMaterial = obsidianMat;
+                Object.DestroyImmediate(spike.GetComponent<Collider>());
+            }
+
+            // Cahaya merah lava (atmosfer api)
+            var fireLight1 = new GameObject("FireCanyon_Light1");
+            fireLight1.transform.SetParent(fireRoot.transform);
+            fireLight1.transform.position = fireCenter + new Vector3(0f, 8f, 10f);
+            var fL1 = fireLight1.AddComponent<Light>();
+            fL1.type = LightType.Point;
+            fL1.color = new Color(1f, 0.3f, 0f);
+            fL1.intensity = 3f;
+            fL1.range = 120f;
+
+            var fireLight2 = new GameObject("FireCanyon_Light2");
+            fireLight2.transform.SetParent(fireRoot.transform);
+            fireLight2.transform.position = towerCenter + new Vector3(0f, 20f, 0f);
+            var fL2 = fireLight2.AddComponent<Light>();
+            fL2.type = LightType.Point;
+            fL2.color = new Color(1f, 0.15f, 0f);
+            fL2.intensity = 2f;
+            fL2.range = 80f;
+
+            // NPC Penjaga Api
+            SpawnNPC(fireRoot.transform, "NPC_PenjagaApi",
+                fireCenter + new Vector3(-25f, 0f, -5f), Quaternion.Euler(0, 90f, 0),
+                new Color(0.9f, 0.4f, 0.2f),
+                "Ngarai Api hanya untuk yang terkuat! Balikkan langkahmu, pengembara lemah!");
+
+            AnimalAssetSetup.SpawnWolf(fireCenter + new Vector3(-28f, 0f, 8f),
+                Quaternion.Euler(0, 90f, 0), fireRoot.transform, "Serigala Api");
+
+            // Spawn musuh elite Ngarai Api
+            SpawnEnemyMarker(fireRoot.transform, "Elite_FireDemon_1", fireCenter + new Vector3( 5f, 0f, 10f));
+            SpawnEnemyMarker(fireRoot.transform, "Elite_FireDemon_2", fireCenter + new Vector3(-5f, 0f, 10f));
+            SpawnEnemyMarker(fireRoot.transform, "Elite_FireBoss",    fireCenter + new Vector3( 0f, 0f, 30f));
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // POHON PEMBATAS MEGA — Hutan tebal di perbatasan 1000m
+        // ══════════════════════════════════════════════════════════════════
+        int treeCount = 0;
+        for (float tx = -480f; tx <= 480f; tx += Random.Range(10f, 18f))
+        {
+            // Perbatasan Utara
+            ProceduralTreeBuilder.BuildTree(megaRoot.transform,
+                new Vector3(tx, 0f, 490f + Random.Range(-5f, 5f)),
+                Random.Range(7f, 14f), barkMat, summerLeafMat, false);
+            // Perbatasan Selatan
+            ProceduralTreeBuilder.BuildTree(megaRoot.transform,
+                new Vector3(tx, 0f, -490f + Random.Range(-5f, 5f)),
+                Random.Range(7f, 14f), barkMat, autumnLeafMat, false);
+            if (++treeCount > 200) break;
+        }
+        treeCount = 0;
+        for (float tz = -480f; tz <= 480f; tz += Random.Range(10f, 18f))
+        {
+            // Perbatasan Barat
+            ProceduralTreeBuilder.BuildTree(megaRoot.transform,
+                new Vector3(-490f + Random.Range(-5f, 5f), 0f, tz),
+                Random.Range(7f, 14f), barkMat, summerLeafMat, false);
+            // Perbatasan Timur
+            ProceduralTreeBuilder.BuildTree(megaRoot.transform,
+                new Vector3(490f + Random.Range(-5f, 5f), 0f, tz),
+                Random.Range(7f, 14f), barkMat, autumnLeafMat, false);
+            if (++treeCount > 200) break;
+        }
+    }
+
+    // Helper: Spawn NPC sederhana dengan dialog satu baris
+    static void SpawnNPC(Transform parent, string npcName, Vector3 worldPos,
+                         Quaternion rotation, Color skinTint, string dialogText)
+    {
+        // Pilih gaya NPC berdasarkan nama (heuristik sederhana)
+        ProceduralNpcBuilder.NpcStyle style = ProceduralNpcBuilder.NpcStyle.Guard;
+        if (npcName.Contains("Penyihir") || npcName.Contains("Peri"))
+            style = ProceduralNpcBuilder.NpcStyle.Wizard;
+        else if (npcName.Contains("Kapten") || npcName.Contains("Nelayan"))
+            style = ProceduralNpcBuilder.NpcStyle.Farmer;
+        else if (npcName.Contains("Penam") || npcName.Contains("Tua"))
+            style = ProceduralNpcBuilder.NpcStyle.Farmer;
+        else if (npcName.Contains("Api") || npcName.Contains("Penjaga"))
+            style = ProceduralNpcBuilder.NpcStyle.Guard;
+
+        var npcGo = ProceduralNpcBuilder.BuildNpc(style, worldPos, rotation, parent, npcName);
+        if (!npcGo) return;
+
+        var dlg = npcGo.GetComponent<NpcDialogue>() ?? npcGo.AddComponent<NpcDialogue>();
+        CreateSimpleDialogue(npcName, dialogText, dlg);
+    }
+
+    // Helper: Spawn titik spawn musuh (marker merah)
+    static void SpawnEnemyMarker(Transform parent, string markerName, Vector3 worldPos)
+    {
+        var marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        marker.name = markerName;
+        marker.transform.SetParent(parent);
+        marker.transform.position = worldPos;
+        marker.transform.localScale = new Vector3(2f, 0.4f, 2f);
+        ApplyColor(marker, new Color(0.85f, 0.05f, 0.05f));
+        Object.DestroyImmediate(marker.GetComponent<Collider>());
     }
 
     // ─────────────────────────────────────────────────────────────────────
