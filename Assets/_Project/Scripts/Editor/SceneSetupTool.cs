@@ -87,6 +87,9 @@ public static class SceneSetupTool
         //     Puncak Salju Utara, Hutan Peri Selatan, Kuil Laut Barat, Ngarai Api Timur
         SetupMegaExpansion(slavicMat, grassTuftMat);
 
+        // 9e. Zone Trigger & Batas Wilayah (BoxCollider music/weather per zona)
+        SetupZoneTriggers();
+
         // 10. Titik Invasi Monster Malam (4 Arah Hutan Liar)
         SetupEnemySpawners();
 
@@ -129,7 +132,10 @@ public static class SceneSetupTool
                 "🌊 Zona KUIL LAUT BARAT — Kuil Tenggelam, Kolam Besar, Patung Dewa Laut, NPC Penjaga\n" +
                 "🌋 Zona NGARAI API TIMUR — Kawah Vulkanik, Lava, Obsidian Tower, NPC Penjaga Api\n" +
                 "🛤️ 4 Koridor Jalan Tambahan ke Zona Mega\n" +
-                "👾 Musuh Elite di tiap Zona Mega\n\n" +
+                "👾 Musuh Elite di tiap Zona Mega\n" +
+                "🎵 Sistem Musik Zona Otomatis (cross-fade saat masuk zona)\n" +
+                "🌦️ Sistem Cuaca Dinamis (hujan, salju, badai, kabut, cerah)\n" +
+                "🗺️ 9 Zone Trigger Musik & Cuaca (BoxCollider batas wilayah)\n\n" +
                 "Tekan ▶ Play untuk mulai menjelajahi dunia barumu!",
                 "Bagus Sekali, Mainkan!"
             );
@@ -336,6 +342,8 @@ public static class SceneSetupTool
         if (!managers.GetComponent<DialogueManager>()) managers.AddComponent<DialogueManager>();
         if (!managers.GetComponent<MusicManager>())    managers.AddComponent<MusicManager>();
         if (!managers.GetComponent<CloudManager>())    managers.AddComponent<CloudManager>();
+        if (!managers.GetComponent<WeatherSystem>())   managers.AddComponent<WeatherSystem>();
+        if (!managers.GetComponent<ZoneMusicManager>()) managers.AddComponent<ZoneMusicManager>();
 
         var gm = managers.GetComponent<GameManager>();
         if (!gm) gm = managers.AddComponent<GameManager>();
@@ -3638,6 +3646,81 @@ public static class SceneSetupTool
         marker.transform.localScale = new Vector3(2f, 0.4f, 2f);
         ApplyColor(marker, new Color(0.85f, 0.05f, 0.05f));
         Object.DestroyImmediate(marker.GetComponent<Collider>());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  9e. ZONE TRIGGER — Musik & Cuaca Otomatis Per Zona
+    // ─────────────────────────────────────────────────────────────────────
+    /// <summary>
+    /// Membuat BoxCollider trigger batas tiap zona (8 zona + desa pusat).
+    /// Saat pemain menyeberang batas, ZoneMusicTrigger mengganti musik dan cuaca.
+    /// </summary>
+    static void SetupZoneTriggers()
+    {
+        var triggerRoot = GameObject.Find("--- ZONE TRIGGERS ---");
+        if (triggerRoot) Object.DestroyImmediate(triggerRoot);
+        triggerRoot = new GameObject("--- ZONE TRIGGERS ---");
+
+        // (zona, center, size, zoneType)
+        var zoneDefs = new (string name, Vector3 center, Vector3 size, ZoneMusicTrigger.ZoneType type)[]
+        {
+            // Desa Pusat — village music
+            ("ZoneTrigger_Village",
+                new Vector3(0f,    5f,   0f),
+                new Vector3(120f,  20f,  120f),
+                ZoneMusicTrigger.ZoneType.Village),
+
+            // Gelombang 1 — Ekspansi Pertama
+            ("ZoneTrigger_North_Mountain",
+                new Vector3(0f,    5f,  190f),
+                new Vector3(120f,  20f,  70f),
+                ZoneMusicTrigger.ZoneType.Mountain),
+            ("ZoneTrigger_South_Swamp",
+                new Vector3(0f,    5f, -190f),
+                new Vector3(120f,  20f,  70f),
+                ZoneMusicTrigger.ZoneType.Swamp),
+            ("ZoneTrigger_West_Fishing",
+                new Vector3(-190f, 5f,   0f),
+                new Vector3(70f,   20f, 120f),
+                ZoneMusicTrigger.ZoneType.Fishing),
+            ("ZoneTrigger_East_Mines",
+                new Vector3( 190f, 5f,   0f),
+                new Vector3(70f,   20f, 120f),
+                ZoneMusicTrigger.ZoneType.Mines),
+
+            // Gelombang 2 — Mega Ekspansi
+            ("ZoneTrigger_FarNorth_SnowPeak",
+                new Vector3(0f,    5f,  380f),
+                new Vector3(200f,  20f, 200f),
+                ZoneMusicTrigger.ZoneType.SnowPeak),
+            ("ZoneTrigger_FarSouth_FairyForest",
+                new Vector3(0f,    5f, -380f),
+                new Vector3(200f,  20f, 200f),
+                ZoneMusicTrigger.ZoneType.FairyForest),
+            ("ZoneTrigger_FarWest_SeaTemple",
+                new Vector3(-380f, 5f,   0f),
+                new Vector3(200f,  20f, 200f),
+                ZoneMusicTrigger.ZoneType.SeaTemple),
+            ("ZoneTrigger_FarEast_FireCanyon",
+                new Vector3( 380f, 5f,   0f),
+                new Vector3(200f,  20f, 200f),
+                ZoneMusicTrigger.ZoneType.FireCanyon),
+        };
+
+        foreach (var (name, center, size, zoneType) in zoneDefs)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(triggerRoot.transform);
+            go.transform.position = center;
+            var col = go.AddComponent<BoxCollider>();
+            col.size      = size;
+            col.isTrigger = true;
+            var trigger = go.AddComponent<ZoneMusicTrigger>();
+            // Set field zone via SerializedObject agar bisa di-set di Edit Mode
+            var so = new UnityEditor.SerializedObject(trigger);
+            so.FindProperty("zone").enumValueIndex = (int)zoneType;
+            so.ApplyModifiedProperties();
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────
