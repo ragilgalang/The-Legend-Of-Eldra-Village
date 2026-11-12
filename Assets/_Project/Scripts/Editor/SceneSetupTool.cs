@@ -117,7 +117,7 @@ public static class SceneSetupTool
                 "🔮 Kompleks Altar Mistis: Formasi 12 pilar batu kuno di utara desa\n" +
                 "🛡️ 8 Menara Pengawas Benteng + Pagar Kayu Melingkar Skala 80 Meter\n" +
                 "🌲 Hutan Rimba Keliling: 90+ Pohon cemara & ek bervariasi mengitari desa\n" +
-                "🐾 Ekosistem Fauna: Serigala Rimba & Elang Perkasa di Langit!\n" +
+                "🐾 Ekosistem Fauna: Ayam Jago Eldara (11 klip animasi prosedural!), Kucing Luna & Oliver, Anjing Milo, Serigala, & Elang!\n" +
                 "🏮 Lentera Malam: Lampu lentera hangat di tiap rumah & menara\n\n" +
                 "🗺️ EKSPANSI PETA GELOMBANG 1 (500×500 meter):\n" +
                 "⛰️ Zona UTARA — Desa Pegunungan, Kuil Batu Kuno, Jembatan Kabut, 2 NPC Baru\n" +
@@ -196,11 +196,12 @@ public static class SceneSetupTool
             ground.GetComponent<Renderer>().sharedMaterial = grassMat;
         }
 
-        // Kabut Atmosferik Realistis (Distance Fog)
+        // Kabut Atmosferik Realistis (Distance Fog - Desa jernih, kabut lembut di horizon)
         RenderSettings.fog = true;
-        RenderSettings.fogMode = FogMode.ExponentialSquared;
-        RenderSettings.fogDensity = 0.005f;
-        RenderSettings.fogColor = new Color(0.7f, 0.76f, 0.82f);
+        RenderSettings.fogMode = FogMode.Linear;
+        RenderSettings.fogStartDistance = 75f;
+        RenderSettings.fogEndDistance = 380f;
+        RenderSettings.fogColor = new Color(0.72f, 0.78f, 0.85f);
 
         // Matahari (Directional Light)
         Light sunLight = null;
@@ -1773,22 +1774,22 @@ public static class SceneSetupTool
 
         towerRoot = new GameObject("--- TOWERS ---");
 
-        // 8 Titik Menara Pengawas Kayu Benteng (Watchtowers Lapang Keliling Desa)
+        // 8 Titik Menara Pengawas Kayu Benteng (Watchtowers Lapang Keliling Perimeter Desa, R = 88m)
         var towerSlots = new (Vector3 pos, string name)[]
         {
             // Gerbang Masuk Selatan (Twin Watchtowers)
-            (new Vector3(-6f, 0f, -54f), "Tower_Gate_West"),
-            (new Vector3( 6f, 0f, -54f), "Tower_Gate_East"),
+            (new Vector3(-6f, 0f, -88f), "Tower_Gate_SouthWest"),
+            (new Vector3( 6f, 0f, -88f), "Tower_Gate_SouthEast"),
 
-            // 4 Penjuru Sudut Benteng Utama (Sudut Pagar X=±80, Z=-54 s/d 52)
-            (new Vector3(-80f, 0f,  52f), "Tower_NorthWest"),
-            (new Vector3( 80f, 0f,  52f), "Tower_NorthEast"),
-            (new Vector3(-80f, 0f, -54f), "Tower_SouthWest"),
-            (new Vector3( 80f, 0f, -54f), "Tower_SouthEast"),
+            // Gerbang Masuk Utara (Twin Watchtowers)
+            (new Vector3(-6f, 0f,  88f), "Tower_Gate_NorthWest"),
+            (new Vector3( 6f, 0f,  88f), "Tower_Gate_NorthEast"),
 
-            // Sisi Sayap Tengah
-            (new Vector3(-80f, 0f,   0f), "Tower_WestFlank"),
-            (new Vector3( 80f, 0f,   0f), "Tower_EastFlank"),
+            // 4 Penjuru Sudut Benteng Utama (Sudut Pagar X=±88, Z=±88)
+            (new Vector3(-88f, 0f,  88f), "Tower_Corner_NorthWest"),
+            (new Vector3( 88f, 0f,  88f), "Tower_Corner_NorthEast"),
+            (new Vector3(-88f, 0f, -88f), "Tower_Corner_SouthWest"),
+            (new Vector3( 88f, 0f, -88f), "Tower_Corner_SouthEast"),
         };
 
         foreach (var (pos, tName) in towerSlots)
@@ -1808,38 +1809,40 @@ public static class SceneSetupTool
             AddPorchLantern(towerObj.transform, new Vector3(0, 4.5f, 0), new Color(1f, 0.65f, 0.2f), 12f);
         }
 
-        // Pagar Kayu Benteng Keliling (Perimeter Palisade Skala Besar 160x106m)
+        // Pagar Kayu Benteng Keliling (Perimeter Palisade Skala 176x176m mengitari seluruh desa)
         string fenceFbx = "EA03_Village_Fence_01a";
-        // Sisi Selatan (Z = -54, dengan celah gerbang utama di tengah X = -4.5 s/d 4.5)
-        for (float x = -80f; x <= 80f; x += 3.2f)
+        // Sisi Selatan (Z = -88, dengan celah gerbang utama di tengah |X| < 5)
+        for (float x = -86f; x <= 86f; x += 3.2f)
         {
             if (Mathf.Abs(x) < 5f) continue;
-            InstantiateArtModel(fenceFbx, new Vector3(x, 0, -54f), Quaternion.Euler(0, 180f, 0), Vector3.one, towerRoot.transform, slavicMat);
+            InstantiateArtModel(fenceFbx, new Vector3(x, 0, -88f), Quaternion.Euler(0, 180f, 0), Vector3.one, towerRoot.transform, slavicMat);
         }
-        // Sisi Utara (Z = 52, dengan celah menuju Altar Kuno)
-        for (float x = -80f; x <= 80f; x += 3.2f)
+        // Sisi Utara (Z = 88, dengan celah menuju Pegunungan Utara |X| < 5)
+        for (float x = -86f; x <= 86f; x += 3.2f)
         {
-            if (Mathf.Abs(x) < 4f) continue; // Celah menuju Altar
-            InstantiateArtModel(fenceFbx, new Vector3(x, 0, 52f), Quaternion.identity, Vector3.one, towerRoot.transform, slavicMat);
+            if (Mathf.Abs(x) < 5f) continue;
+            InstantiateArtModel(fenceFbx, new Vector3(x, 0, 88f), Quaternion.identity, Vector3.one, towerRoot.transform, slavicMat);
         }
-        // Sisi Timur (X = 80)
-        for (float z = -54f; z <= 52f; z += 3.2f)
+        // Sisi Timur (X = 88, dengan celah menuju Tambang Kristal |Z| < 5)
+        for (float z = -86f; z <= 86f; z += 3.2f)
         {
-            InstantiateArtModel(fenceFbx, new Vector3(80f, 0, z), Quaternion.Euler(0, 90f, 0), Vector3.one, towerRoot.transform, slavicMat);
+            if (Mathf.Abs(z) < 5f) continue;
+            InstantiateArtModel(fenceFbx, new Vector3(88f, 0, z), Quaternion.Euler(0, 90f, 0), Vector3.one, towerRoot.transform, slavicMat);
         }
-        // Sisi Barat (X = -80)
-        for (float z = -54f; z <= 52f; z += 3.2f)
+        // Sisi Barat (X = -88, dengan celah menuju Desa Nelayan |Z| < 5)
+        for (float z = -86f; z <= 86f; z += 3.2f)
         {
-            InstantiateArtModel(fenceFbx, new Vector3(-80f, 0, z), Quaternion.Euler(0, -90f, 0), Vector3.one, towerRoot.transform, slavicMat);
+            if (Mathf.Abs(z) < 5f) continue;
+            InstantiateArtModel(fenceFbx, new Vector3(-88f, 0, z), Quaternion.Euler(0, -90f, 0), Vector3.one, towerRoot.transform, slavicMat);
         }
 
-        // Spike Traps di Jalur Masuk Gerbang Utama
+        // Spike Traps di Jalur Masuk Gerbang Selatan Luar
         var trapPositions = new Vector3[]
         {
-            new Vector3( 0f, 0.05f, -50f),
-            new Vector3(-2.5f, 0.05f, -55f),
-            new Vector3( 2.5f, 0.05f, -55f),
-            new Vector3( 0f, 0.05f, -60f),
+            new Vector3( 0f, 0.05f, -91f),
+            new Vector3(-2.5f, 0.05f, -94f),
+            new Vector3( 2.5f, 0.05f, -94f),
+            new Vector3( 0f, 0.05f, -97f),
         };
 
         for (int i = 0; i < trapPositions.Length; i++)
@@ -1881,55 +1884,26 @@ public static class SceneSetupTool
             "EA03_Nature_Bush_03b", "EA03_Nature_Bush_01c", "EA03_Nature_Bush_01b"
         };
 
-        // 1. Pohon-pohon peneduh & taman alami di dalam desa
-        // Aturan ketat penataan desa:
-        // - Alun-Alun Pusat, jalan raya utama, dan jalan setapak steril dari rintangan pohon
-        // - Ditempatkan di 4 taman sudut plaza dan pekarangan belakang tiap rumah sebagai peneduh alami
+        // 1. Pohon-pohon peneduh di Taman Alun-Alun Pusat
+        // DesaGenerator sudah secara mandiri menempatkan pohon peneduh bebas-tabrakan di pekarangan warga.
+        // Di sini kita lengkapi 4 taman sudut plaza Alun-Alun Pusat agar megah dan asri.
         var innerTrees = new Vector3[]
         {
-            // 4 Pohon Peneduh Sudut Alun-Alun Pusat (Taman Terbuka)
-            new Vector3(-11f, 0f,  11f), new Vector3( 11f, 0f,  11f),
-            new Vector3(-11f, 0f, -11f), new Vector3( 11f, 0f, -11f),
-
-            // Kompleks Pemerintahan & Adat Utara
-            new Vector3(-36f, 0f, 36f), // Taman samping Rumah Gadang
-            new Vector3( 36f, 0f, 36f), // Taman samping Pendopo Joglo
-            new Vector3(  0f, 0f, 46f), // Hutan lindung belakang Balai Desa
-
-            // Kawasan Pertanian & Danau Barat
-            new Vector3(-22f, 0f,  25f), // Kebun belakang Rumah Petani
-            new Vector3(-40f, 0f,  25f), // Ladang belakang Lumbung Gandum
-            new Vector3(-52f, 0f,  14f), // Batas barat pertanian
-            new Vector3(-22f, 0f, -25f), // Halaman belakang Chalet
-            new Vector3(-52f, 0f, -14f), // Pohon peneduh tepi danau
-
-            // Kawasan Pandai Besi & Pengrajin Timur
-            new Vector3( 22f, 0f,  25f), // Belakang Bengkel Pandai Besi
-            new Vector3( 38f, 0f,  25f), // Belakang Gudang Logistik
-            new Vector3( 50f, 0f,  14f), // Batas timur bengkel
-            new Vector3( 22f, 0f, -25f), // Halaman belakang Cabin
-            new Vector3( 50f, 0f, -14f), // Batas timur villa
-
-            // Kawasan Pemukiman & Gerbang Selatan
-            new Vector3(-26f, 0f, -30f), // Halaman belakang Penginapan A-Frame
-            new Vector3( 26f, 0f, -30f), // Taman Zen belakang Minka Dukun
-            new Vector3(-14f, 0f, -52f), // Peneduh Menara Gerbang Barat
-            new Vector3( 14f, 0f, -52f), // Peneduh Menara Gerbang Timur
+            new Vector3(-11f, 0f,  11f), // Sudut Barat Laut Alun-Alun
+            new Vector3( 11f, 0f,  11f), // Sudut Timur Laut Alun-Alun
+            new Vector3(-11f, 0f, -11f), // Sudut Barat Daya Alun-Alun
+            new Vector3( 11f, 0f, -11f), // Sudut Tenggara Alun-Alun
         };
 
         int innerIndex = 0;
         foreach (var pos in innerTrees)
         {
             innerIndex++;
-            float scale = Random.Range(1.0f, 1.3f);
+            float scale = Random.Range(1.1f, 1.35f);
             GameObject treeObj;
 
-            // Variasi pohon desa: Pohon Ek Rimbun, Pohon Birch Indah, dan Pohon Ek Musim Gugur
-            if (innerIndex % 4 == 0)
-            {
-                treeObj = RealisticTreeBuilder.BuildAutumnOakTree(pos, scale, natureRoot.transform, barkMat, autumnLeafMat);
-            }
-            else if (innerIndex % 3 == 0)
+            // Variasi pohon peneduh alun-alun: Pohon Ek Rimbun & Pohon Birch
+            if (innerIndex % 2 == 0)
             {
                 treeObj = RealisticTreeBuilder.BuildBirchTree(pos, scale, natureRoot.transform, birchBarkMat, springLeafMat);
             }
@@ -1941,92 +1915,75 @@ public static class SceneSetupTool
             if (treeObj)
             {
                 var sway = treeObj.GetComponent<TreeWindSway>();
-                if (sway && innerIndex <= 4)
+                if (sway)
                 {
                     sway.enableFallingLeaves = true;
                 }
 
-                // Semak liar & tanaman paku di pangkal pohon
+                // Semak liar di pangkal pohon
                 InstantiateArtModel("EA03_Nature_TrunkPlant_01a", pos, Quaternion.Euler(0, Random.Range(0, 360f), 0), Vector3.one * 0.9f, natureRoot.transform, slavicMat);
 
-                if (Random.value > 0.35f)
+                string bFbx = bushModels[Random.Range(0, bushModels.Length)];
+                Vector3 bushPos = pos + new Vector3(Random.Range(-1.5f, 1.5f), 0, Random.Range(-1.5f, 1.5f));
+                var bush = InstantiateArtModel(bFbx, bushPos, Quaternion.Euler(0, Random.Range(0, 360f), 0), Vector3.one * Random.Range(0.8f, 1.1f), natureRoot.transform, slavicMat);
+                if (bush)
                 {
-                    string bFbx = bushModels[Random.Range(0, bushModels.Length)];
-                    Vector3 bushPos = pos + new Vector3(Random.Range(-1.5f, 1.5f), 0, Random.Range(-1.5f, 1.5f));
-                    var bush = InstantiateArtModel(bFbx, bushPos, Quaternion.Euler(0, Random.Range(0, 360f), 0), Vector3.one * Random.Range(0.8f, 1.1f), natureRoot.transform, slavicMat);
-                    if (bush)
-                    {
-                        var bSway = bush.AddComponent<TreeWindSway>();
-                        bSway.swayIntensity = 1.0f;
-                        bSway.swaySpeed = 1.8f;
-                    }
+                    var bSway = bush.AddComponent<TreeWindSway>();
+                    bSway.swayIntensity = 1.0f;
+                    bSway.swaySpeed = 1.8f;
                 }
             }
         }
 
-        // 2. Hutan Rimba Luar (Di Luar Garis Pagar Benteng Keliling Desa)
-        // Dikelompokkan di 4 zona alam eksterior: Rimba Utara (Altar), Lembah Selatan, Hutan Barat, & Tambang Timur
+        // 2. Hutan Rimba Luar (Di Luar Perimeter Desa, R = 94m s/d 150m)
+        // Membentengi seluruh kawasan pemukiman desa tanpa menabrak atap rumah atau jalan
         var outerTreeZones = new System.Collections.Generic.List<Vector3>();
 
-        // Zona Rimba Utara (Z = 56 s/d 220, X = -220 s/d 220, sisakan celah jalan altar |X| < 6)
-        for (int i = 0; i < 120; i++)
-        {
-            float x = Random.Range(-220f, 220f);
-            if (Mathf.Abs(x) < 7f) continue;
-            float z = Random.Range(56f, 220f);
-            outerTreeZones.Add(new Vector3(x, 0f, z));
-        }
-
-        // Zona Rimba Selatan (Z = -220 s/d -58, X = -220 s/d 220, sisakan celah gerbang selatan |X| < 7)
-        for (int i = 0; i < 110; i++)
-        {
-            float x = Random.Range(-220f, 220f);
-            if (Mathf.Abs(x) < 7f) continue;
-            float z = Random.Range(-220f, -58f);
-            outerTreeZones.Add(new Vector3(x, 0f, z));
-        }
-
-        // Zona Hutan Barat (X = -220 s/d -56, Z = -100 s/d 100) — lebih tebal
+        // Zona Rimba Utara (Z = 94 s/d 150, X = -150 s/d 150, celah jalan raya utara |X| < 7)
         for (int i = 0; i < 90; i++)
         {
-            float x = Random.Range(-220f, -56f);
-            float z = Random.Range(-100f, 100f);
+            float x = Random.Range(-150f, 150f);
+            if (Mathf.Abs(x) < 7f) continue;
+            float z = Random.Range(94f, 150f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
 
-        // Zona Hutan Timur & Tebing Tambang (X = 56 s/d 220, Z = -100 s/d 100) — lebih tebal
+        // Zona Rimba Selatan (Z = -150 s/d -94, X = -150 s/d 150, celah jalan raya selatan |X| < 7)
         for (int i = 0; i < 90; i++)
         {
-            float x = Random.Range(56f, 220f);
-            float z = Random.Range(-100f, 100f);
+            float x = Random.Range(-150f, 150f);
+            if (Mathf.Abs(x) < 7f) continue;
+            float z = Random.Range(-150f, -94f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
 
-        // Zona Peralihan 4 sudut pojok (lebih lebat)
-        for (int i = 0; i < 40; i++)
+        // Zona Hutan Barat (X = -150 s/d -94, Z = -150 s/d 150, celah jalan barat |Z| < 7)
+        for (int i = 0; i < 80; i++)
         {
-            float x = Random.Range(-220f, -60f);
-            float z = Random.Range(56f, 220f);
+            float z = Random.Range(-150f, 150f);
+            if (Mathf.Abs(z) < 7f) continue;
+            float x = Random.Range(-150f, -94f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
-        for (int i = 0; i < 40; i++)
+
+        // Zona Hutan Timur & Tebing Tambang (X = 94 s/d 150, Z = -150 s/d 150, celah jalan timur |Z| < 7)
+        for (int i = 0; i < 80; i++)
         {
-            float x = Random.Range(60f, 220f);
-            float z = Random.Range(56f, 220f);
+            float z = Random.Range(-150f, 150f);
+            if (Mathf.Abs(z) < 7f) continue;
+            float x = Random.Range(94f, 150f);
             outerTreeZones.Add(new Vector3(x, 0f, z));
         }
-        for (int i = 0; i < 40; i++)
-        {
-            float x = Random.Range(-220f, -60f);
-            float z = Random.Range(-220f, -56f);
-            outerTreeZones.Add(new Vector3(x, 0f, z));
-        }
-        for (int i = 0; i < 40; i++)
-        {
-            float x = Random.Range(60f, 220f);
-            float z = Random.Range(-220f, -56f);
-            outerTreeZones.Add(new Vector3(x, 0f, z));
-        }
+
+        // Zona Rimba Tebal 4 Sudut Luar (Peralihan sudut antarzona, X = ±(92..150), Z = ±(92..150))
+        for (int i = 0; i < 30; i++)
+            outerTreeZones.Add(new Vector3(Random.Range(-150f, -94f), 0f, Random.Range(94f, 150f)));
+        for (int i = 0; i < 30; i++)
+            outerTreeZones.Add(new Vector3(Random.Range(94f, 150f), 0f, Random.Range(94f, 150f)));
+        for (int i = 0; i < 30; i++)
+            outerTreeZones.Add(new Vector3(Random.Range(-150f, -94f), 0f, Random.Range(-150f, -94f)));
+        for (int i = 0; i < 30; i++)
+            outerTreeZones.Add(new Vector3(Random.Range(94f, 150f), 0f, Random.Range(-150f, -94f)));
 
         int treeIdx = 0;
         foreach (var pos in outerTreeZones)
@@ -2124,46 +2081,11 @@ public static class SceneSetupTool
             RealisticFlowerBuilder.BuildFlowerClump(new Vector3(x, 0, -2.9f), 4, 1.2f, flowerRoot.transform, RealisticFlowerBuilder.FlowerColor.RedPoppy);
         }
 
-        // 2. Taman Bunga Tematik & Pekarangan Rumah Warga (Themed Flower Gardens)
-        var gardenConfigs = new (Vector3 center, RealisticFlowerBuilder.FlowerColor col1, RealisticFlowerBuilder.FlowerColor col2, int flowerCount, int grassCount)[]
-        {
-            (new Vector3(-32f, 0f,  26f), RealisticFlowerBuilder.FlowerColor.RedPoppy,        RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       18, 20), // Taman Gadang
-            (new Vector3( 32f, 0f,  26f), RealisticFlowerBuilder.FlowerColor.GoldenDandelion, RealisticFlowerBuilder.FlowerColor.MysticPurple,    18, 20), // Taman Joglo
-            (new Vector3(  0f, 0f,  44f), RealisticFlowerBuilder.FlowerColor.RedPoppy,        RealisticFlowerBuilder.FlowerColor.SkyBluebell,      24, 24), // Taman Balai Desa
-            (new Vector3(-28f, 0f,  22f), RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       RealisticFlowerBuilder.FlowerColor.GoldenDandelion, 16, 20), // Kebun Petani
-            (new Vector3(-48f, 0f,  22f), RealisticFlowerBuilder.FlowerColor.GoldenDandelion, RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       16, 24), // Lumbung Gandum
-            (new Vector3(-28f, 0f, -22f), RealisticFlowerBuilder.FlowerColor.SkyBluebell,     RealisticFlowerBuilder.FlowerColor.MysticPurple,    22, 24), // Tepi Danau Alami
-            (new Vector3( 28f, 0f,  22f), RealisticFlowerBuilder.FlowerColor.GoldenDandelion, RealisticFlowerBuilder.FlowerColor.RedPoppy,        14, 20), // Bengkel Pandai Besi
-            (new Vector3( 44f, 0f,  22f), RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       RealisticFlowerBuilder.FlowerColor.GoldenDandelion, 14, 20), // Gudang Logistik
-            (new Vector3( 28f, 0f, -22f), RealisticFlowerBuilder.FlowerColor.MysticPurple,    RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       18, 20), // Halaman Log Cabin
-            (new Vector3( 48f, 0f, -22f), RealisticFlowerBuilder.FlowerColor.SkyBluebell,     RealisticFlowerBuilder.FlowerColor.RedPoppy,        18, 20), // Halaman Villa
-            (new Vector3(-26f, 0f, -30f), RealisticFlowerBuilder.FlowerColor.RedPoppy,        RealisticFlowerBuilder.FlowerColor.SkyBluebell,      18, 20), // Chalet Pegunungan
-            (new Vector3(-10f, 0f, -44f), RealisticFlowerBuilder.FlowerColor.GoldenDandelion, RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       16, 18), // A-Frame Singgah
-            (new Vector3( 26f, 0f, -30f), RealisticFlowerBuilder.FlowerColor.MysticPurple,    RealisticFlowerBuilder.FlowerColor.WhiteDaisy,       22, 20), // Zen Garden Dukun
-        };
-
-        foreach (var gc in gardenConfigs)
-        {
-            RealisticGrassBuilder.BuildGrassClump(gc.center, gc.grassCount, 5.5f, grassRoot.transform, grassMat);
-            RealisticFlowerBuilder.BuildFlowerClump(gc.center, gc.flowerCount / 2, 4.5f, flowerRoot.transform, gc.col1);
-            RealisticFlowerBuilder.BuildFlowerClump(gc.center, gc.flowerCount / 2, 4.5f, flowerRoot.transform, gc.col2);
-        }
-
-        // 3. Pangkal Pepohonan Rindang Desa (Rings of Grass & Flowers under Canopies)
+        // 2. Taman Bunga Tematik di 4 Sudut Plaza Alun-Alun Pusat
         var innerTrees = new Vector3[]
         {
             new Vector3(-11f, 0f,  11f), new Vector3( 11f, 0f,  11f),
             new Vector3(-11f, 0f, -11f), new Vector3( 11f, 0f, -11f),
-            new Vector3(-36f, 0f,  36f), new Vector3( 36f, 0f,  36f),
-            new Vector3(  0f, 0f,  46f),
-            new Vector3(-22f, 0f,  25f), new Vector3(-40f, 0f,  25f),
-            new Vector3(-52f, 0f,  14f), new Vector3(-22f, 0f, -25f),
-            new Vector3(-52f, 0f, -14f),
-            new Vector3( 22f, 0f,  25f), new Vector3( 38f, 0f,  25f),
-            new Vector3( 50f, 0f,  14f), new Vector3( 22f, 0f, -25f),
-            new Vector3( 50f, 0f, -14f),
-            new Vector3(-26f, 0f, -30f), new Vector3( 26f, 0f, -30f),
-            new Vector3(-14f, 0f, -52f), new Vector3( 14f, 0f, -52f),
         };
         foreach (var tp in innerTrees)
         {
@@ -2171,31 +2093,33 @@ public static class SceneSetupTool
             RealisticFlowerBuilder.BuildFlowerClump(tp, 6, 2.8f, flowerRoot.transform);
         }
 
-        // 4. Sepanjang Garis Perimeter Pagar Kayu Benteng (Perimeter 160x106m)
-        for (float x = -75f; x <= 75f; x += 8f)
+        // 3. Sepanjang Garis Perimeter Pagar Benteng (Perimeter 176x176m)
+        for (float x = -86f; x <= 86f; x += 8f)
         {
             if (Mathf.Abs(x) < 6f) continue;
-            RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0,  50f), 8, 3.5f, grassRoot.transform, grassMat);
-            RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0, -52f), 8, 3.5f, grassRoot.transform, grassMat);
-            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(x, 0,  50f), 4, 3.0f, flowerRoot.transform);
-            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(x, 0, -52f), 4, 3.0f, flowerRoot.transform);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0,  86f), 8, 3.5f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0, -86f), 8, 3.5f, grassRoot.transform, grassMat);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(x, 0,  86f), 4, 3.0f, flowerRoot.transform);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(x, 0, -86f), 4, 3.0f, flowerRoot.transform);
         }
-        for (float z = -48f; z <= 48f; z += 8f)
+        for (float z = -86f; z <= 86f; z += 8f)
         {
-            RealisticGrassBuilder.BuildGrassClump(new Vector3( 78f, 0, z), 8, 3.5f, grassRoot.transform, grassMat);
-            RealisticGrassBuilder.BuildGrassClump(new Vector3(-78f, 0, z), 8, 3.5f, grassRoot.transform, grassMat);
-            RealisticFlowerBuilder.BuildFlowerClump(new Vector3( 78f, 0, z), 4, 3.0f, flowerRoot.transform);
-            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(-78f, 0, z), 4, 3.0f, flowerRoot.transform);
+            if (Mathf.Abs(z) < 6f) continue;
+            RealisticGrassBuilder.BuildGrassClump(new Vector3( 86f, 0, z), 8, 3.5f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(-86f, 0, z), 8, 3.5f, grassRoot.transform, grassMat);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3( 86f, 0, z), 4, 3.0f, flowerRoot.transform);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(-86f, 0, z), 4, 3.0f, flowerRoot.transform);
         }
 
-        // 5. Hamparan Padang Rumput Liar Luar Desa — lebat & rapat
-        // Cincin dalam (36-60m)
-        int meadowInner = 80;
-        for (int i = 0; i < meadowInner; i++)
+        // 4. Hamparan Padang Rumput Liar Luar Benteng Desa (R = 94m s/d 145m)
+        int meadowCount = 100;
+        for (int i = 0; i < meadowCount; i++)
         {
-            float ang = (i / (float)meadowInner) * 360f * Mathf.Deg2Rad;
-            float r = Random.Range(36f, 60f);
+            float ang = (i / (float)meadowCount) * 360f * Mathf.Deg2Rad;
+            float r = Random.Range(94f, 145f);
             Vector3 pos = new Vector3(Mathf.Cos(ang) * r, 0f, Mathf.Sin(ang) * r);
+            // Lewati jika memotong 4 koridor jalan utama (|X| < 6 atau |Z| < 6)
+            if (Mathf.Abs(pos.x) < 6f || Mathf.Abs(pos.z) < 6f) continue;
             RealisticGrassBuilder.BuildGrassClump(pos, 12, 4.5f, grassRoot.transform, grassMat);
             if (i % 2 == 0)
                 RealisticFlowerBuilder.BuildFlowerClump(pos, 5, 3.5f, flowerRoot.transform);
@@ -2324,26 +2248,9 @@ public static class SceneSetupTool
     static void SetupFaunaAndAnimals()
     {
         // Bersihkan objek ikan darat & fauna lama jika ada
-        var allTransforms = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        var fishToDestroy = new System.Collections.Generic.HashSet<GameObject>();
-        foreach (var t in allTransforms)
+        foreach (var fish in Object.FindObjectsByType<FishController>(FindObjectsSortMode.None))
         {
-            if (!t) continue;
-            string n = t.name.ToLower();
-            if (n.Contains("fish") || n.Contains("piranha") || t.GetComponent<FishController>())
-            {
-                Transform curr = t;
-                while (curr.parent != null && curr.parent.name != "--- FAUNA & ANIMALS ---" && 
-                      (curr.parent.name.ToLower().Contains("fish") || curr.parent.name.ToLower().Contains("piranha")))
-                {
-                    curr = curr.parent;
-                }
-                fishToDestroy.Add(curr.gameObject);
-            }
-        }
-        foreach (var go in fishToDestroy)
-        {
-            if (go) Object.DestroyImmediate(go);
+            if (fish) Object.DestroyImmediate(fish.gameObject);
         }
 
         GameObject faunaRoot = GameObject.Find("--- FAUNA & ANIMALS ---");
@@ -2365,6 +2272,30 @@ public static class SceneSetupTool
         AnimalAssetSetup.SpawnCat(new Vector3(8f, 0.14f, 8f),
             Quaternion.Euler(0, -120f, 0), faunaRoot.transform,
             "Oliver", "Purrr... kamu menggangguku tidur!", altColor: true);
+
+        // 0c. Ayam Jago Desa (Eldara Rooster prosedural 11 klip animasi - port skrip Blender v3)
+        // Spawn ayam jago di Alun-Alun, pematang sawah, dan pekarangan desa
+        void SpawnVillageRooster(Vector3 pos, float yRot, string name, Eldara.RoosterClip clip)
+        {
+            var roosterGo = new GameObject(name);
+            roosterGo.transform.SetParent(faunaRoot.transform);
+            roosterGo.transform.position = pos;
+            roosterGo.transform.rotation = Quaternion.Euler(0, yRot, 0);
+            var rooster = roosterGo.AddComponent<Eldara.EldaraRooster>();
+            var so = new SerializedObject(rooster);
+            var p = so.FindProperty("startClip");
+            if (p != null) p.enumValueIndex = (int)clip;
+            so.ApplyModifiedProperties();
+        }
+
+        // Jago Alun-Alun (di dekat pelataran Balai Desa)
+        SpawnVillageRooster(new Vector3(-5.5f, 0.14f, 8.5f), 65f, "Rooster_Jago_AlunAlun", Eldara.RoosterClip.Idle);
+        // Jago Sawah Barat (di pematang sawah padi barat mencari cacing)
+        SpawnVillageRooster(new Vector3(-25f, 0.14f, 22f), -45f, "Rooster_Jago_SawahBarat", Eldara.RoosterClip.Peck);
+        // Jago Sawah Timur (di jalan lingkar timur dekat sawah)
+        SpawnVillageRooster(new Vector3(25f, 0.14f, 22f), 135f, "Rooster_Jago_SawahTimur", Eldara.RoosterClip.Walk);
+        // Jago Pekarangan (di pelataran selatan alun-alun berkokok)
+        SpawnVillageRooster(new Vector3(8.5f, 0.14f, -5.5f), -120f, "Rooster_Jago_Pekarangan", Eldara.RoosterClip.Crow);
 
         // 1. Kawanan Serigala Rimba (Di hutan lebat luar pagar desa)
         // Alpha Wolf: Hutan Utara dekat Altar Kuno
