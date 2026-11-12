@@ -3152,10 +3152,9 @@ public static class SceneSetupTool
             {
                 float tx = Random.Range(-80f, 80f);
                 float tz = Random.Range(-60f, 60f);
-                ProceduralTreeBuilder.BuildTree(
-                    snowRoot.transform,
+                RealisticTreeBuilder.BuildPineTree(
                     snowCenter + new Vector3(tx, 0f, tz),
-                    Random.Range(5f, 10f), barkMat, summerLeafMat, false);
+                    Random.Range(5f, 10f), snowRoot.transform, barkMat, summerLeafMat);
             }
 
             // Cahaya biru redup (aura dingin)
@@ -3215,8 +3214,8 @@ public static class SceneSetupTool
                 float tx = Random.Range(-85f, 85f);
                 float tz = Random.Range(-70f, 70f);
                 var treePos = fairyCenter + new Vector3(tx, 0f, tz);
-                ProceduralTreeBuilder.BuildTree(fairyRoot.transform, treePos,
-                    Random.Range(9f, 18f), barkMat, summerLeafMat, false);
+                RealisticTreeBuilder.BuildOakTree(treePos,
+                    Random.Range(9f, 18f), fairyRoot.transform, barkMat, summerLeafMat);
                 // Tambah cahaya peri di setiap pohon
                 var glowGo = new GameObject($"FairyGlow_{t}");
                 glowGo.transform.SetParent(fairyRoot.transform);
@@ -3590,26 +3589,26 @@ public static class SceneSetupTool
         for (float tx = -480f; tx <= 480f; tx += Random.Range(10f, 18f))
         {
             // Perbatasan Utara
-            ProceduralTreeBuilder.BuildTree(megaRoot.transform,
+            RealisticTreeBuilder.BuildPineTree(
                 new Vector3(tx, 0f, 490f + Random.Range(-5f, 5f)),
-                Random.Range(7f, 14f), barkMat, summerLeafMat, false);
+                Random.Range(7f, 14f), megaRoot.transform, barkMat, summerLeafMat);
             // Perbatasan Selatan
-            ProceduralTreeBuilder.BuildTree(megaRoot.transform,
+            RealisticTreeBuilder.BuildAutumnOakTree(
                 new Vector3(tx, 0f, -490f + Random.Range(-5f, 5f)),
-                Random.Range(7f, 14f), barkMat, autumnLeafMat, false);
+                Random.Range(7f, 14f), megaRoot.transform, barkMat, autumnLeafMat);
             if (++treeCount > 200) break;
         }
         treeCount = 0;
         for (float tz = -480f; tz <= 480f; tz += Random.Range(10f, 18f))
         {
             // Perbatasan Barat
-            ProceduralTreeBuilder.BuildTree(megaRoot.transform,
+            RealisticTreeBuilder.BuildBirchTree(
                 new Vector3(-490f + Random.Range(-5f, 5f), 0f, tz),
-                Random.Range(7f, 14f), barkMat, summerLeafMat, false);
+                Random.Range(7f, 14f), megaRoot.transform, birchBarkMat, summerLeafMat);
             // Perbatasan Timur
-            ProceduralTreeBuilder.BuildTree(megaRoot.transform,
+            RealisticTreeBuilder.BuildAutumnOakTree(
                 new Vector3(490f + Random.Range(-5f, 5f), 0f, tz),
-                Random.Range(7f, 14f), barkMat, autumnLeafMat, false);
+                Random.Range(7f, 14f), megaRoot.transform, barkMat, autumnLeafMat);
             if (++treeCount > 200) break;
         }
     }
