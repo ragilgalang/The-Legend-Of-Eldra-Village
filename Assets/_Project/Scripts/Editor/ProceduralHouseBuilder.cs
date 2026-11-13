@@ -18,7 +18,7 @@ using System.Collections.Generic;
 /// 10. Minka (Minka Tradisional Jepang: pintu shoji, atap limas hip roof, gerbang torii & kolam koi)
 /// 11. Chalet (Chalet Salju Pegunungan: lantai batu alam tebal, balkon ukir kayu, mantel salju)
 /// </summary>
-public static class ProceduralHouseBuilder
+public static partial class ProceduralHouseBuilder
 {
     public enum HouseStyle
     {
@@ -1108,93 +1108,11 @@ public static class ProceduralHouseBuilder
     // ─────────────────────────────────────────────────────────────────────
     //  11. RUMAH PANGGUNG NUSANTARA (Gaya Rumah Adat Tropis Indonesia)
     // ─────────────────────────────────────────────────────────────────────
+    //  11. CHALET SALJU PEGUNUNGAN (Versi Tembok Kayu yang BISA DIMASUKI)
+    // ─────────────────────────────────────────────────────────────────────
     private static void BuildChalet(GameObject root)
     {
-        // ── Tiang Panggung Kayu (8 tiang, tinggi 1.4m) ──
-        float[] tiangX = { -3.0f, -1.0f, 1.0f, 3.0f };
-        float[] tiangZ = { -2.5f, 2.5f };
-        foreach (var tx in tiangX)
-            foreach (var tz in tiangZ)
-            {
-                Box(root, 0.22f, 1.4f, 0.22f, matWood, new Vector3(tx, 0.7f, tz));
-                // Penyangga diagonal (bracing tiang)
-                Box(root, 0.1f, 0.1f, 1.1f, matWood, new Vector3(tx, 1.0f, 0), collider: false);
-            }
-
-        // ── Lantai Papan Panggung ──
-        Box(root, 8.0f, 0.18f, 6.2f, matDeck, new Vector3(0, 1.4f, 0));
-
-        // ── Dinding Kayu Papan Vertikal (Lantai Utama) ──
-        Box(root, 8.0f, 2.6f, 6.0f, matSlat, new Vector3(0, 2.75f, 0));
-
-        // ── Pintu Utama Kayu Ukir ──
-        Box(root, 1.0f, 2.0f, 0.12f, matWood, new Vector3(0, 2.1f, 3.05f));
-        // Hiasan ukiran di atas pintu
-        Box(root, 1.0f, 0.2f, 0.08f, matRed, new Vector3(0, 3.1f, 3.07f), collider: false);
-
-        // ── Jendela Kayu dengan Kisi-Kisi ──
-        float[] winXs = { -2.6f, 2.6f };
-        foreach (var x in winXs)
-        {
-            Window(root, 1.1f, 1.0f, new Vector3(x, 2.6f, 3.05f), 0);
-            // Kisi-kisi kayu horizontal
-            Box(root, 1.1f, 0.06f, 0.06f, matWood, new Vector3(x, 2.4f, 3.09f), collider: false);
-            Box(root, 1.1f, 0.06f, 0.06f, matWood, new Vector3(x, 2.65f, 3.09f), collider: false);
-            Box(root, 1.1f, 0.06f, 0.06f, matWood, new Vector3(x, 2.9f, 3.09f), collider: false);
-            // Dinding samping — jendela sisi
-            Window(root, 1.0f, 0.9f, new Vector3(x > 0 ? 4.06f : -4.06f, 2.6f, 0), x > 0 ? 90f : -90f);
-        }
-
-        // ── Atap Pelana Bertumpuk Khas Nusantara (2 lapis) ──
-        // Lapis bawah — lebih lebar & landai
-        float pitchLow  = Mathf.Atan(1.6f / 4.5f) * Mathf.Rad2Deg;
-        float slopeLow  = Mathf.Sqrt(4.5f * 4.5f + 1.6f * 1.6f);
-        Box(root, 10.0f, 0.22f, slopeLow, matRoof, new Vector3(0, 4.15f,  2.0f), new Vector3( pitchLow, 0, 0));
-        Box(root, 10.0f, 0.22f, slopeLow, matRoof, new Vector3(0, 4.15f, -2.0f), new Vector3(-pitchLow, 0, 0));
-        GableTriangle(root, slopeLow * 1.6f, 1.6f, 0.18f, matSlat, new Vector3(-5.1f, 3.5f, 0), -90f);
-        GableTriangle(root, slopeLow * 1.6f, 1.6f, 0.18f, matSlat, new Vector3( 5.1f, 3.5f, 0),  90f);
-
-        // Lapis atas — lebih kecil & lebih curam (tumpang sari)
-        float pitchHigh = Mathf.Atan(1.8f / 2.6f) * Mathf.Rad2Deg;
-        float slopeHigh = Mathf.Sqrt(2.6f * 2.6f + 1.8f * 1.8f);
-        Box(root, 7.0f, 0.20f, slopeHigh, matRoof, new Vector3(0, 5.95f,  1.1f), new Vector3( pitchHigh, 0, 0));
-        Box(root, 7.0f, 0.20f, slopeHigh, matRoof, new Vector3(0, 5.95f, -1.1f), new Vector3(-pitchHigh, 0, 0));
-        GableTriangle(root, slopeHigh * 1.6f, 1.8f, 0.16f, matWood, new Vector3(-3.6f, 5.3f, 0), -90f);
-        GableTriangle(root, slopeHigh * 1.6f, 1.8f, 0.16f, matWood, new Vector3( 3.6f, 5.3f, 0),  90f);
-
-        // Bubungan atap (ridge beam)
-        Box(root, 7.2f, 0.14f, 0.14f, matWood, new Vector3(0, 7.76f, 0), collider: false);
-
-        // ── Teras / Beranda Depan ──
-        Box(root, 8.0f, 0.14f, 2.0f, matDeck, new Vector3(0, 1.4f, 4.0f));
-        // Pagar teras
-        float[] pagarX = { -3.8f, -1.9f, 0f, 1.9f, 3.8f };
-        foreach (var px in pagarX)
-        {
-            Box(root, 0.1f, 0.9f, 0.1f, matWood, new Vector3(px, 1.9f, 4.95f), collider: false);
-        }
-        Box(root, 8.0f, 0.08f, 0.08f, matWood, new Vector3(0, 2.32f, 4.95f), collider: false);
-        // Tangga naik ke teras (3 anak tangga)
-        Box(root, 1.5f, 0.14f, 0.5f, matDeck, new Vector3(0, 0.44f, 5.25f));
-        Box(root, 1.5f, 0.14f, 0.5f, matDeck, new Vector3(0, 0.88f, 4.90f));
-        Box(root, 1.5f, 0.14f, 0.5f, matDeck, new Vector3(0, 1.26f, 4.55f));
-
-        // ── Cerobong Tanah Liat (Dapur Belakang) ──
-        Box(root, 0.5f, 1.8f, 0.5f, matConcrete, new Vector3(2.5f, 4.8f, -1.5f));
-        // Tutup cerobong
-        Box(root, 0.8f, 0.1f, 0.8f, matRoof, new Vector3(2.5f, 5.72f, -1.5f), collider: false);
-
-        // ── Lampu Lentera Minyak di Teras ──
-        Lantern(root, new Vector3(-1.5f, 2.5f, 4.6f));
-        Lantern(root, new Vector3( 1.5f, 2.5f, 4.6f));
-
-        // ── Pot Tanah Liat & Hiasan Teras ──
-        // Pot kiri
-        Sphere(root, 0.22f, matConcrete, new Vector3(-3.2f, 1.65f, 4.8f));
-        Box(root, 0.3f, 0.26f, 0.3f, matConcrete, new Vector3(-3.2f, 1.52f, 4.8f));
-        // Pot kanan
-        Sphere(root, 0.22f, matConcrete, new Vector3(3.2f, 1.65f, 4.8f));
-        Box(root, 0.3f, 0.26f, 0.3f, matConcrete, new Vector3(3.2f, 1.52f, 4.8f));
+        BuildChaletSalju(root);
     }
 }
 #endif

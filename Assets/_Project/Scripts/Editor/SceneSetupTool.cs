@@ -12,7 +12,7 @@ using TMPro;
 /// kawasan pemukiman, pandai besi, pertanian, menara benteng, hutan lebat keliling, dan altar kuno.
 /// Menu: Eldara > Setup Prototype Scene
 /// </summary>
-public static class SceneSetupTool
+public static partial class SceneSetupTool
 {
     // ─────────────────────────────────────────────────────────────────────
     //  ENTRY POINT
@@ -48,7 +48,7 @@ public static class SceneSetupTool
             "Village", "--- NPCs ---", "--- TOWERS ---", "--- WILDERNESS ---",
             "--- GRASS FIELDS ---", "--- 3D WILDFLOWERS ---", "--- WORLD OBJECTS ---",
             "--- FAUNA & ANIMALS ---", "--- EXPANSION ZONES ---", "--- MEGA EXPANSION ---",
-            "--- ZONE TRIGGERS ---", "--- ENEMY SPAWNERS ---",
+            "--- ZONE TRIGGERS ---", "--- ENEMY SPAWNERS ---", "--- VILLAGE DETAILS ---",
             "Managers", "HUD", "CameraRig", "Ground",
             "EXPANSION_ZONES", "MegaExpansion", "ZoneTriggers", "NightSpawner",
             "Zone_North_Mountain", "Zone_South_Swamp", "Zone_West_Fishing", "Zone_East_Cliffs",
@@ -114,6 +114,9 @@ public static class SceneSetupTool
 
         // 9e. Zone Trigger & Batas Wilayah (BoxCollider music/weather per zona)
         SetupZoneTriggers();
+
+        // 9f. Perbaikan Desain Akhir (Hutan alami berumpun, sumur desa, lampu jalan luar, kabut dinamis)
+        ApplyVillageDesignPass();
 
         // 10. Titik Invasi Monster Malam (4 Arah Hutan Liar)
         SetupEnemySpawners();
@@ -1912,13 +1915,8 @@ public static class SceneSetupTool
         // 1. Pohon-pohon peneduh di Taman Alun-Alun Pusat
         // DesaGenerator sudah secara mandiri menempatkan pohon peneduh bebas-tabrakan di pekarangan warga.
         // Di sini kita lengkapi 4 taman sudut plaza Alun-Alun Pusat agar megah dan asri.
-        var innerTrees = new Vector3[]
-        {
-            new Vector3(-11f, 0f,  11f), // Sudut Barat Laut Alun-Alun
-            new Vector3( 11f, 0f,  11f), // Sudut Timur Laut Alun-Alun
-            new Vector3(-11f, 0f, -11f), // Sudut Barat Daya Alun-Alun
-            new Vector3( 11f, 0f, -11f), // Sudut Tenggara Alun-Alun
-        };
+        // Menggunakan PlazaTreeSpots dari Beautify agar tidak menabrak atap Balai Desa (off = 15.5m).
+        var innerTrees = PlazaTreeSpots;
 
         int innerIndex = 0;
         foreach (var pos in innerTrees)
@@ -1960,98 +1958,9 @@ public static class SceneSetupTool
             }
         }
 
-        // 2. Hutan Rimba Luar (Di Luar Perimeter Desa, R = 94m s/d 150m)
-        // Membentengi seluruh kawasan pemukiman desa tanpa menabrak atap rumah atau jalan
-        var outerTreeZones = new System.Collections.Generic.List<Vector3>();
-
-        // Zona Rimba Utara (Z = 94 s/d 150, X = -150 s/d 150, celah jalan raya utara |X| < 7)
-        for (int i = 0; i < 90; i++)
-        {
-            float x = Random.Range(-150f, 150f);
-            if (Mathf.Abs(x) < 7f) continue;
-            float z = Random.Range(94f, 150f);
-            outerTreeZones.Add(new Vector3(x, 0f, z));
-        }
-
-        // Zona Rimba Selatan (Z = -150 s/d -94, X = -150 s/d 150, celah jalan raya selatan |X| < 7)
-        for (int i = 0; i < 90; i++)
-        {
-            float x = Random.Range(-150f, 150f);
-            if (Mathf.Abs(x) < 7f) continue;
-            float z = Random.Range(-150f, -94f);
-            outerTreeZones.Add(new Vector3(x, 0f, z));
-        }
-
-        // Zona Hutan Barat (X = -150 s/d -94, Z = -150 s/d 150, celah jalan barat |Z| < 7)
-        for (int i = 0; i < 80; i++)
-        {
-            float z = Random.Range(-150f, 150f);
-            if (Mathf.Abs(z) < 7f) continue;
-            float x = Random.Range(-150f, -94f);
-            outerTreeZones.Add(new Vector3(x, 0f, z));
-        }
-
-        // Zona Hutan Timur & Tebing Tambang (X = 94 s/d 150, Z = -150 s/d 150, celah jalan timur |Z| < 7)
-        for (int i = 0; i < 80; i++)
-        {
-            float z = Random.Range(-150f, 150f);
-            if (Mathf.Abs(z) < 7f) continue;
-            float x = Random.Range(94f, 150f);
-            outerTreeZones.Add(new Vector3(x, 0f, z));
-        }
-
-        // Zona Rimba Tebal 4 Sudut Luar (Peralihan sudut antarzona, X = ±(92..150), Z = ±(92..150))
-        for (int i = 0; i < 30; i++)
-            outerTreeZones.Add(new Vector3(Random.Range(-150f, -94f), 0f, Random.Range(94f, 150f)));
-        for (int i = 0; i < 30; i++)
-            outerTreeZones.Add(new Vector3(Random.Range(94f, 150f), 0f, Random.Range(94f, 150f)));
-        for (int i = 0; i < 30; i++)
-            outerTreeZones.Add(new Vector3(Random.Range(-150f, -94f), 0f, Random.Range(-150f, -94f)));
-        for (int i = 0; i < 30; i++)
-            outerTreeZones.Add(new Vector3(Random.Range(94f, 150f), 0f, Random.Range(-150f, -94f)));
-
-        int treeIdx = 0;
-        foreach (var pos in outerTreeZones)
-        {
-            treeIdx++;
-            float scale = Random.Range(0.95f, 1.45f);
-
-            // Kombinasi Pohon Pinus Pegunungan, Pohon Ek Lebat, & Ek Keemasan
-            if (treeIdx % 3 == 0)
-            {
-                RealisticTreeBuilder.BuildPineTree(pos, scale, natureRoot.transform, barkMat, summerLeafMat);
-            }
-            else if (treeIdx % 5 == 0)
-            {
-                RealisticTreeBuilder.BuildAutumnOakTree(pos, scale, natureRoot.transform, barkMat, autumnLeafMat);
-            }
-            else
-            {
-                RealisticTreeBuilder.BuildOakTree(pos, scale, natureRoot.transform, barkMat, summerLeafMat);
-            }
-
-            // Semak belukar di lantai hutan luar
-            if (treeIdx % 2 == 0)
-            {
-                string bFbx = bushModels[Random.Range(0, bushModels.Length)];
-                Vector3 bushPos = pos + new Vector3(Random.Range(-2.5f, 2.5f), 0, Random.Range(-2.5f, 2.5f));
-                var bush = InstantiateArtModel(bFbx, bushPos, Quaternion.Euler(0, Random.Range(0, 360f), 0), Vector3.one * Random.Range(0.8f, 1.3f), natureRoot.transform, slavicMat);
-                if (bush)
-                {
-                    var bSway = bush.AddComponent<TreeWindSway>();
-                    bSway.swayIntensity = 1.1f;
-                    bSway.swaySpeed = 1.7f;
-                }
-            }
-
-            // Bongkahan batu tebing alami di hutan luar
-            if (treeIdx % 3 == 0)
-            {
-                string rFbx = rockModels[Random.Range(0, rockModels.Length)];
-                Vector3 rockPos = pos + new Vector3(Random.Range(-3f, 3f), 0, Random.Range(-3f, 3f));
-                InstantiateArtModel(rFbx, rockPos, Quaternion.Euler(0, Random.Range(0, 360f), 0), Vector3.one * Random.Range(1.2f, 2.5f), natureRoot.transform, slavicMat);
-            }
-        }
+        // 2. Hutan Rimba Luar (Di Luar Perimeter Desa)
+        // Menggunakan BuildNaturalForest dari Beautify: berumpun alami, ada padang terbuka, spesies mengelompok, bebas jalan & tambang
+        BuildNaturalForest(natureRoot.transform, barkMat, birchBarkMat, summerLeafMat, springLeafMat, autumnLeafMat, slavicMat, bushModels, rockModels);
     }
 
     // ─────────────────────────────────────────────────────────────────────
