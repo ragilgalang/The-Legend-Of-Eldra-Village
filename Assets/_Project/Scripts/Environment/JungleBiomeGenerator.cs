@@ -204,13 +204,6 @@ public class JungleBiomeGenerator : MonoBehaviour
         sun.intensity = 0.9f;
         sun.shadows = LightShadows.Soft;
         sun.transform.rotation = Quaternion.Euler(55f, 30f, 0f);
-
-        Camera cam = Camera.main;
-        if (cam != null)
-        {
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = fogColor;
-        }
     }
 
 #if UNITY_EDITOR
@@ -223,12 +216,22 @@ public class JungleBiomeGenerator : MonoBehaviour
         if (go == null)
         {
             go = new GameObject("Jungle_Biome");
+            // Tempatkan di zona rimba tenggara agar TIDAK menimpa Desa Eldara di tengah (0,0)
+            go.transform.position = new Vector3(220f, 0f, -220f);
             Undo.RegisterCreatedObjectUndo(go, "Create Jungle Biome");
+        }
+        else if (go.transform.position == Vector3.zero)
+        {
+            // Geser keluar dari desa jika sebelumnya sempat dibuat di (0,0,0)
+            go.transform.position = new Vector3(220f, 0f, -220f);
         }
 
         var gen = go.GetComponent<JungleBiomeGenerator>() ?? go.AddComponent<JungleBiomeGenerator>();
         var grass = go.GetComponent<JungleGrass>() ?? go.AddComponent<JungleGrass>();
         var wind = go.GetComponent<JungleWind>() ?? go.AddComponent<JungleWind>();
+
+        // Jangan menimpa langit desa dengan kabut hijau pekat solid
+        gen.setupAtmosphere = false;
 
         // 1. Generate Pohon Raksasa, Menengah, & Semak Langsung!
         gen.Generate();
@@ -238,6 +241,12 @@ public class JungleBiomeGenerator : MonoBehaviour
 
         // 3. Pasang Tree Sway ke semua pohon
         wind.AttachTreeSway();
+
+        // Pulihkan kamera utama ke mode Skybox jika sempat tertimpa
+        if (Camera.main != null)
+        {
+            Camera.main.clearFlags = CameraClearFlags.Skybox;
+        }
 
         // Tandai scene dirty agar perubahan tersimpan
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
@@ -251,7 +260,8 @@ public class JungleBiomeGenerator : MonoBehaviour
 
         EditorUtility.DisplayDialog(
             "🌴 Hutan Rimba Berhasil Dibuat!",
-            $"Hutan rimba lengkap kini sudah langsung muncul di Scene!\n\n" +
+            $"Hutan rimba berhasil di-generate di Zona Rimba Tenggara (X=220, Z=-220)!\n\n" +
+            $"• Desa Eldara di pusat (0,0) tetap aman & utuh.\n" +
             $"• {gen.giantTrees} Pohon Raksasa (akar banir & tajuk lebat)\n" +
             $"• {gen.midTrees} Pohon Menengah\n" +
             $"• {gen.bushes} Rumpun Semak Hutan\n" +
@@ -261,20 +271,40 @@ public class JungleBiomeGenerator : MonoBehaviour
             "Mantap!");
     }
 
-    [MenuItem("Eldara/Biomes/Hapus Hutan Rimba (Clear)")]
+    [MenuItem("Eldara/Biomes/Hapus Hutan Rimba (Kembalikan Desa)")]
     public static void ClearJungleBiomeObject()
     {
         var go = GameObject.Find("Jungle_Biome");
         if (go != null)
         {
             Undo.DestroyObjectImmediate(go);
-            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
-            EditorUtility.DisplayDialog("Hutan Rimba Dibersihkan", "Objek 'Jungle_Biome' dan seluruh isinya telah dibersihkan dari Scene.", "OK");
         }
-        else
+
+        // Pulihkan kabut dan pencahayaan atmosfer desa
+        RenderSettings.fog = true;
+        RenderSettings.fogMode = FogMode.ExponentialSquared;
+        RenderSettings.fogDensity = 0.0042f;
+        RenderSettings.fogColor = new Color(0.72f, 0.78f, 0.85f);
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Skybox;
+
+        if (Camera.main != null)
         {
-            EditorUtility.DisplayDialog("Tidak Ditemukan", "Tidak ada objek 'Jungle_Biome' di Scene saat ini.", "OK");
+            Camera.main.clearFlags = CameraClearFlags.Skybox;
         }
+
+        // Fokuskan kembali kamera ke Balai Desa di tengah
+        var village = GameObject.Find("--- VILLAGE ---") ?? GameObject.Find("House_BalaiDesa");
+        if (village != null)
+        {
+            Selection.activeGameObject = village;
+            if (SceneView.lastActiveSceneView != null)
+            {
+                SceneView.lastActiveSceneView.FrameSelected();
+            }
+        }
+
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+        EditorUtility.DisplayDialog("Desa Eldara Dipulihkan!", "Hutan rimba telah dibersihkan dan atmosfer/kamera Desa Eldara telah dipulihkan seperti semula.", "Alhamdulillah");
     }
 #endif
 }
