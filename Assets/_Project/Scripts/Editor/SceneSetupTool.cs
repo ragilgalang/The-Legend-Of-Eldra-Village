@@ -2047,8 +2047,8 @@ public static partial class SceneSetupTool
             (new Vector3( 80f, 0f, -54f), "Tower_SouthEast"),
 
             // Sisi Sayap Tengah
-            (new Vector3(-80f, 0f,   0f), "Tower_WestFlank"),
-            (new Vector3( 80f, 0f,   0f), "Tower_EastFlank"),
+            (new Vector3(-80f, 0f,   7.5f), "Tower_WestFlank"),
+            (new Vector3( 80f, 0f,   7.5f), "Tower_EastFlank"),
         };
 
         foreach (var (pos, tName) in towerSlots)
@@ -2336,23 +2336,23 @@ public static partial class SceneSetupTool
 
         // ── A. AREA TAMBANG BIJIH BESI — Di luar benteng, dekat gerbang timur (X=92+)
         PlaceArtResource(itemsRoot.transform, "Iron_Ore_1", "EA03_Environment_Rock_CatHead_01a", "iron_ore",
-            "Tekan E untuk menambang Bijih Besi", new Vector3(96f, 0f, 8f), Quaternion.identity, new Vector3(1.4f, 1.4f, 1.4f), slavicMat, new Color(0.4f, 0.4f, 0.5f));
+            "Tekan E untuk menambang Bijih Besi", new Vector3(96f, 0f, 14f), Quaternion.identity, new Vector3(1.4f, 1.4f, 1.4f), slavicMat, new Color(0.4f, 0.4f, 0.5f));
         PlaceArtResource(itemsRoot.transform, "Iron_Ore_2", "EA03_Environment_Rock_CatHead_01b", "iron_ore",
-            "Tekan E untuk menambang Bijih Besi", new Vector3(100f, 0f, 14f), Quaternion.Euler(0, 45f, 0), new Vector3(1.3f, 1.3f, 1.3f), slavicMat, new Color(0.4f, 0.4f, 0.5f));
+            "Tekan E untuk menambang Bijih Besi", new Vector3(102f, 0f, 20f), Quaternion.Euler(0, 45f, 0), new Vector3(1.3f, 1.3f, 1.3f), slavicMat, new Color(0.4f, 0.4f, 0.5f));
         PlaceArtResource(itemsRoot.transform, "Iron_Ore_3", "EA03_Environment_Rock_CatHead_01a", "iron_ore",
-            "Tekan E untuk menambang Bijih Besi", new Vector3(104f, 0f, 4f), Quaternion.Euler(0, 110f, 0), new Vector3(1.2f, 1.2f, 1.2f), slavicMat, new Color(0.4f, 0.4f, 0.5f));
+            "Tekan E untuk menambang Bijih Besi", new Vector3(108f, 0f, 14f), Quaternion.Euler(0, 110f, 0), new Vector3(1.2f, 1.2f, 1.2f), slavicMat, new Color(0.4f, 0.4f, 0.5f));
 
         // ── B. AREA BALOK KAYU — Di luar benteng, dekat gerbang barat (X=-92-)
         PlaceArtResource(itemsRoot.transform, "Wood_Log_1", "EA03_Prop_Forester_CutOutTrees_03", "wood",
-            "Tekan E untuk mengambil Balok Kayu", new Vector3(-96f, 0f, 8f), Quaternion.identity, Vector3.one, slavicMat, new Color(0.5f, 0.3f, 0.1f));
+            "Tekan E untuk mengambil Balok Kayu", new Vector3(-96f, 0f, 18f), Quaternion.identity, Vector3.one, slavicMat, new Color(0.5f, 0.3f, 0.1f));
         PlaceArtResource(itemsRoot.transform, "Wood_Log_2", "EA03_Prop_Forester_CutOutTrees_03", "wood",
-            "Tekan E untuk mengambil Balok Kayu", new Vector3(-100f, 0f, 14f), Quaternion.Euler(0, 80f, 0), Vector3.one, slavicMat, new Color(0.5f, 0.3f, 0.1f));
+            "Tekan E untuk mengambil Balok Kayu", new Vector3(-102f, 0f, 24f), Quaternion.Euler(0, 80f, 0), Vector3.one, slavicMat, new Color(0.5f, 0.3f, 0.1f));
         PlaceArtResource(itemsRoot.transform, "Wood_Log_3", "EA03_Prop_Forester_CutOutTrees_03", "wood",
-            "Tekan E untuk mengambil Balok Kayu", new Vector3(-104f, 0f, 4f), Quaternion.Euler(0, 30f, 0), Vector3.one, slavicMat, new Color(0.5f, 0.3f, 0.1f));
+            "Tekan E untuk mengambil Balok Kayu", new Vector3(-108f, 0f, 18f), Quaternion.Euler(0, 30f, 0), Vector3.one, slavicMat, new Color(0.5f, 0.3f, 0.1f));
 
         // ── C. BATU ALAM TAMBANG (STONE BOULDERS) — Di luar perimeter desa
         PlaceArtResource(itemsRoot.transform, "Stone_Rock_1", "EA03_Environment_Rock_Head_01a", "stone",
-            "Tekan E untuk memecah Batu", new Vector3(56f, 0f, 4f), Quaternion.identity, new Vector3(1.5f, 1.5f, 1.5f), slavicMat, new Color(0.55f, 0.55f, 0.55f));
+            "Tekan E untuk memecah Batu", new Vector3(56f, 0f, 12f), Quaternion.identity, new Vector3(1.5f, 1.5f, 1.5f), slavicMat, new Color(0.55f, 0.55f, 0.55f));
         PlaceArtResource(itemsRoot.transform, "Stone_Rock_2", "EA03_Environment_Rock_Head_01b", "stone",
             "Tekan E untuk memecah Batu", new Vector3(-56f, 0f, -92f), Quaternion.Euler(0, 50f, 0), new Vector3(1.3f, 1.3f, 1.3f), slavicMat, new Color(0.55f, 0.55f, 0.55f));
 
@@ -2522,11 +2522,11 @@ public static partial class SceneSetupTool
 
         // Jalan Utama Barat ke Lembah Pertanian Luas & Kincir Angin (X=-66 ke X=-160, lebar 4m)
         CreateContinuousPavedRoad(expandRoads.transform, "Road_West_Expansion",
-            new Vector3(-66f, 0, 0), new Vector3(-160f, 0, 0), 4.0f, roadMat, 2.5f);
+            new Vector3(-54f, 0, 0), new Vector3(-160f, 0, 0), 4.0f, roadMat, 2.5f);
 
         // Jalan Utama Timur ke Hutan Belantara & Makam Kuno (X=66 ke X=160, lebar 4m)
         CreateContinuousPavedRoad(expandRoads.transform, "Road_East_Expansion",
-            new Vector3(66f, 0, 0), new Vector3(160f, 0, 0), 4.0f, roadMat, 2.5f);
+            new Vector3(54f, 0, 0), new Vector3(160f, 0, 0), 4.0f, roadMat, 2.5f);
 
         // ════════════════════════════════════════════════════════════════
         // ZONA UTARA — DESA PEGUNUNGAN ELDARA ATAS (Z=160-220)
@@ -3762,8 +3762,8 @@ public static partial class SceneSetupTool
         {
             (new Vector3( 0f, 0f, 85f),  "SpawnPoint_North_Woods"),
             (new Vector3( 0f, 0f,-80f),  "SpawnPoint_South_Road"),
-            (new Vector3( 92f,0f,   0f), "SpawnPoint_East_Mines"),
-            (new Vector3(-92f,0f,   0f), "SpawnPoint_West_Forest"),
+            (new Vector3( 92f,0f,   8f), "SpawnPoint_East_Mines"),
+            (new Vector3(-92f,0f,   8f), "SpawnPoint_West_Forest"),
         };
 
         var spawnerGo = new GameObject("NightSpawner");
