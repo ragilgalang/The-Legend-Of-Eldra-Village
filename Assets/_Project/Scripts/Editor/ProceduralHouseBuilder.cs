@@ -31,8 +31,9 @@ public static partial class ProceduralHouseBuilder
     private const string FolderMats = "Assets/_Project/Art/HouseMaterials";
 
     // Ukuran minimum pintu agar nyaman untuk player (tinggi 2 m, diameter 1 m)
-    public const float DoorMinW = 1.7f;
-    public const float DoorMinH = 2.7f;
+    // (nilai diatur di HouseDimensions.cs)
+    public const float DoorMinW = HouseDimensions.DoorWidth;
+    public const float DoorMinH = HouseDimensions.DoorHeight;
 
     // ─────────────────────────────────────────────────────────────────────
     //  MATERIAL
@@ -444,7 +445,7 @@ public static partial class ProceduralHouseBuilder
     }
 
     // Pintu: lubang dari lantai. Ukuran SELALU minimal DoorMinW x DoorMinH supaya player (2 m x 1 m) lega.
-    private static WallOpening Door(float c, float w, float floorY, float h = 2.7f)
+    private static WallOpening Door(float c, float w, float floorY, float h = HouseDimensions.DoorHeight)
     {
         w = Mathf.Max(w, DoorMinW);
         h = Mathf.Max(h, DoorMinH);
@@ -478,7 +479,7 @@ public static partial class ProceduralHouseBuilder
         foreach (var op in ops)
         {
             // Sisakan minimal 12 cm balok di atas lubang agar tembok tetap menyatu dengan atap
-            float head = Mathf.Min(op.head, y1 - 0.12f);
+            float head = Mathf.Min(op.head, y1 - HouseDimensions.LintelMin);
             float l = op.center - op.width * 0.5f;
             float r = op.center + op.width * 0.5f;
             WallPiece(root, alongX, fixedPos, cur, l, y0, y1, t, mat);
@@ -500,6 +501,9 @@ public static partial class ProceduralHouseBuilder
         WallOpening[] front, WallOpening[] back, WallOpening[] left, WallOpening[] right,
         Material post = null)
     {
+        if (y1 - y0 < HouseDimensions.MinWallHeight)
+            Debug.LogWarning($"[Eldara] Ruangan '{root.name}' terlalu rendah ({y1 - y0:F2} m < {HouseDimensions.MinWallHeight:F2} m): kepala player bisa mepet.");
+
         WallRun(root, true,  cz + hz, cx - hx - t * 0.5f, cx + hx + t * 0.5f, y0, y1, t, mat, front);
         WallRun(root, true,  cz - hz, cx - hx - t * 0.5f, cx + hx + t * 0.5f, y0, y1, t, mat, back);
         WallRun(root, false, cx - hx, cz - hz + t * 0.5f, cz + hz - t * 0.5f, y0, y1, t, mat, left);
@@ -561,6 +565,19 @@ public static partial class ProceduralHouseBuilder
             float hgt = rise * (i + 1);
             Box(g, width, hgt, run, mat, new Vector3(0, hgt * 0.5f, run * (i + 0.5f)));
         }
+    }
+
+    // Tangga otomatis: jumlah anak tangga dihitung dari tinggi total & HouseDimensions.MaxStairRise.
+    // topEdge = titik (di y = 0) tempat ujung atas tangga menyentuh lantai atas.
+    // yaw = arah naik (0 = naik ke +Z, 180 = naik ke -Z, dst., dalam ruang lokal rumah).
+    private static void StairsTo(GameObject root, Vector3 topEdge, float yawDeg, float totalHeight, float width, Material mat)
+    {
+        int steps = HouseDimensions.StairSteps(totalHeight);
+        float rise = totalHeight / steps;
+        float run = HouseDimensions.StairRun;
+        Vector3 climbDir = Quaternion.Euler(0, yawDeg, 0) * Vector3.forward;
+        Vector3 start = topEdge - climbDir * (steps * run);
+        Stairs(root, start, yawDeg, steps, rise, run, width, mat);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -930,7 +947,7 @@ public static partial class ProceduralHouseBuilder
         for (int i = 0; i < 6; i++)
             Box(root, 0.06f, 0.9f, 0.06f, matDark, new Vector3(-7.6f + i * 1.7f, 3.75f, 5.25f), default, false);
         // Tangga luar menuju balkon: lebar 1.6 m (sebelumnya 1.0 m = tidak muat), 16 anak tangga, tinggi total 3.3 m
-        Stairs(root, new Vector3(-6.5f, 0f, -1.3f), 0f, 16, 0.20625f, 0.3f, 1.6f, matDeck);
+        StairsTo(root, new Vector3(-6.5f, 0f, 3.5f), 0f, 3.3f, HouseDimensions.StairWidth, matDeck);
 
         // Teras & kolam refleksi
         Box(root, 7.4f, 0.3f, 4.0f, matDeck, new Vector3(-2.3f, -0.15f, 5.0f));
@@ -982,7 +999,7 @@ public static partial class ProceduralHouseBuilder
 
         // Tangga kayu padat ke veranda: 10 anak tangga x 0.2125 m = 2.125 m (dulu 0.38 m/anak = tidak bisa dinaiki).
         // Mulai dari ujung bawah (z = 7.25) naik ke arah rumah (-Z) sampai tepi dek (z = 4.25).
-        Stairs(root, new Vector3(0f, 0f, 7.25f), 180f, 10, 0.2125f, 0.3f, 1.8f, matDeck);
+        StairsTo(root, new Vector3(0f, 0f, 4.25f), 180f, fy, 1.8f, matDeck);
 
         // Pagar veranda (celah di tengah untuk tangga)
         Box(root, 3.2f, 0.08f, 0.08f, matDark, new Vector3(-2.6f, 3.1f, 4.15f), default, false);
@@ -1272,7 +1289,7 @@ public static partial class ProceduralHouseBuilder
             Lantern(root, new Vector3(x, 6.2f, 3.0f));
 
         // Tangga balok 25 anak tangga (lebar 1.6 m): dari tanah (z=10.4) naik ke tepi dek (z=3)
-        Stairs(root, new Vector3(cx, 0f, 10.4f), 180f, 25, 0.206f, 0.3f, 1.6f, matDeck);
+        StairsTo(root, new Vector3(cx, 0f, 3.0f), 180f, fy, HouseDimensions.StairWidth, matDeck);
 
         // Jembatan & gardu kedua
         Box(root, 6.0f, 0.1f, 1.2f, matDeck, new Vector3(8.3f, 5.0f, 0));
@@ -1335,7 +1352,7 @@ public static partial class ProceduralHouseBuilder
 
         // Tangga masuk padat: 10 anak tangga x 0.1925 m = 1.925 m (dulu 0.4 m/anak + celah melayang = tidak bisa dinaiki).
         // Dari z = 5.7 naik ke tepi dek (z = 2.7).
-        Stairs(root, new Vector3(0f, 0f, 5.7f), 180f, 10, 0.1925f, 0.3f, 2.0f, matDeck);
+        StairsTo(root, new Vector3(0f, 0f, 2.7f), 180f, fy, 2.0f, matDeck);
 
         Lantern(root, new Vector3(-1.4f, 3.4f, 2.9f));
         Lantern(root, new Vector3(1.4f, 3.4f, 2.9f));
