@@ -595,19 +595,18 @@ public static partial class SceneSetupTool
         // ── DISTRIK 3: TIMUR — KAWASAN PANDAI BESI & PENGRAJIN ──────────────
         // Menghadap ke Jalan Timur (East Avenue Z = 0)
 
-        // 8. Bengkel Pandai Besi (Sisi Utara Jalan Timur, menghadap Selatan ke jalan)
-        var smith = BuildModularHouse(village.transform, "House_PandaiBesi",
-            new Vector3(22f, 0f, 15f), 0f, "wood", false, false);
-        if (smith)
-        {
-            InstantiateArtModel("EA03_Prop_Tool_Stump_02a",          new Vector3(18f, 0f, 10f),     Quaternion.identity,     Vector3.one, village.transform, slavicMat);
-            InstantiateArtModel("EA03_Prop_Tool_Pick_01a",           new Vector3(18.3f,0.4f,10.2f), Quaternion.Euler(45,0,0),Vector3.one, village.transform, slavicMat);
-            InstantiateArtModel("EA03_Prop_Forester_CutOutTrees_03", new Vector3(28f, 0f, 10f),     Quaternion.identity,     Vector3.one, village.transform, slavicMat);
-        }
+        // 8. Bengkel Pandai Besi (Cabin, menghadap Selatan ke jalan)
+        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Cabin,
+            new Vector3(22f, 0f, 19f), Quaternion.Euler(0, 180f, 0),
+            village.transform, "House_PandaiBesi");
+        InstantiateArtModel("EA03_Prop_Tool_Stump_02a",          new Vector3(18f, 0f, 10f),     Quaternion.identity,      Vector3.one, village.transform, slavicMat);
+        InstantiateArtModel("EA03_Prop_Tool_Pick_01a",           new Vector3(18.3f,0.4f,10.2f), Quaternion.Euler(45,0,0), Vector3.one, village.transform, slavicMat);
+        InstantiateArtModel("EA03_Prop_Forester_CutOutTrees_03", new Vector3(28f, 0f, 10f),     Quaternion.identity,      Vector3.one, village.transform, slavicMat);
 
-        // 9. Gudang Logistik Pandai Besi (Sisi Utara Jalan Timur, sebelah timur bengkel, menghadap Selatan)
-        BuildModularHouse(village.transform, "Storage_PandaiBesi",
-            new Vector3(33f, 0f, 15f), 0f, "wood", false, false, small: true);
+        // 9. Gudang Logistik (Chalet, menghadap Selatan ke jalan)
+        ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Chalet,
+            new Vector3(34f, 0f, 19f), Quaternion.Euler(0, 180f, 0),
+            village.transform, "Storage_PandaiBesi");
 
         // 10. Rumah Pengrajin / Log Cabin (Sisi Selatan Jalan Timur, menghadap Utara ke jalan)
         ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Cabin,
