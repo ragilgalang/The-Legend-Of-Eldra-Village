@@ -4345,8 +4345,10 @@ public static partial class SceneSetupTool
 
         SafeMapStep("Gerbang & pagar", () => FixPerimeterGates(t));
         SafeMapStep("Jalan penghubung", () => LinkMissingRoads(t));
-        SafeMapStep("Lampu jalan dalam desa", () => PlaceInnerAvenueLamps(t));
-        SafeMapStep("Pelataran rumah", () => BuildHouseYardPads(t));
+        // PlaceInnerAvenueLamps: dinonaktifkan sementara (posisi lampu perlu disesuaikan dengan layout jalan aktual)
+        // SafeMapStep("Lampu jalan dalam desa", () => PlaceInnerAvenueLamps(t));
+        // BuildHouseYardPads: dinonaktifkan sementara (root '--- RESIDENTIAL DISTRICTS ---' tidak ada di scene)
+        // SafeMapStep("Pelataran rumah", () => BuildHouseYardPads(t));
         SafeMapStep("Distrik pertanian", () => BuildFarmDistrict(t));
         SafeMapStep("Kincir angin", () => BuildWindmill(t, new Vector3(-58f, 0f, 10f)));
         SafeMapStep("Kolam desa", () => BuildVillagePond(t, new Vector3(-58f, 0f, -23f)));
