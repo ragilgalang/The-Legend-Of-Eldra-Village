@@ -119,6 +119,13 @@ public static partial class SceneSetupTool
         return CreateContinuousPavedRoad(parent, "Map_Road_Segment", start, end, width, roadMat, uvScale);
     }
 
+    static Mesh CreateHollowRingMesh(string name, float r1, float r2, float height)
+    {
+        float outerR = Mathf.Max(r1, r2);
+        float innerR = Mathf.Min(r1, r2);
+        return CreateHollowRingMesh(name, outerR, innerR, topY: height, bottomY: 0f, segments: 32, addInnerWall: true);
+    }
+
     // ─────────────────────────────────────────────────────────────────────
     //  1. GERBANG BENTENG (membuka pagar di perpotongan jalan)
     // ─────────────────────────────────────────────────────────────────────
@@ -447,13 +454,13 @@ public static partial class SceneSetupTool
         bed.transform.position = c;
 
         var rim = CreateMeshObject("Pond_Rim", pond.transform,
-            CreateHollowRingMesh("Pond_Rim_Mesh", 6.8f, 7.8f, 0.18f),
+            CreateHollowRingMesh("Pond_Rim_Mesh", outerR: 7.8f, innerR: 6.8f, topY: 0.18f, bottomY: 0f),
             MapMat("PondRim", new Color(0.38f, 0.35f, 0.28f), 0.05f), new Color(0.38f, 0.35f, 0.28f));
         rim.transform.position = c;
 
         // Air realistis
         var water = CreateMeshObject("Pond_Water", pond.transform,
-            CreateTessellatedWaterMesh("Pond_Water_Mesh", 6.8f, 16),
+            CreateTessellatedWaterMesh("Pond_Water_Mesh", radius: 6.8f, yLevel: 0f, rings: 4, segments: 24),
             GetOrCreateRealisticWaterMaterial(), new Color(0.18f, 0.38f, 0.42f, 0.75f));
         water.transform.position = c + new Vector3(0f, 0.10f, 0f);
 
