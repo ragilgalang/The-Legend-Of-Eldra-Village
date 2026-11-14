@@ -2131,8 +2131,8 @@ public static partial class SceneSetupTool
         // 2. Hutan Rimba Luar — pohon perimeter kuning-hijau sekeliling peta
         BuildNaturalForest(natureRoot.transform, barkMat, birchBarkMat, summerLeafMat, springLeafMat, autumnLeafMat, slavicMat, bushModels, rockModels);
 
-        // 3. Dinding Batas Tak Terlihat di ±160 m — player tidak bisa keluar peta
-        BuildInvisibleBoundaryWalls(natureRoot.transform);
+        // 3. Dinding Batas Tak Terlihat di ±160 m (desa) — player tidak bisa keluar sebelum zona ekspansi
+        BuildMapBoundaryWalls(natureRoot.transform, half: 160f, height: 60f);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -3536,34 +3536,9 @@ public static partial class SceneSetupTool
         }
 
         // ══════════════════════════════════════════════════════════════════
-        // POHON PEMBATAS MEGA — Hutan tebal di perbatasan 1000m
+        // DINDING BATAS MEGA — Invisible BoxCollider di ±495 m (gantikan pohon pembatas)
         // ══════════════════════════════════════════════════════════════════
-        int treeCount = 0;
-        for (float tx = -480f; tx <= 480f; tx += Random.Range(10f, 18f))
-        {
-            // Perbatasan Utara
-            RealisticTreeBuilder.BuildPineTree(
-                new Vector3(tx, 0f, 490f + Random.Range(-5f, 5f)),
-                Random.Range(7f, 14f), megaRoot.transform, barkMat, summerLeafMat);
-            // Perbatasan Selatan
-            RealisticTreeBuilder.BuildAutumnOakTree(
-                new Vector3(tx, 0f, -490f + Random.Range(-5f, 5f)),
-                Random.Range(7f, 14f), megaRoot.transform, barkMat, autumnLeafMat);
-            if (++treeCount > 200) break;
-        }
-        treeCount = 0;
-        for (float tz = -480f; tz <= 480f; tz += Random.Range(10f, 18f))
-        {
-            // Perbatasan Barat
-            RealisticTreeBuilder.BuildBirchTree(
-                new Vector3(-490f + Random.Range(-5f, 5f), 0f, tz),
-                Random.Range(7f, 14f), megaRoot.transform, birchBarkMat, summerLeafMat);
-            // Perbatasan Timur
-            RealisticTreeBuilder.BuildAutumnOakTree(
-                new Vector3(490f + Random.Range(-5f, 5f), 0f, tz),
-                Random.Range(7f, 14f), megaRoot.transform, barkMat, autumnLeafMat);
-            if (++treeCount > 200) break;
-        }
+        BuildMapBoundaryWalls(megaRoot.transform);
     }
 
     // Helper: Spawn NPC sederhana dengan dialog satu baris
@@ -4095,38 +4070,6 @@ public static partial class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
     //  HUTAN ALAMI: berumpun, ada padang kosong, spesies mengelompok
     // ─────────────────────────────────────────────────────────────────────
-    // ─────────────────────────────────────────────────────────────────────
-    //  DINDING BATAS TAK TERLIHAT (Invisible Boundary Walls)
-    //  4 sisi kotak di ±boundarySize meter. Tinggi 50 m sehingga tidak bisa
-    //  dilompati. Tidak ada MeshRenderer → tidak terlihat di kamera.
-    // ─────────────────────────────────────────────────────────────────────
-    static void BuildInvisibleBoundaryWalls(Transform root, float boundarySize = 160f, float wallHeight = 50f, float wallThickness = 4f)
-    {
-        var barrierRoot = new GameObject("--- MAP BOUNDARY ---");
-        barrierRoot.transform.SetParent(root);
-
-        // Data: (name, center X, center Z, size X, size Z)
-        var walls = new (string name, float cx, float cz, float sx, float sz)[]
-        {
-            ("Barrier_North", 0f,  boundarySize + wallThickness * 0.5f, boundarySize * 2f + wallThickness * 2f, wallThickness),
-            ("Barrier_South", 0f, -boundarySize - wallThickness * 0.5f, boundarySize * 2f + wallThickness * 2f, wallThickness),
-            ("Barrier_East",  boundarySize + wallThickness * 0.5f, 0f, wallThickness, boundarySize * 2f),
-            ("Barrier_West", -boundarySize - wallThickness * 0.5f, 0f, wallThickness, boundarySize * 2f),
-        };
-
-        foreach (var w in walls)
-        {
-            var go = new GameObject(w.name);
-            go.transform.SetParent(barrierRoot.transform);
-            go.transform.position = new Vector3(w.cx, wallHeight * 0.5f, w.cz);
-            go.layer = LayerMask.NameToLayer("Default");
-
-            var col = go.AddComponent<BoxCollider>();
-            col.size = new Vector3(w.sx, wallHeight, w.sz);
-            col.isTrigger = false;
-            // Tidak ada MeshRenderer → tak terlihat
-        }
-    }
 
     static void BuildNaturalForest(
         Transform root,
