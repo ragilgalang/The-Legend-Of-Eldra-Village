@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Gerbang portal: saat Player (CharacterController, tag "Player") masuk ke trigger,
+/// Gerbang portal: saat Player (CharacterController) masuk ke trigger,
 /// Player dipindahkan ke 'destination' dengan efek kilat layar.
 /// Dipakai oleh SceneSetupTool.JungleBiome (portal desa -> jungle dan portal kembali).
 /// </summary>
@@ -41,6 +41,10 @@ public class PortalGate : MonoBehaviour
 
     void Awake()
     {
+        // Pastikan BoxCollider selalu isTrigger
+        var box = GetComponent<BoxCollider>();
+        if (box) box.isTrigger = true;
+
         int n = energyRenderers != null ? energyRenderers.Length : 0;
         _mats = new Material[n];
         _texProp = new string[n];
@@ -49,6 +53,20 @@ public class PortalGate : MonoBehaviour
             if (!energyRenderers[i]) continue;
             _mats[i] = energyRenderers[i].material; // instance per portal
             _texProp[i] = _mats[i].HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
+        }
+
+        // Jika destination null, cari Arrival_Jungle / Arrival_Village berdasarkan nama portal
+        if (!destination)
+        {
+            string arrivalName = portalLabel.Contains("Desa") ? "Arrival_Village" : "Arrival_Jungle";
+            var arr = GameObject.Find(arrivalName);
+            if (arr) destination = arr.transform;
+            if (destination)
+                Debug.LogWarning($"[PortalGate] '{portalLabel}': destination auto-linked ke '{arrivalName}'. " +
+                                 "Set manual di Inspector untuk hasil stabil.");
+            else
+                Debug.LogError($"[PortalGate] '{portalLabel}': destination NULL dan tidak ditemukan '{arrivalName}' di scene! " +
+                               "Jalankan ulang Setup Prototype Scene.");
         }
     }
 
@@ -81,15 +99,39 @@ public class PortalGate : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (!destination || Time.time < s_nextAllowedTime) return;
+        // Debug: selalu log siapa yang masuk trigger
+        Debug.Log($"[PortalGate] '{portalLabel}' OnTriggerEnter: {other.name} (tag={other.tag})");
 
-        var cc = other.GetComponentInParent<CharacterController>();
-        if (!cc || !cc.CompareTag("Player")) return;
+        if (!destination)
+        {
+            Debug.LogError($"[PortalGate] '{portalLabel}': destination NULL — teleport dibatalkan!");
+            return;
+        }
+
+        if (Time.time < s_nextAllowedTime)
+        {
+            Debug.Log($"[PortalGate] '{portalLabel}': cooldown aktif, skip.");
+            return;
+        }
+
+        // Cari CharacterController di object itu sendiri atau parent-nya
+        var cc = other.GetComponent<CharacterController>()
+                 ?? other.GetComponentInParent<CharacterController>();
+
+        if (!cc)
+        {
+            Debug.Log($"[PortalGate] '{portalLabel}': tidak ada CharacterController di {other.name}.");
+            return;
+        }
+
+        // Terima player apa pun tag-nya (tag "Player" disarankan tapi tidak wajib)
+        // Tolak hanya jika jelas bukan player (tidak punya CharacterController)
+        Debug.Log($"[PortalGate] '{portalLabel}': TELEPORT {cc.name} → {destination.position}");
 
         s_nextAllowedTime = Time.time + cooldown;
 
         bool wasEnabled = cc.enabled;
-        cc.enabled = false; // CharacterController harus dimatikan agar posisi bisa diubah langsung
+        cc.enabled = false;
         cc.transform.SetPositionAndRotation(destination.position, destination.rotation);
         cc.enabled = wasEnabled;
         Physics.SyncTransforms();
