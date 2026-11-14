@@ -170,6 +170,41 @@ public static partial class SceneSetupTool
         }
     }
 
+    [MenuItem("Eldara/Hapus Pagar Benteng Keliling")]
+    public static void RemovePerimeterFences()
+    {
+        var towerRoot = GameObject.Find("--- TOWERS ---");
+        if (!towerRoot)
+        {
+            Debug.Log("[Eldara] '--- TOWERS ---' tidak ditemukan.");
+            return;
+        }
+
+        var toRemove = new List<GameObject>();
+        for (int i = 0; i < towerRoot.transform.childCount; i++)
+        {
+            var child = towerRoot.transform.GetChild(i).gameObject;
+            if (child.name.StartsWith("EA03_Village_Fence_01a"))
+            {
+                // Pertahankan dua sayap gerbang masuk selatan (z ≈ -48)
+                if (Mathf.Abs(child.transform.position.z - (-48f)) < 1f) continue;
+                toRemove.Add(child);
+            }
+        }
+
+        foreach (var go in toRemove)
+        {
+            Object.DestroyImmediate(go);
+        }
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        Debug.Log($"[Eldara] {toRemove.Count} modul pagar benteng keliling berhasil dihapus.");
+        if (!Application.isBatchMode)
+        {
+            EditorUtility.DisplayDialog("Pagar Dibersihkan!", $"{toRemove.Count} modul pagar benteng keliling berhasil dihapus dari scene.", "OK");
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────
     //  1. ENVIRONMENT & ATMOSPHERE
     // ─────────────────────────────────────────────────────────────────────
@@ -2031,34 +2066,6 @@ public static partial class SceneSetupTool
 
             // Lentera Obor Menara Pengawas
             AddPorchLantern(towerObj.transform, new Vector3(0, 4.5f, 0), new Color(1f, 0.65f, 0.2f), 12f);
-        }
-
-        // Pagar Kayu Benteng Keliling (Perimeter Palisade Skala Besar 160x106m)
-        string fenceFbx = "EA03_Village_Fence_01a";
-        // Sisi Selatan (Z = -54, dengan celah gerbang utama di tengah X = -4.5 s/d 4.5)
-        for (float x = -80f; x <= 80f; x += 3.2f)
-        {
-            if (Mathf.Abs(x) < 5f) continue;
-            InstantiateArtModel(fenceFbx, new Vector3(x, 0, -54f), Quaternion.Euler(0, 180f, 0), Vector3.one, towerRoot.transform, slavicMat);
-        }
-        // Sisi Utara (Z = 52, dengan celah menuju Altar Kuno & Jalan Utama Utara x=14)
-        for (float x = -80f; x <= 80f; x += 3.2f)
-        {
-            if (Mathf.Abs(x) < 4f) continue; // Celah menuju Altar
-            if (Mathf.Abs(x - 14f) < 4f) continue; // Celah jalan utama utara (x ≈ 12.8 & 16.0)
-            InstantiateArtModel(fenceFbx, new Vector3(x, 0, 52f), Quaternion.identity, Vector3.one, towerRoot.transform, slavicMat);
-        }
-        // Sisi Timur (X = 80, dengan celah jalan utama timur)
-        for (float z = -54f; z <= 52f; z += 3.2f)
-        {
-            if (Mathf.Abs(z) < 4f) continue; // Celah jalan utama timur
-            InstantiateArtModel(fenceFbx, new Vector3(80f, 0, z), Quaternion.Euler(0, 90f, 0), Vector3.one, towerRoot.transform, slavicMat);
-        }
-        // Sisi Barat (X = -80, dengan celah jalan utama barat)
-        for (float z = -54f; z <= 52f; z += 3.2f)
-        {
-            if (Mathf.Abs(z) < 4f) continue; // Celah jalan utama barat
-            InstantiateArtModel(fenceFbx, new Vector3(-80f, 0, z), Quaternion.Euler(0, -90f, 0), Vector3.one, towerRoot.transform, slavicMat);
         }
 
         // Spike Traps di Jalur Masuk Gerbang Utama
