@@ -110,7 +110,13 @@ public static partial class SceneSetupTool
     static void PlaceMapLamp(Transform parent, Vector3 pos, Vector3 facing)
     {
         if (!IsAreaFree(pos, 0.8f)) return;
-        AddTraditionalVillageLamp(parent, pos, facing);
+        float yRot = (facing.sqrMagnitude > 0.001f) ? Mathf.Atan2(facing.x, facing.z) * Mathf.Rad2Deg : 0f;
+        AddTraditionalVillageLamp(parent, pos, yRot);
+    }
+
+    static GameObject CreateContinuousPavedRoad(Transform parent, Vector3 start, Vector3 end, float width, Material roadMat, float uvScale = 2.5f)
+    {
+        return CreateContinuousPavedRoad(parent, "Map_Road_Segment", start, end, width, roadMat, uvScale);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -376,7 +382,8 @@ public static partial class SceneSetupTool
         // Baju rombeng & kepala jerami
         MapPrimLocal(PrimitiveType.Cube, "Body", sc.transform, new Vector3(0, 1.4f, 0), new Vector3(0.55f, 0.8f, 0.35f), cloth);
         MapPrimLocal(PrimitiveType.Sphere, "Head", sc.transform, new Vector3(0, 2.15f, 0), new Vector3(0.45f, 0.5f, 0.45f), straw);
-        MapPrimLocal(PrimitiveType.Cone, "Hat", sc.transform, new Vector3(0, 2.5f, 0), new Vector3(0.6f, 0.4f, 0.6f), straw);
+        MapPrimLocal(PrimitiveType.Cylinder, "HatBrim", sc.transform, new Vector3(0, 2.45f, 0), new Vector3(0.75f, 0.06f, 0.75f), straw);
+        MapPrimLocal(PrimitiveType.Cylinder, "HatCrown", sc.transform, new Vector3(0, 2.58f, 0), new Vector3(0.42f, 0.22f, 0.42f), straw);
     }
 
     // ─────────────────────────────────────────────────────────────────────
