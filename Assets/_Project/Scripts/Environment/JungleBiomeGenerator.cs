@@ -215,16 +215,66 @@ public class JungleBiomeGenerator : MonoBehaviour
 
 #if UNITY_EDITOR
     [MenuItem("GameObject/3D Object/Jungle Biome", false, 10)]
-    [MenuItem("Eldara/Biomes/Buat Objek Jungle Biome Lengkap")]
+    [MenuItem("Eldara/Biomes/Buat & Generate Hutan Rimba Lengkap")]
     public static void CreateJungleBiomeObject()
     {
-        var go = new GameObject("Jungle_Biome");
-        var gen = go.AddComponent<JungleBiomeGenerator>();
-        var grass = go.AddComponent<JungleGrass>();
-        var wind = go.AddComponent<JungleWind>();
+        // Cari atau buat objek Jungle_Biome
+        var go = GameObject.Find("Jungle_Biome");
+        if (go == null)
+        {
+            go = new GameObject("Jungle_Biome");
+            Undo.RegisterCreatedObjectUndo(go, "Create Jungle Biome");
+        }
+
+        var gen = go.GetComponent<JungleBiomeGenerator>() ?? go.AddComponent<JungleBiomeGenerator>();
+        var grass = go.GetComponent<JungleGrass>() ?? go.AddComponent<JungleGrass>();
+        var wind = go.GetComponent<JungleWind>() ?? go.AddComponent<JungleWind>();
+
+        // 1. Generate Pohon Raksasa, Menengah, & Semak Langsung!
+        gen.Generate();
+
+        // 2. Generate Hamparan Rumput Prosedural
+        grass.Generate();
+
+        // 3. Pasang Tree Sway ke semua pohon
+        wind.AttachTreeSway();
+
+        // Tandai scene dirty agar perubahan tersimpan
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
         Selection.activeGameObject = go;
-        Undo.RegisterCreatedObjectUndo(go, "Create Jungle Biome");
-        Debug.Log("[Eldara] Objek Jungle Biome lengkap (Generator + Grass + Wind) berhasil dibuat!");
+
+        // Fokuskan kamera Scene view ke objek Jungle
+        if (SceneView.lastActiveSceneView != null)
+        {
+            SceneView.lastActiveSceneView.FrameSelected();
+        }
+
+        EditorUtility.DisplayDialog(
+            "🌴 Hutan Rimba Berhasil Dibuat!",
+            $"Hutan rimba lengkap kini sudah langsung muncul di Scene!\n\n" +
+            $"• {gen.giantTrees} Pohon Raksasa (akar banir & tajuk lebat)\n" +
+            $"• {gen.midTrees} Pohon Menengah\n" +
+            $"• {gen.bushes} Rumpun Semak Hutan\n" +
+            $"• Hamparan Rumput Prosedural (GPU Wind)\n" +
+            $"• Pengatur Angin Terpusat (JungleWind)\n\n" +
+            $"Tekan tombol Play di Unity untuk melihat rumput dan dahan pohon bergoyang tertiup angin!",
+            "Mantap!");
+    }
+
+    [MenuItem("Eldara/Biomes/Hapus Hutan Rimba (Clear)")]
+    public static void ClearJungleBiomeObject()
+    {
+        var go = GameObject.Find("Jungle_Biome");
+        if (go != null)
+        {
+            Undo.DestroyObjectImmediate(go);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+            EditorUtility.DisplayDialog("Hutan Rimba Dibersihkan", "Objek 'Jungle_Biome' dan seluruh isinya telah dibersihkan dari Scene.", "OK");
+        }
+        else
+        {
+            EditorUtility.DisplayDialog("Tidak Ditemukan", "Tidak ada objek 'Jungle_Biome' di Scene saat ini.", "OK");
+        }
     }
 #endif
 }
