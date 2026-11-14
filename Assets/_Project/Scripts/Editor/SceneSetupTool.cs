@@ -48,7 +48,7 @@ public static partial class SceneSetupTool
             "Village", "--- NPCs ---", "--- TOWERS ---", "--- WILDERNESS ---",
             "--- GRASS FIELDS ---", "--- 3D WILDFLOWERS ---", "--- WORLD OBJECTS ---",
             "--- FAUNA & ANIMALS ---", "--- EXPANSION ZONES ---", "--- MEGA EXPANSION ---",
-            "--- ZONE TRIGGERS ---", "--- ENEMY SPAWNERS ---", "--- VILLAGE DETAILS ---",
+            "--- ZONE TRIGGERS ---", "--- ENEMY SPAWNERS ---", "--- VILLAGE DETAILS ---", "Village_Yard_Fences",
             "Managers", "HUD", "CameraRig", "Ground",
             "EXPANSION_ZONES", "MegaExpansion", "ZoneTriggers", "NightSpawner",
             "Zone_North_Mountain", "Zone_South_Swamp", "Zone_West_Fishing", "Zone_East_Cliffs",
@@ -170,38 +170,40 @@ public static partial class SceneSetupTool
         }
     }
 
-    [MenuItem("Eldara/Hapus Pagar Benteng Keliling")]
+    [MenuItem("Eldara/Hapus Semua Pagar Liar & Penghalang")]
     public static void RemovePerimeterFences()
     {
+        int count = 0;
+        var yardFences = GameObject.Find("Village_Yard_Fences");
+        if (yardFences)
+        {
+            count += yardFences.transform.childCount;
+            Object.DestroyImmediate(yardFences);
+        }
+
         var towerRoot = GameObject.Find("--- TOWERS ---");
-        if (!towerRoot)
+        if (towerRoot)
         {
-            Debug.Log("[Eldara] '--- TOWERS ---' tidak ditemukan.");
-            return;
-        }
-
-        var toRemove = new List<GameObject>();
-        for (int i = 0; i < towerRoot.transform.childCount; i++)
-        {
-            var child = towerRoot.transform.GetChild(i).gameObject;
-            if (child.name.StartsWith("EA03_Village_Fence_01a"))
+            var toRemove = new List<GameObject>();
+            for (int i = 0; i < towerRoot.transform.childCount; i++)
             {
-                // Pertahankan dua sayap gerbang masuk selatan (z ≈ -48)
-                if (Mathf.Abs(child.transform.position.z - (-48f)) < 1f) continue;
-                toRemove.Add(child);
+                var child = towerRoot.transform.GetChild(i).gameObject;
+                if (child.name.StartsWith("EA03_Village_Fence_01a"))
+                {
+                    // Pertahankan dua sayap gerbang masuk selatan (z ≈ -48)
+                    if (Mathf.Abs(child.transform.position.z - (-48f)) < 1f) continue;
+                    toRemove.Add(child);
+                }
             }
-        }
-
-        foreach (var go in toRemove)
-        {
-            Object.DestroyImmediate(go);
+            count += toRemove.Count;
+            foreach (var go in toRemove) Object.DestroyImmediate(go);
         }
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        Debug.Log($"[Eldara] {toRemove.Count} modul pagar benteng keliling berhasil dihapus.");
+        Debug.Log($"[Eldara] {count} modul pagar pekarangan & benteng liar berhasil dihapus.");
         if (!Application.isBatchMode)
         {
-            EditorUtility.DisplayDialog("Pagar Dibersihkan!", $"{toRemove.Count} modul pagar benteng keliling berhasil dihapus dari scene.", "OK");
+            EditorUtility.DisplayDialog("Pagar Dibersihkan!", $"{count} modul pagar yang menghalangi pekarangan dan jalan berhasil dibersihkan dari scene.", "OK");
         }
     }
 
@@ -634,87 +636,7 @@ public static partial class SceneSetupTool
             new Vector3(55f, 0f, 38f), Quaternion.Euler(0, -135f, 0),
             village.transform, "Treehouse_Pengawas");
 
-        // ── D. PAGAR PEKARANGAN & BATAS KAVLING DESA ──────────────────────
-        BuildVillageYardFences(village.transform, slavicMat);
-    }
 
-    /// <summary>
-    /// Membangun pagar kayu pekarangan dan batas kavling antar-rumah desa.
-    /// Memberikan struktur tapak pemukiman yang rapi, berpagar indah, dan memiliki bukaan gerbang untuk jalan setapak.
-    /// </summary>
-    static void BuildVillageYardFences(Transform parent, Material mat)
-    {
-        var fenceGroup = new GameObject("Village_Yard_Fences");
-        fenceGroup.transform.SetParent(parent);
-
-        string fbx = "EA03_Village_Fence_01a";
-
-        void PlaceFence(Vector3 pos, float yRot)
-        {
-            var f = InstantiateArtModel(fbx, pos, Quaternion.Euler(0, yRot, 0), Vector3.one, fenceGroup.transform, mat);
-            if (!f)
-            {
-                // Fallback jika FBX tidak ada: balok kayu pagar prosedural sederhana
-                var p = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                p.name = "Fence_Post";
-                p.transform.SetParent(fenceGroup.transform);
-                p.transform.position = pos + new Vector3(0, 0.5f, 0);
-                p.transform.rotation = Quaternion.Euler(0, yRot, 0);
-                p.transform.localScale = new Vector3(2.4f, 0.9f, 0.15f);
-                ApplyColor(p, new Color(0.42f, 0.28f, 0.16f));
-            }
-        }
-
-        // 1. Pagar Pembatas Distrik Pertanian Barat (Z > 0):
-        // Pagar sekat antara Rumah Petani dan Lumbung (X = -31, Z = 5 s/d 17)
-        for (float z = 5.5f; z <= 17f; z += 2.8f) PlaceFence(new Vector3(-31f, 0, z), 90f);
-        // Pagar depan Rumah Petani (Z = 5, X = -28 s/d -15, jeda di X = -22 untuk jalan setapak)
-        PlaceFence(new Vector3(-26.5f, 0, 5f), 0f);
-        PlaceFence(new Vector3(-17.5f, 0, 5f), 0f);
-        PlaceFence(new Vector3(-14.7f, 0, 5f), 0f);
-        // Pagar depan Lumbung Barn (Z = 5, X = -46 s/d -33, jeda di X = -40 untuk jalan setapak)
-        PlaceFence(new Vector3(-44.5f, 0, 5f), 0f);
-        PlaceFence(new Vector3(-35.5f, 0, 5f), 0f);
-        PlaceFence(new Vector3(-32.7f, 0, 5f), 0f);
-
-        // 2. Pagar Pembatas Distrik Chalet & Danau Barat (Z < 0):
-        // Pagar sekat antara Chalet dan Pondok Danau (X = -31, Z = -17 s/d -5)
-        for (float z = -17f; z <= -5.5f; z += 2.8f) PlaceFence(new Vector3(-31f, 0, z), 90f);
-        // Pagar depan Chalet (Z = -5, X = -28 s/d -15, jeda di X = -22 untuk jalan setapak)
-        PlaceFence(new Vector3(-26.5f, 0, -5f), 0f);
-        PlaceFence(new Vector3(-17.5f, 0, -5f), 0f);
-        PlaceFence(new Vector3(-14.7f, 0, -5f), 0f);
-        // Pagar depan Danau (Z = -5, X = -46 s/d -33, jeda di X = -40 untuk jalan setapak)
-        PlaceFence(new Vector3(-44.5f, 0, -5f), 0f);
-        PlaceFence(new Vector3(-35.5f, 0, -5f), 0f);
-
-        // 3. Pagar Pembatas Distrik Pandai Besi & Gudang Timur (Z > 0):
-        // Pagar sekat antara Bengkel dan Gudang (X = 30, Z = 5 s/d 17)
-        for (float z = 5.5f; z <= 17f; z += 2.8f) PlaceFence(new Vector3(30f, 0, z), 90f);
-        // Pagar depan Bengkel (Z = 5, X = 15 s/d 28, jeda di X = 22 untuk jalan setapak)
-        PlaceFence(new Vector3(17.5f, 0, 5f), 0f);
-        PlaceFence(new Vector3(26.5f, 0, 5f), 0f);
-        // Pagar depan Gudang Logistik (Z = 5, X = 32 s/d 44, jeda di X = 38 untuk jalan setapak)
-        PlaceFence(new Vector3(33.5f, 0, 5f), 0f);
-        PlaceFence(new Vector3(42.5f, 0, 5f), 0f);
-
-        // 4. Pagar Pembatas Distrik Cabin & Villa Modern Timur (Z < 0):
-        // Pagar sekat antara Cabin dan Villa (X = 30, Z = -17 s/d -5)
-        for (float z = -17f; z <= -5.5f; z += 2.8f) PlaceFence(new Vector3(30f, 0, z), 90f);
-        // Pagar depan Cabin (Z = -5, X = 15 s/d 28, jeda di X = 22 untuk jalan setapak)
-        PlaceFence(new Vector3(17.5f, 0, -5f), 0f);
-        PlaceFence(new Vector3(26.5f, 0, -5f), 0f);
-        // Pagar depan Villa (Z = -5, X = 32 s/d 44, jeda di X = 38 untuk jalan setapak)
-        PlaceFence(new Vector3(33.5f, 0, -5f), 0f);
-        PlaceFence(new Vector3(42.5f, 0, -5f), 0f);
-
-        // 5. Pagar Halaman Penginapan A-Frame & Minka Dukun Selatan (X = ±7, Z = -36 s/d -24):
-        // Sisi Barat (A-Frame):
-        PlaceFence(new Vector3(-6.5f, 0, -25f), 90f);
-        PlaceFence(new Vector3(-6.5f, 0, -35f), 90f);
-        // Sisi Timur (Minka Dukun):
-        PlaceFence(new Vector3( 6.5f, 0, -25f), 90f);
-        PlaceFence(new Vector3( 6.5f, 0, -35f), 90f);
     }
 
     // ─────────────────────────────────────────────────────────────────────
