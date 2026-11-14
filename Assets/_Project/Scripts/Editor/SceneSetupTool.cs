@@ -199,6 +199,14 @@ public static partial class SceneSetupTool
             foreach (var go in toRemove) Object.DestroyImmediate(go);
         }
 
+        // Hapus rumah nelayan jika masih ada di scene
+        string[] fishHouses = { "FishHouse_1", "FishHouse_2", "FishHouse_3", "FishHouse_Barn" };
+        foreach (var fh in fishHouses)
+        {
+            var fhGo = GameObject.Find(fh);
+            if (fhGo) { count++; Object.DestroyImmediate(fhGo); }
+        }
+
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         Debug.Log($"[Eldara] {count} modul pagar pekarangan & benteng liar berhasil dihapus.");
         if (!Application.isBatchMode)
@@ -2730,16 +2738,6 @@ public static partial class SceneSetupTool
             boat2.transform.localScale = new Vector3(2.2f, 0.55f, 4.5f);
             boat2.transform.rotation = Quaternion.Euler(0, -20f, 0);
             ApplyColor(boat2, new Color(0.4f, 0.28f, 0.16f));
-
-            // 4 Rumah Nelayan
-            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Panggung,
-                new Vector3(-165f, 0f, 12f), Quaternion.Euler(0, 90f, 0), westRoot.transform, "FishHouse_1");
-            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Danau,
-                new Vector3(-165f, 0f, -10f), Quaternion.Euler(0, 90f, 0), westRoot.transform, "FishHouse_2");
-            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Panggung,
-                new Vector3(-180f, 0f, 20f), Quaternion.Euler(0, 70f, 0), westRoot.transform, "FishHouse_3");
-            ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Barn,
-                new Vector3(-180f, 0f, -18f), Quaternion.Euler(0, 100f, 0), westRoot.transform, "FishHouse_Barn");
 
             // NPC Kapten Nelayan
             var npcNelayan = ProceduralNpcBuilder.BuildNpc(
