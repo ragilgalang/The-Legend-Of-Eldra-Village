@@ -118,6 +118,14 @@ public static partial class SceneSetupTool
             barkMat, birchBarkMat, summerLeaf, springLeaf,
             stoneMat, darkStone, runeMat, vineMat, groundMat, glowMat, woodMat, energy1, energy2, glowCol, out var jGate);
         jGate.destination = villageArrival;
+
+        // Daftarkan zona Jungle ke ChunkRenderDistance agar render optimal & langsung muncul saat teleport
+        var crd = ChunkRenderDistance.Instance ?? FindFirstObjectByType<ChunkRenderDistance>();
+        if (crd != null)
+        {
+            crd.RegisterZone("Hutan Rimba Belantara", jungleRoot, JungleCenter, 220f);
+            crd.UpdateAll(true);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -314,13 +322,13 @@ public static partial class SceneSetupTool
         Vector2 temple2 = new Vector2(templeCenter.x, templeCenter.z);
         Vector2 portal2 = new Vector2(jPortalPos.x, jPortalPos.z);
 
-        // Tanah berlumut (visual saja; pijakan = Ground utama)
+        // Tanah gelap rimba tropis (persis seperti di JungleBiomeGenerator)
         var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
         ground.name = "Jungle_Ground";
         ground.transform.SetParent(root);
         ground.transform.position = C + Vector3.up * 0.02f;
         ground.transform.localScale = new Vector3(26f, 1f, 26f);
-        ground.GetComponent<Renderer>().sharedMaterial = groundMat;
+        ground.GetComponent<Renderer>().sharedMaterial = JungleTree.MakeMaterial(new Color(0.16f, 0.12f, 0.07f), 0.05f);
         Object.DestroyImmediate(ground.GetComponent<Collider>());
 
         // Portal kembali ke desa
@@ -357,52 +365,77 @@ public static partial class SceneSetupTool
             pad.transform.SetParent(root);
         }
 
-        // Pohon raksasa purba + akar banir
-        Vector3 giantPos = C + new Vector3(-42f, 0f, 55f);
-        RealisticTreeBuilder.BuildOakTree(giantPos, 5.5f, root, barkMat, summerLeaf);
-        for (int i = 0; i < 6; i++)
-        {
-            float ang = i / 6f * 360f;
-            Vector3 dir = Quaternion.Euler(0f, ang, 0f) * Vector3.forward;
-            var rootObj = JungleCyl(root, "ButtressRoot", giantPos + dir * 3.2f + Vector3.up * 0.35f, 0.45f, 5f, woodMat, true);
-            rootObj.transform.rotation = Quaternion.LookRotation(dir) * Quaternion.Euler(90f, 0f, 0f);
-        }
+        // ── POHON RIMBA PROSEDURAL (JungleTree & JungleBush — persis seperti di JungleBiomeGenerator) ──
+        if (!root.GetComponent<JungleWind>())
+            root.gameObject.AddComponent<JungleWind>();
 
-        // Hutan rimba lebat
+        // 1) Pohon Raksasa Purba (Pusat Rimba) dengan akar banir besar
+        Vector3 giantPos = C + new Vector3(-42f, 0f, 55f);
+        SpawnProceduralJungleTree(root, "AncientGiantTree", giantPos, 48f, 2.6f, 40, new Color(0.10f, 0.44f, 0.12f), 12345);
+
         var placed = new List<Vector2>();
+        int treeSeed = 777;
+
+        // 2) Gugusan Pohon Raksasa (Giant Trees) — tinggi 38-52m, batang besar berakar banir
+        int giantCount = 0;
         int attempts = 0;
-        while (placed.Count < 240 && attempts < 6000)
+        while (giantCount < 20 && attempts < 2500)
         {
             attempts++;
-            float x = C.x + Random.Range(-120f, 120f);
-            float z = C.z + Random.Range(-120f, 120f);
+            float x = C.x + Random.Range(-110f, 110f);
+            float z = C.z + Random.Range(-110f, 110f);
             var p2 = new Vector2(x, z);
 
-            if (Mathf.Abs(x - C.x) < 5.5f && z > jPortalPos.z - 6f && z < templeCenter.z - 10f) continue; // jalan
-            if (Vector2.Distance(p2, pondXZ) < 15f) continue;
-            if (Vector2.Distance(p2, temple2) < 26f) continue;
-            if (Vector2.Distance(p2, portal2) < 13f) continue;
-            if (Vector2.Distance(p2, new Vector2(giantPos.x, giantPos.z)) < 10f) continue;
+            if (Mathf.Abs(x - C.x) < 7f && z > jPortalPos.z - 8f && z < templeCenter.z - 8f) continue; // sterilkan jalan setapak
+            if (Vector2.Distance(p2, pondXZ) < 16f) continue;
+            if (Vector2.Distance(p2, temple2) < 28f) continue;
+            if (Vector2.Distance(p2, portal2) < 14f) continue;
+            if (Vector2.Distance(p2, new Vector2(giantPos.x, giantPos.z)) < 16f) continue;
 
             bool tooClose = false;
-            foreach (var q in placed) if ((q - p2).sqrMagnitude < 25f) { tooClose = true; break; }
+            foreach (var q in placed) if ((q - p2).sqrMagnitude < 144f) { tooClose = true; break; }
             if (tooClose) continue;
 
-            float s = Random.Range(1.6f, 2.8f);
-            var pos = new Vector3(x, 0f, z);
-            if (placed.Count % 4 == 0) RealisticTreeBuilder.BuildBirchTree(pos, s, root, birchBarkMat, springLeaf);
-            else                       RealisticTreeBuilder.BuildOakTree(pos, s, root, barkMat, summerLeaf);
+            float h = Random.Range(38f, 52f);
+            float r = Random.Range(1.8f, 2.6f);
+            Color leafCol = Color.Lerp(new Color(0.08f, 0.38f, 0.10f), new Color(0.20f, 0.52f, 0.14f), Random.value);
+            SpawnProceduralJungleTree(root, $"GiantTree_{giantCount}", new Vector3(x, 0f, z), h, r, Random.Range(30, 42), leafCol, treeSeed + giantCount * 37);
             placed.Add(p2);
+            giantCount++;
         }
 
-        // Sulur menggantung di kanopi
-        for (int i = 0; i < placed.Count && i < 90; i += 2)
+        // 3) Pohon Menengah (Mid Trees) — tinggi 20-32m, tajuk hijau awan bertingkat
+        int midCount = 0;
+        attempts = 0;
+        while (midCount < 50 && attempts < 3500)
         {
-            Vector2 tp = placed[i];
-            float len = Random.Range(3.5f, 6f);
-            JungleCyl(root, "HangingVine",
-                new Vector3(tp.x + Random.Range(-2.5f, 2.5f), 9f - len * 0.5f, tp.y + Random.Range(-2.5f, 2.5f)),
-                0.04f, len, vineMat);
+            attempts++;
+            float x = C.x + Random.Range(-115f, 115f);
+            float z = C.z + Random.Range(-115f, 115f);
+            var p2 = new Vector2(x, z);
+
+            if (Mathf.Abs(x - C.x) < 5.5f && z > jPortalPos.z - 6f && z < templeCenter.z - 10f) continue;
+            if (Vector2.Distance(p2, pondXZ) < 14f) continue;
+            if (Vector2.Distance(p2, temple2) < 24f) continue;
+            if (Vector2.Distance(p2, portal2) < 12f) continue;
+
+            bool tooClose = false;
+            foreach (var q in placed) if ((q - p2).sqrMagnitude < 49f) { tooClose = true; break; }
+            if (tooClose) continue;
+
+            float h = Random.Range(20f, 32f);
+            float r = Random.Range(0.85f, 1.35f);
+            Color leafCol = Color.Lerp(new Color(0.12f, 0.44f, 0.14f), new Color(0.24f, 0.58f, 0.18f), Random.value);
+            SpawnProceduralJungleTree(root, $"MidTree_{midCount}", new Vector3(x, 0f, z), h, r, Random.Range(18, 26), leafCol, treeSeed + 1000 + midCount * 23);
+            placed.Add(p2);
+            midCount++;
+        }
+
+        // 4) Semak Rimba Prosedural Lumpy (JungleBush dari JungleTree.LumpySphere) — 75 semak
+        for (int i = 0; i < 75; i++)
+        {
+            Vector3 bp = JungleRandomOffPath(C, jPortalPos, templeCenter, 115f);
+            SpawnProceduralJungleBush(root, $"JungleBush_{i}", bp, treeSeed + 2000 + i * 17);
         }
 
         // Semak, batu, rumput, bunga
@@ -744,6 +777,66 @@ public static partial class SceneSetupTool
         go.GetComponent<Renderer>().sharedMaterial = mat;
         Object.DestroyImmediate(go.GetComponent<Collider>());
         return go;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  SPAWNER POHON & SEMAK RIMBA (Model JungleTree & JungleBush)
+    // ─────────────────────────────────────────────────────────────────────
+    static void SpawnProceduralJungleTree(Transform parent, string name, Vector3 pos, float height, float baseRadius, int leaves, Color leafColor, int seed)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.position = pos;
+        go.transform.rotation = Quaternion.Euler(Random.Range(-1.5f, 1.5f), Random.value * 360f, Random.Range(-1.5f, 1.5f));
+
+        var t = go.AddComponent<JungleTree>();
+        t.height = height;
+        t.baseRadius = baseRadius;
+        t.topRadius = baseRadius * 0.32f;
+        t.buttressCount = Random.Range(4, 8);
+        t.buttressFlare = Random.Range(1.1f, 1.7f);
+        t.buttressHeight = height * 0.12f;
+        t.canopyRadius = 10f * (height / 38f);
+        t.leafClusters = leaves;
+        t.canopyStart = 0.58f;
+        t.clusterSize = new Vector2(4.5f, 8f) * (height / 38f);
+        t.leafTint = leafColor;
+        t.Build(seed);
+
+        if (go.GetComponent<JungleTreeSway>() == null)
+            go.AddComponent<JungleTreeSway>();
+    }
+
+    static void SpawnProceduralJungleBush(Transform parent, string name, Vector3 pos, int seed)
+    {
+        Random.State old = Random.state;
+        Random.InitState(seed);
+
+        var parts = new List<CombineInstance>();
+        Mesh lumpy = JungleTree.LumpySphere();
+        if (lumpy == null) { Random.state = old; return; }
+
+        int n = Random.Range(3, 6);
+        for (int i = 0; i < n; i++)
+        {
+            Vector3 p = new Vector3(Random.Range(-1.1f, 1.1f), Random.Range(0.3f, 0.9f), Random.Range(-1.1f, 1.1f));
+            float s = Random.Range(1.0f, 1.9f);
+            parts.Add(new CombineInstance
+            {
+                mesh = lumpy,
+                transform = Matrix4x4.TRS(p, Quaternion.Euler(0, Random.value * 360f, 0), new Vector3(s, s * 0.6f, s))
+            });
+        }
+
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.position = pos;
+        go.AddComponent<MeshFilter>().sharedMesh = JungleTree.Combine(parts);
+        var mr = go.AddComponent<MeshRenderer>();
+        Color c = Color.Lerp(new Color(0.10f, 0.40f, 0.12f), new Color(0.25f, 0.55f, 0.18f), Random.value);
+        mr.sharedMaterial = JungleTree.MakeMaterial(c, 0.1f);
+
+        Random.state = old;
     }
 }
 #endif

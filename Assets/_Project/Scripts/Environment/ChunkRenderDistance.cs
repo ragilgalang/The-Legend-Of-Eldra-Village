@@ -262,7 +262,7 @@ public class ChunkRenderDistance : MonoBehaviour
         if (grassFields != null) manager.ChunkifyContainer(grassFields.transform);
 
         // 3. Chunkify Hutan Rimba
-        var jungle = GameObject.Find("Jungle_Biome");
+        var jungle = GameObject.Find("Jungle_Biome") ?? GameObject.Find("--- JUNGLE BIOME ---");
         if (jungle != null) manager.ChunkifyContainer(jungle.transform);
 
         // 4. Daftarkan 4 Zona Ekspansi Utama
