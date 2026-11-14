@@ -17,11 +17,11 @@ public class JungleBiomeGenerator : MonoBehaviour
     public int seed = 12345;
     public bool generateOnStart = true;
 
-    [Header("Kepadatan")]
-    public int giantTrees = 28;                   // pohon raksasa, batang sangat besar
-    public int midTrees = 70;                     // pohon lapis tengah
-    public int bushes = 350;                      // semak / paku-pakuan
-    public float minTreeSpacing = 7f;
+    [Header("Kepadatan (Dioptimasi Lancar)")]
+    public int giantTrees = 16;                   // pohon raksasa, batang sangat besar
+    public int midTrees = 35;                     // pohon lapis tengah
+    public int bushes = 80;                       // semak / paku-pakuan
+    public float minTreeSpacing = 9f;
 
     [Header("Ukuran Pohon Raksasa")]
     public Vector2 giantHeight = new Vector2(38f, 55f);
@@ -38,6 +38,31 @@ public class JungleBiomeGenerator : MonoBehaviour
 
     Transform container;
     readonly List<Vector4> placed = new List<Vector4>(); // x,z,radius,-
+    readonly Dictionary<Vector2Int, Transform> chunkContainers = new Dictionary<Vector2Int, Transform>();
+
+    Transform GetOrCreateChunkContainer(Vector3 localPos)
+    {
+        Vector3 worldPos = transform.TransformPoint(localPos);
+        var crd = ChunkRenderDistance.Instance ?? FindFirstObjectByType<ChunkRenderDistance>();
+        float cSize = crd != null ? crd.chunkSize : 25f;
+        int cx = Mathf.FloorToInt(worldPos.x / cSize);
+        int cz = Mathf.FloorToInt(worldPos.z / cSize);
+        var coord = new Vector2Int(cx, cz);
+
+        if (!chunkContainers.TryGetValue(coord, out Transform chunkT) || chunkT == null)
+        {
+            var chunkGO = new GameObject($"Chunk_{cx}_{cz}");
+            chunkGO.transform.SetParent(container, false);
+            chunkT = chunkGO.transform;
+            chunkContainers[coord] = chunkT;
+
+            if (crd != null)
+            {
+                crd.RegisterChunk(coord, chunkGO);
+            }
+        }
+        return chunkT;
+    }
 
     void Start()
     {
@@ -50,11 +75,16 @@ public class JungleBiomeGenerator : MonoBehaviour
         Clear();
         Random.InitState(seed);
         placed.Clear();
+        chunkContainers.Clear();
 
         container = new GameObject("JungleBiome").transform;
         container.SetParent(transform, false);
 
         if (terrain == null) CreateGround();
+
+        // Pastikan ChunkRenderDistance aktif
+        var crd = ChunkRenderDistance.Instance ?? FindFirstObjectByType<ChunkRenderDistance>();
+        if (crd == null) gameObject.AddComponent<ChunkRenderDistance>();
 
         // 1) pohon raksasa
         for (int i = 0; i < giantTrees; i++)
@@ -73,6 +103,7 @@ public class JungleBiomeGenerator : MonoBehaviour
     [ContextMenu("Clear Jungle")]
     public void Clear()
     {
+        chunkContainers.Clear();
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
             if (Application.isPlaying) Destroy(transform.GetChild(i).gameObject);
@@ -89,8 +120,9 @@ public class JungleBiomeGenerator : MonoBehaviour
 
         if (!FindSpot(r + minTreeSpacing * 0.5f, out Vector3 pos)) return;
 
+        Transform chunkParent = GetOrCreateChunkContainer(pos);
         var go = new GameObject(label + "_" + idx);
-        go.transform.SetParent(container, false);
+        go.transform.SetParent(chunkParent, false);
         go.transform.position = pos;
         go.transform.rotation = Quaternion.Euler(Random.Range(-1.5f, 1.5f), Random.value * 360f, Random.Range(-1.5f, 1.5f));
 
@@ -129,8 +161,9 @@ public class JungleBiomeGenerator : MonoBehaviour
             });
         }
 
+        Transform chunkParent = GetOrCreateChunkContainer(pos);
         var go = new GameObject("Bush_" + idx);
-        go.transform.SetParent(container, false);
+        go.transform.SetParent(chunkParent, false);
         go.transform.position = pos;
         go.AddComponent<MeshFilter>().sharedMesh = JungleTree.Combine(parts);
         var mr = go.AddComponent<MeshRenderer>();
@@ -229,6 +262,7 @@ public class JungleBiomeGenerator : MonoBehaviour
         var gen = go.GetComponent<JungleBiomeGenerator>() ?? go.AddComponent<JungleBiomeGenerator>();
         var grass = go.GetComponent<JungleGrass>() ?? go.AddComponent<JungleGrass>();
         var wind = go.GetComponent<JungleWind>() ?? go.AddComponent<JungleWind>();
+        var crd = go.GetComponent<ChunkRenderDistance>() ?? go.AddComponent<ChunkRenderDistance>();
 
         // Jangan menimpa langit desa dengan kabut hijau pekat solid
         gen.setupAtmosphere = false;
@@ -241,6 +275,9 @@ public class JungleBiomeGenerator : MonoBehaviour
 
         // 3. Pasang Tree Sway ke semua pohon
         wind.AttachTreeSway();
+
+        // 4. Update Jarak Render Chunk seketika
+        crd.UpdateAllChunks(true);
 
         // Pulihkan kamera utama ke mode Skybox jika sempat tertimpa
         if (Camera.main != null)

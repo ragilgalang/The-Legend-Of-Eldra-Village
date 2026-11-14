@@ -19,9 +19,9 @@ public class JungleGrass : MonoBehaviour
     public int seed = 777;
     public bool generateOnStart = true;
 
-    [Header("Kepadatan")]
-    [Range(0.1f, 4f)] public float clumpsPerSquareMeter = 1.2f;   // rumpun per m2
-    public Vector2Int bladesPerClump = new Vector2Int(4, 7);
+    [Header("Kepadatan (Dioptimasi Lancar)")]
+    [Range(0.1f, 4f)] public float clumpsPerSquareMeter = 0.45f;   // rumpun per m2
+    public Vector2Int bladesPerClump = new Vector2Int(3, 5);
     public float clumpRadius = 0.28f;
     public float trunkClearance = 0.4f;              // jarak aman di luar akar banir
     public float cellSize = 16f;                     // ukuran chunk
@@ -131,6 +131,16 @@ public class JungleGrass : MonoBehaviour
             mr.shadowCastingMode = ShadowCastingMode.Off;
             mr.receiveShadows = true;
             chunks.Add(mr);
+
+            // Daftarkan ke sistem Jarak Render (Chunk ala Minecraft)
+            var crd = ChunkRenderDistance.Instance ?? FindFirstObjectByType<ChunkRenderDistance>();
+            if (crd != null)
+            {
+                Vector3 centerPos = new Vector3((x0 + x1) * 0.5f, 0f, (z0 + z1) * 0.5f) + transform.position;
+                int gcx = Mathf.FloorToInt(centerPos.x / crd.chunkSize);
+                int gcz = Mathf.FloorToInt(centerPos.z / crd.chunkSize);
+                crd.RegisterChunk(new Vector2Int(gcx, gcz), go);
+            }
         }
 
         Random.state = old;
@@ -159,6 +169,9 @@ public class JungleGrass : MonoBehaviour
     // ------------------------------------------------------------- CULLING
     void Update()
     {
+        // Jika sistem ChunkRenderDistance aktif, biarkan sistem chunk yang mengatur on/off
+        if (ChunkRenderDistance.Instance != null) return;
+
         cullTimer -= Time.deltaTime;
         if (cullTimer > 0f || chunks.Count == 0) return;
         cullTimer = 0.3f;
