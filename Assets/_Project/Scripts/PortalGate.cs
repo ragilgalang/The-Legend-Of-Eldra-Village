@@ -137,7 +137,7 @@ public class PortalGate : MonoBehaviour
         Physics.SyncTransforms();
 
         // Segera perbarui ChunkRenderDistance seketika agar pohon jungle langsung tampil tanpa culling
-        var crd = ChunkRenderDistance.Instance ?? FindFirstObjectByType<ChunkRenderDistance>();
+        var crd = ChunkRenderDistance.Instance ?? Object.FindFirstObjectByType<ChunkRenderDistance>();
         if (crd != null) crd.UpdateAll(true);
 
         _flash = flashDuration;

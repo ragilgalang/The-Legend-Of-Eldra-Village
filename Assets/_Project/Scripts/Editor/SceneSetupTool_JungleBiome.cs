@@ -120,7 +120,7 @@ public static partial class SceneSetupTool
         jGate.destination = villageArrival;
 
         // Daftarkan zona Jungle ke ChunkRenderDistance agar render optimal & langsung muncul saat teleport
-        var crd = ChunkRenderDistance.Instance ?? FindFirstObjectByType<ChunkRenderDistance>();
+        var crd = ChunkRenderDistance.Instance ?? Object.FindFirstObjectByType<ChunkRenderDistance>();
         if (crd != null)
         {
             crd.RegisterZone("Hutan Rimba Belantara", jungleRoot, JungleCenter, 220f);
