@@ -1376,7 +1376,7 @@ public static partial class SceneSetupTool
         Material matWall   = (style == "brick") ? matBrick : (style == "wood" ? matWood : matPlaster);
         Material matCorner = (style == "wood")  ? matWood : matBrick;
 
-        float s = small ? 0.8f : 1f;
+        float s = 1f;
 
         var houseRoot = new GameObject(houseName);
         houseRoot.transform.SetParent(parent);
@@ -1398,12 +1398,14 @@ public static partial class SceneSetupTool
         // Segmen Kiri (X = -1): Pintu Masuk
         InstantiateArtModelLocal(doorWallFbx, new Vector3(-1f, 0, -2f), Quaternion.identity, Vector3.one, modelContainer.transform, matWall);
         // Daun Pintu Kayu (sedikit terbuka 30 derajat agar mengundang)
-        InstantiateArtModelLocal("Door_1_Flat", new Vector3(-1.45f, 0, -1.95f), Quaternion.Euler(0, -35f, 0), Vector3.one, modelContainer.transform, matWood);
+        var leaf = InstantiateArtModelLocal("Door_1_Flat", new Vector3(-1.45f, 0, -1.95f), Quaternion.Euler(0, -35f, 0), Vector3.one, modelContainer.transform, matWood);
+        if (leaf) foreach (var c in leaf.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
 
         // Segmen Kanan (X = 1): Jendela Lebar
         InstantiateArtModelLocal(winWallFbx, new Vector3(1f, 0, -2f), Quaternion.identity, Vector3.one, modelContainer.transform, matWall);
         // Daun Jendela Kayu Terbuka (Window Shutters)
-        InstantiateArtModelLocal("WindowShutters_Wide_Flat_Open", new Vector3(1f, 0, -2f), Quaternion.identity, Vector3.one, modelContainer.transform, matWood);
+        var shutters = InstantiateArtModelLocal("WindowShutters_Wide_Flat_Open", new Vector3(1f, 0, -2f), Quaternion.identity, Vector3.one, modelContainer.transform, matWood);
+        if (shutters) foreach (var c in shutters.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
 
         // ── 2. DINDING BELAKANG (Z = 2, menghadap Utara lokal) ──
         InstantiateArtModelLocal(solidWallFbx, new Vector3(-1f, 0, 2f), Quaternion.Euler(0, 180f, 0), Vector3.one, modelContainer.transform, matWall);
