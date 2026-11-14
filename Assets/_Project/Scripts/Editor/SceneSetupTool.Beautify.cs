@@ -53,6 +53,10 @@ public static partial class SceneSetupTool
 
         // 3. Lampu di jalan ekspansi di luar benteng
         PlaceRoadLamps(root.transform);
+
+        // 4. Perbaikan desain peta: gerbang benteng, jalan penghubung, lampu avenue,
+        //    pelataran rumah, distrik tani, kincir angin, kolam, kandang ternak, latihan, dan rumpun pohon
+        ApplyMapDesignPass(root.transform);
     }
 
     // ─────────────────────────────────────────────────────────────────────
