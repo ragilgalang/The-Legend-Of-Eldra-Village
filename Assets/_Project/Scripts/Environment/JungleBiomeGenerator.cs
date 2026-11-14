@@ -277,7 +277,7 @@ public class JungleBiomeGenerator : MonoBehaviour
         wind.AttachTreeSway();
 
         // 4. Update Jarak Render Chunk seketika
-        crd.UpdateAllChunks(true);
+        crd.UpdateAll(true);
 
         // Pulihkan kamera utama ke mode Skybox jika sempat tertimpa
         if (Camera.main != null)

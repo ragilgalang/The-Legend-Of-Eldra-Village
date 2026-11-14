@@ -127,6 +127,8 @@ public class ChunkRenderDistance : MonoBehaviour
         lastChunkZ = int.MinValue;
     }
 
+    public void UpdateAllChunks(bool force = false) => UpdateAll(force);
+
     public void UpdateAll(bool force = false)
     {
         Vector3 viewerPos = GetViewerPosition();
