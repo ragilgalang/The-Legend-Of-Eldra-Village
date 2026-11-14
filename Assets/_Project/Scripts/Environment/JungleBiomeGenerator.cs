@@ -215,14 +215,16 @@ public class JungleBiomeGenerator : MonoBehaviour
 
 #if UNITY_EDITOR
     [MenuItem("GameObject/3D Object/Jungle Biome", false, 10)]
-    [MenuItem("Eldara/Biomes/Buat Objek Jungle Biome")]
+    [MenuItem("Eldara/Biomes/Buat Objek Jungle Biome Lengkap")]
     public static void CreateJungleBiomeObject()
     {
         var go = new GameObject("Jungle_Biome");
         var gen = go.AddComponent<JungleBiomeGenerator>();
+        var grass = go.AddComponent<JungleGrass>();
+        var wind = go.AddComponent<JungleWind>();
         Selection.activeGameObject = go;
         Undo.RegisterCreatedObjectUndo(go, "Create Jungle Biome");
-        Debug.Log("[Eldara] Objek Jungle Biome berhasil dibuat! Klik kanan komponen JungleBiomeGenerator di Inspector dan pilih 'Generate Jungle'.");
+        Debug.Log("[Eldara] Objek Jungle Biome lengkap (Generator + Grass + Wind) berhasil dibuat!");
     }
 #endif
 }
