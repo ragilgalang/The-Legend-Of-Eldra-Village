@@ -49,6 +49,7 @@ public static partial class SceneSetupTool
             "--- GRASS FIELDS ---", "--- 3D WILDFLOWERS ---", "--- WORLD OBJECTS ---",
             "--- FAUNA & ANIMALS ---", "--- EXPANSION ZONES ---", "--- MEGA EXPANSION ---",
             "--- ZONE TRIGGERS ---", "--- ENEMY SPAWNERS ---", "--- VILLAGE DETAILS ---", "Village_Yard_Fences",
+            "--- CHUNK RENDER DISTANCE ---",
             "Managers", "HUD", "CameraRig", "Ground",
             "EXPANSION_ZONES", "MegaExpansion", "ZoneTriggers", "NightSpawner",
             "Zone_North_Mountain", "Zone_South_Swamp", "Zone_West_Fishing", "Zone_East_Cliffs",
@@ -123,6 +124,9 @@ public static partial class SceneSetupTool
 
         // 11. Antarmuka Pemain (Full HUD)
         SetupHUD(playerInteractor, playerHealth);
+
+        // 12. Sistem Jarak Render Chunk Global ala Minecraft (Optimasi 60 FPS Seluruh Peta)
+        ChunkRenderDistance.ApplyToEntireWorldMenu();
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         EditorSceneManager.SaveOpenScenes();

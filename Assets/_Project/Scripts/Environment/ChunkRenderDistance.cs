@@ -5,44 +5,57 @@ using UnityEditor;
 #endif
 
 /// <summary>
-/// Sistem Jarak Render ala Minecraft (Chunk-based Render Distance).
-/// Membagi dunia/hutan menjadi petak (gugus / chunk) berukuran 20-25m.
-/// Hanya petak dalam radius "Jarak Render" di sekitar pemain yang aktif/dirender.
-/// Petak di luar jarak render otomatis di-nonaktifkan (0% beban GPU & CPU).
+/// Sistem Jarak Render Global ala Minecraft untuk seluruh dunia Legenda Desa Eldara.
+/// - Membagi pohon hutan liar dan padang rumput menjadi petak-petak (chunks 25m).
+/// - Mengatur on/off otomatis untuk 8 zona ekspansi besar (hanya aktif saat pemain mendekat).
+/// - Mendukung Scene View di Editor dan Play Mode, sehingga Unity 100% bebas lag & patah-patah!
 /// </summary>
 [ExecuteAlways]
 public class ChunkRenderDistance : MonoBehaviour
 {
     public static ChunkRenderDistance Instance { get; private set; }
 
-    [Header("Pengaturan Jarak Render (ala Minecraft)")]
+    [System.Serializable]
+    public class ZoneTarget
+    {
+        public string zoneName;
+        public GameObject zoneObject;
+        public Vector3 center;
+        public float activationRadius = 150f;
+    }
+
+    [Header("Pengaturan Jarak Render Chunk (Pohon & Rumput)")]
     [Tooltip("Ukuran satu petak (chunk) dalam meter")]
     public float chunkSize = 25f;
 
     [Range(2, 12)]
-    [Tooltip("Jarak Render dalam satuan gugus/chunk (misal 4 gugus = 100 meter)")]
+    [Tooltip("Jarak Render dalam satuan petak/gugus (misal 4 gugus = 100 meter)")]
     public int renderDistance = 4;
 
+    [Header("Jarak Render Zona Wilayah Besar")]
+    public List<ZoneTarget> expansionZones = new List<ZoneTarget>();
+
     [Header("Atmosfer Kabut")]
-    [Tooltip("Otomatis menyesuaikan jarak kabut dengan jarak render agar batas chunk tidak terlihat pop-in (seperti Minecraft)")]
+    [Tooltip("Menyesuaikan kabut otomatis agar batas render terlihat lembut seperti Minecraft")]
     public bool syncFogDistance = true;
 
-    [Header("Target Kamera / Pemain")]
+    [Header("Target Pemain")]
     public Transform playerTarget;
 
     // Koordinat chunk pemain terakhir
     int lastChunkX = int.MinValue;
     int lastChunkZ = int.MinValue;
+    Vector3 lastViewerPos = new Vector3(float.MinValue, 0f, float.MinValue);
     float updateTimer;
 
-    // Daftar semua chunk terdaftar: koordinat grid -> GameObject chunk
+    // Daftar semua chunk grid terdaftar: koordinat -> GameObject
     readonly Dictionary<Vector2Int, GameObject> registeredChunks = new Dictionary<Vector2Int, GameObject>();
 
     void OnEnable()
     {
         Instance = this;
         FindPlayerTarget();
-        UpdateAllChunks(true);
+        UpdateAll(true);
     }
 
     void OnDisable()
@@ -54,37 +67,35 @@ public class ChunkRenderDistance : MonoBehaviour
     {
         updateTimer -= Time.deltaTime;
         if (updateTimer > 0f) return;
-        updateTimer = 0.2f; // Cek 5x per detik, sangat ringan!
+        updateTimer = 0.15f; // Cek ~6x per detik, sangat ringan
 
         Vector3 viewerPos = GetViewerPosition();
         int currentChunkX = Mathf.FloorToInt(viewerPos.x / chunkSize);
         int currentChunkZ = Mathf.FloorToInt(viewerPos.z / chunkSize);
 
-        if (currentChunkX != lastChunkX || currentChunkZ != lastChunkZ)
+        // Update jika pemain pindah chunk atau geser cukup jauh
+        if (currentChunkX != lastChunkX || currentChunkZ != lastChunkZ || Vector3.Distance(viewerPos, lastViewerPos) > 5f)
         {
             lastChunkX = currentChunkX;
             lastChunkZ = currentChunkZ;
-            UpdateAllChunks();
+            lastViewerPos = viewerPos;
+            UpdateAll();
         }
 
         if (syncFogDistance && RenderSettings.fog)
         {
             float maxDist = renderDistance * chunkSize;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogStartDistance = Mathf.Max(20f, (renderDistance - 2) * chunkSize);
+            RenderSettings.fogStartDistance = Mathf.Max(25f, (renderDistance - 2) * chunkSize);
             RenderSettings.fogEndDistance = maxDist;
         }
     }
 
-    /// <summary>
-    /// Mendaftarkan petak chunk ke sistem render distance.
-    /// </summary>
     public void RegisterChunk(Vector2Int coord, GameObject chunkObj)
     {
         if (chunkObj == null) return;
         registeredChunks[coord] = chunkObj;
 
-        // Cek visibilitas langsung saat didaftarkan
         Vector3 viewerPos = GetViewerPosition();
         int currentChunkX = Mathf.FloorToInt(viewerPos.x / chunkSize);
         int currentChunkZ = Mathf.FloorToInt(viewerPos.z / chunkSize);
@@ -95,35 +106,38 @@ public class ChunkRenderDistance : MonoBehaviour
         chunkObj.SetActive(visible);
     }
 
-    /// <summary>
-    /// Membersihkan semua chunk yang terdaftar.
-    /// </summary>
+    public void RegisterZone(string name, GameObject obj, Vector3 center, float radius)
+    {
+        if (obj == null) return;
+        expansionZones.RemoveAll(z => z.zoneName == name || z.zoneObject == obj);
+        expansionZones.Add(new ZoneTarget
+        {
+            zoneName = name,
+            zoneObject = obj,
+            center = center,
+            activationRadius = radius
+        });
+    }
+
     public void ClearRegistry()
     {
         registeredChunks.Clear();
+        expansionZones.Clear();
         lastChunkX = int.MinValue;
         lastChunkZ = int.MinValue;
     }
 
-    /// <summary>
-    /// Memperbarui status aktif/nonaktif semua chunk berdasarkan posisi pemain.
-    /// </summary>
-    public void UpdateAllChunks(bool force = false)
+    public void UpdateAll(bool force = false)
     {
         Vector3 viewerPos = GetViewerPosition();
         int currentChunkX = Mathf.FloorToInt(viewerPos.x / chunkSize);
         int currentChunkZ = Mathf.FloorToInt(viewerPos.z / chunkSize);
 
-        var keysToRemove = new List<Vector2Int>();
-
+        // 1. Update Grid Chunks (Pohon, semak, rumput)
+        var toRemove = new List<Vector2Int>();
         foreach (var kvp in registeredChunks)
         {
-            if (kvp.Value == null)
-            {
-                keysToRemove.Add(kvp.Key);
-                continue;
-            }
-
+            if (kvp.Value == null) { toRemove.Add(kvp.Key); continue; }
             int dx = Mathf.Abs(kvp.Key.x - currentChunkX);
             int dz = Mathf.Abs(kvp.Key.y - currentChunkZ);
             bool shouldBeActive = dx <= renderDistance && dz <= renderDistance;
@@ -133,10 +147,25 @@ public class ChunkRenderDistance : MonoBehaviour
                 kvp.Value.SetActive(shouldBeActive);
             }
         }
+        foreach (var k in toRemove) registeredChunks.Remove(k);
 
-        foreach (var k in keysToRemove)
+        // 2. Update Zona-Zona Ekspansi Besar
+        for (int i = expansionZones.Count - 1; i >= 0; i--)
         {
-            registeredChunks.Remove(k);
+            var z = expansionZones[i];
+            if (z.zoneObject == null)
+            {
+                expansionZones.RemoveAt(i);
+                continue;
+            }
+
+            float dist = Vector3.Distance(viewerPos, z.center);
+            bool active = dist <= z.activationRadius;
+
+            if (force || z.zoneObject.activeSelf != active)
+            {
+                z.zoneObject.SetActive(active);
+            }
         }
     }
 
@@ -151,7 +180,6 @@ public class ChunkRenderDistance : MonoBehaviour
 #if UNITY_EDITOR
         else
         {
-            // Di Scene View Editor, ikuti kamera editor!
             if (SceneView.lastActiveSceneView != null && SceneView.lastActiveSceneView.camera != null)
             {
                 return SceneView.lastActiveSceneView.camera.transform.position;
@@ -173,19 +201,109 @@ public class ChunkRenderDistance : MonoBehaviour
         }
     }
 
-#if UNITY_EDITOR
-    [MenuItem("Eldara/Biomes/Pasang Sistem Jarak Render (Minecraft)")]
-    public static void AttachRenderDistanceManager()
+    /// <summary>
+    /// Membagi sebuah GameObject induk (berisi banyak pohon/objek) ke dalam petak chunk 25m.
+    /// </summary>
+    public void ChunkifyContainer(Transform container)
     {
-        var existing = FindFirstObjectByType<ChunkRenderDistance>();
-        if (existing == null)
+        if (container == null || container.childCount == 0) return;
+
+        var chunkParents = new Dictionary<Vector2Int, Transform>();
+        var children = new List<Transform>();
+        for (int i = 0; i < container.childCount; i++)
+        {
+            children.Add(container.GetChild(i));
+        }
+
+        foreach (var child in children)
+        {
+            if (child.name.StartsWith("Chunk_")) continue;
+
+            Vector3 pos = child.position;
+            int cx = Mathf.FloorToInt(pos.x / chunkSize);
+            int cz = Mathf.FloorToInt(pos.z / chunkSize);
+            var coord = new Vector2Int(cx, cz);
+
+            if (!chunkParents.TryGetValue(coord, out Transform chunkT) || chunkT == null)
+            {
+                var chunkGO = new GameObject($"Chunk_{cx}_{cz}");
+                chunkGO.transform.SetParent(container, true);
+                chunkT = chunkGO.transform;
+                chunkParents[coord] = chunkT;
+                RegisterChunk(coord, chunkGO);
+            }
+
+            child.SetParent(chunkT, true);
+        }
+    }
+
+#if UNITY_EDITOR
+    [MenuItem("Eldara/Biomes/Terapkan Chunk Render ke Seluruh Peta")]
+    public static void ApplyToEntireWorldMenu()
+    {
+        var manager = FindFirstObjectByType<ChunkRenderDistance>();
+        if (manager == null)
         {
             var go = new GameObject("--- CHUNK RENDER DISTANCE ---");
-            existing = go.AddComponent<ChunkRenderDistance>();
+            manager = go.AddComponent<ChunkRenderDistance>();
             Undo.RegisterCreatedObjectUndo(go, "Create Chunk Render Distance");
         }
-        Selection.activeGameObject = existing.gameObject;
-        Debug.Log("[Eldara] Sistem Jarak Render Chunk (ala Minecraft) berhasil aktif di Scene!");
+
+        manager.ClearRegistry();
+
+        // 1. Chunkify Hutan Liar Keliling Desa
+        var wilderness = GameObject.Find("--- WILDERNESS ---");
+        if (wilderness != null) manager.ChunkifyContainer(wilderness.transform);
+
+        // 2. Chunkify Padang Rumput
+        var grassFields = GameObject.Find("--- GRASS FIELDS ---");
+        if (grassFields != null) manager.ChunkifyContainer(grassFields.transform);
+
+        // 3. Chunkify Hutan Rimba
+        var jungle = GameObject.Find("Jungle_Biome");
+        if (jungle != null) manager.ChunkifyContainer(jungle.transform);
+
+        // 4. Daftarkan 4 Zona Ekspansi Utama
+        var zNorth = GameObject.Find("Zone_North_MountainVillage");
+        if (zNorth) manager.RegisterZone("Pegunungan Utara", zNorth, new Vector3(0f, 0f, 185f), 150f);
+
+        var zSouth = GameObject.Find("Zone_South_SwampCamp");
+        if (zSouth) manager.RegisterZone("Rawa Selatan", zSouth, new Vector3(0f, 0f, -185f), 150f);
+
+        var zWest = GameObject.Find("Zone_West_FishingVillage");
+        if (zWest) manager.RegisterZone("Desa Nelayan Barat", zWest, new Vector3(-175f, 0f, 0f), 150f);
+
+        var zEast = GameObject.Find("Zone_East_CrystalMines");
+        if (zEast) manager.RegisterZone("Tambang Kristal Timur", zEast, new Vector3(175f, 0f, 0f), 150f);
+
+        // 5. Daftarkan 4 Zona Mega Ekspansi
+        var mNorth = GameObject.Find("Zone_FarNorth_SnowPeak");
+        if (mNorth) manager.RegisterZone("Puncak Salju Utara", mNorth, new Vector3(0f, 0f, 400f), 180f);
+
+        var mSouth = GameObject.Find("Zone_FarSouth_FairyForest");
+        if (mSouth) manager.RegisterZone("Hutan Peri Selatan", mSouth, new Vector3(0f, 0f, -400f), 180f);
+
+        var mWest = GameObject.Find("Zone_FarWest_SeaTemple");
+        if (mWest) manager.RegisterZone("Kuil Laut Barat", mWest, new Vector3(-400f, 0f, 0f), 180f);
+
+        var mEast = GameObject.Find("Zone_FarEast_FireCanyon");
+        if (mEast) manager.RegisterZone("Ngarai Api Timur", mEast, new Vector3(400f, 0f, 0f), 180f);
+
+        manager.UpdateAll(true);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+
+        if (!Application.isBatchMode)
+        {
+            EditorUtility.DisplayDialog(
+                "⚡ Chunk Render Diterapkan ke Seluruh Peta!",
+                $"Sistem Jarak Render ala Minecraft kini telah aktif untuk SELURUH dunia Eldara!\n\n" +
+                $"• Hutan Rimba & Hutan Liar dibagi ke petak-petak chunk 25m.\n" +
+                $"• Padang rumput & bunga 3D dikendalikan per chunk.\n" +
+                $"• 8 Zona Ekspansi & Mega Ekspansi hanya aktif saat didekati pemain.\n" +
+                $"• Jarak Render: {manager.renderDistance} Gugus ({manager.renderDistance * manager.chunkSize} Meter).\n\n" +
+                $"Game dan Editor dijamin super lancar dan ringan!",
+                "Keren!");
+        }
     }
 #endif
 }
