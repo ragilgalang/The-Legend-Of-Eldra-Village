@@ -65,7 +65,7 @@ public static partial class SceneSetupTool
         Material slavicMat, string[] bushModels, string[] rockModels)
     {
         const float cell = 7.5f;     // jarak minimum antar-kandidat (jittered grid = tanpa tumpukan pohon)
-        const float inner = 94f;     // di luar pagar benteng
+        const float inner = 84f;     // di luar pagar benteng (pagar di 80m)
         const float outer = 160f;    // batas zona ekspansi
 
         float seedA = Random.Range(0f, 1000f); // kerapatan
@@ -174,6 +174,9 @@ public static partial class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
     static void PlaceVillageWell(Transform parent)
     {
+        // Jangan buat sumur ganda bila sumur utama di pusat alun-alun sudah ada
+        if (GameObject.Find("Village_Stone_Well") != null) return;
+
         for (float r = 14f; r <= 18f; r += 2f)
         {
             for (int a = 0; a < 8; a++)
@@ -230,3 +233,4 @@ public static partial class SceneSetupTool
     }
 }
 #endif
+
