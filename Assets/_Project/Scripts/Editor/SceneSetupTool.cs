@@ -2128,8 +2128,10 @@ public static partial class SceneSetupTool
             }
         }
 
-        // 2. Dinding Batas Tak Terlihat (menggantikan pohon perimeter)
-        // Player tidak bisa keluar peta di ±160 m; tidak ada pohon perimeter yang berat.
+        // 2. Hutan Rimba Luar — pohon perimeter kuning-hijau sekeliling peta
+        BuildNaturalForest(natureRoot.transform, barkMat, birchBarkMat, summerLeafMat, springLeafMat, autumnLeafMat, slavicMat, bushModels, rockModels);
+
+        // 3. Dinding Batas Tak Terlihat di ±160 m — player tidak bisa keluar peta
         BuildInvisibleBoundaryWalls(natureRoot.transform);
     }
 
