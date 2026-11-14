@@ -2041,20 +2041,23 @@ public static partial class SceneSetupTool
             if (Mathf.Abs(x) < 5f) continue;
             InstantiateArtModel(fenceFbx, new Vector3(x, 0, -54f), Quaternion.Euler(0, 180f, 0), Vector3.one, towerRoot.transform, slavicMat);
         }
-        // Sisi Utara (Z = 52, dengan celah menuju Altar Kuno)
+        // Sisi Utara (Z = 52, dengan celah menuju Altar Kuno & Jalan Utama Utara x=14)
         for (float x = -80f; x <= 80f; x += 3.2f)
         {
             if (Mathf.Abs(x) < 4f) continue; // Celah menuju Altar
+            if (Mathf.Abs(x - 14f) < 4f) continue; // Celah jalan utama utara (x ≈ 12.8 & 16.0)
             InstantiateArtModel(fenceFbx, new Vector3(x, 0, 52f), Quaternion.identity, Vector3.one, towerRoot.transform, slavicMat);
         }
-        // Sisi Timur (X = 80)
+        // Sisi Timur (X = 80, dengan celah jalan utama timur)
         for (float z = -54f; z <= 52f; z += 3.2f)
         {
+            if (Mathf.Abs(z) < 4f) continue; // Celah jalan utama timur
             InstantiateArtModel(fenceFbx, new Vector3(80f, 0, z), Quaternion.Euler(0, 90f, 0), Vector3.one, towerRoot.transform, slavicMat);
         }
-        // Sisi Barat (X = -80)
+        // Sisi Barat (X = -80, dengan celah jalan utama barat)
         for (float z = -54f; z <= 52f; z += 3.2f)
         {
+            if (Mathf.Abs(z) < 4f) continue; // Celah jalan utama barat
             InstantiateArtModel(fenceFbx, new Vector3(-80f, 0, z), Quaternion.Euler(0, -90f, 0), Vector3.one, towerRoot.transform, slavicMat);
         }
 
