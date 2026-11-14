@@ -1485,6 +1485,15 @@ public static partial class SceneSetupTool
         // ── 11. LENTERA DINDING TERAS HANGAT ──
         AddPorchLantern(houseRoot.transform, new Vector3(-0.35f * s, 2.3f * s, -2.2f * s));
 
+        // ── 12. PERABOT & INTERIOR TRADISIONAL ──
+        var interiorRoot = new GameObject("Interior_Furnishings");
+        interiorRoot.transform.SetParent(modelContainer.transform, false);
+        interiorRoot.transform.localRotation = Quaternion.Euler(0, 180f, 0); // Pintu modular menghadap -Z lokal
+        int flags = small
+            ? (ProceduralHouseBuilder.FChest | ProceduralHouseBuilder.FMat)
+            : ProceduralHouseBuilder.FAll;
+        ProceduralHouseBuilder.FurnishInterior(interiorRoot, 0f, 0f, 1.8f, 1.8f, 0.02f, 1.0f, flags, 2.8f);
+
         return houseRoot;
     }
 

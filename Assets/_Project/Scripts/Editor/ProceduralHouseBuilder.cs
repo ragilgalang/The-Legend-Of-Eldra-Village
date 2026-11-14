@@ -4,68 +4,36 @@ using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// Generator 11 Gaya Rumah Kayu Realistis untuk Legenda Desa Eldara (Porting dari Skrip Blender).
-/// Menghadirkan 11 gaya arsitektur kayu tradisional dan modern dengan material URP, collider, dan lentera hangat:
-/// 1. Cabin (Log Cabin balok kayu tersusun bertingkat, atap pelana, teras depan, cerobong batu)
-/// 2. Modern (Villa kayu minimalis kaca lebar, 2 lantai cantilever, dek kolam refleksi)
-/// 3. Panggung (Rumah Panggung pilar kayu tinggi 2m menopang lantai dek, tangga berundak)
-/// 4. AFrame (A-Frame cabin segitiga curam dari tanah ke puncak, fasad kaca depan penuh & api unggun)
-/// 5. Joglo (Joglo Tropis Jawa: 4 soko guru utama jati, atap tumpangsari bertingkat, kolam teratai)
-/// 6. Danau (Pondok Danau dermaga kayu menjorok ke perairan dengan perahu kayu kecil)
-/// 7. Barn (Barn Modern kayu hitam, pintu geser persilangan X, atap gambrel & silo gandum)
-/// 8. Pohon (Rumah Pohon bertengger di dahan pohon raksasa, dek 5m, jembatan gantung)
-/// 9. Gadang (Rumah Gadang Minangkabau: tiang miring, atap gonjong lengkung tanduk kerbau menjulang)
-/// 10. Minka (Minka Tradisional Jepang: pintu shoji, atap limas hip roof, gerbang torii & kolam koi)
-/// 11. Chalet (Chalet Salju Pegunungan: lantai batu alam tebal, balkon ukir kayu, mantel salju)
+/// Generator 11 Gaya Rumah Kayu untuk Legenda Desa Eldara — SEMUA BISA DIMASUKI.
+///
+/// Perubahan utama dibanding versi lama:
+///  - Tembok dibangun per-segmen (WallRun/Room/LogWall) sehingga pintu & jendela benar-benar berlubang.
+///  - Jendela kini rangka + kaca tipis (bukan panel gelap padat), jadi interior terlihat dari luar.
+///  - Setiap rumah punya lantai dalam, pintu masuk (tangga bila rumah panggung/treehouse), dan furnitur
+///    tradisional: dipan, meja makan + dingklik, lemari ukir, tungku tanah liat (pawon), rak dapur + kendi,
+///    gentong, peti, tikar anyaman, kain batik, pelita. Minka memakai tatami, irori, tokonoma & futon.
+///  - FurnishInterior() bersifat public agar bisa dipakai BuildModularHouse di SceneSetupTool.
+///
+/// Gaya: 1 Cabin, 2 Modern, 3 Panggung, 4 AFrame, 5 Joglo, 6 Danau, 7 Barn, 8 Pohon, 9 Gadang, 10 Minka, 11 Chalet.
+/// Konvensi: depan rumah = +Z (pintu menghadap +Z).
+/// CATATAN: file ini sudah memuat BuildChalet. Hapus ProceduralHouseBuilder_Chalet.cs bila masih ada (duplikat).
 /// </summary>
 public static partial class ProceduralHouseBuilder
 {
     public enum HouseStyle
     {
-        Cabin,
-        Modern,
-        Panggung,
-        AFrame,
-        Joglo,
-        Danau,
-        Barn,
-        Pohon,
-        Gadang,
-        Minka,
-        Chalet
+        Cabin, Modern, Panggung, AFrame, Joglo, Danau, Barn, Pohon, Gadang, Minka, Chalet
     }
 
     private const string FolderHouses = "Assets/_Project/Art/ProceduralHouses";
     private const string FolderMats = "Assets/_Project/Art/HouseMaterials";
 
     // ─────────────────────────────────────────────────────────────────────
-    //  MATERIAL SYSTEM (URP LIT PALETTES)
+    //  MATERIAL
     // ─────────────────────────────────────────────────────────────────────
-
-    private static Material matWood;
-    private static Material matSlat;
-    private static Material matBlack;
-    private static Material matRedWood;
-    private static Material matDeck;
-    private static Material matRoof;
-    private static Material matRoofThatch;
-    private static Material matRoofJapanese;
-    private static Material matConcrete;
-    private static Material matGlass;
-    private static Material matDark;
-    private static Material matGold;
-    private static Material matShoji;
-    private static Material matLamp;
-    private static Material matWater;
-    private static Material matSnow;
-    private static Material matLeaf;
-    private static Material matPink;
-    private static Material matRed;
-    private static Material matMetal;
-    private static Material matHay;
-    private static Material matFabric;
-    private static Material matOrange;
-    private static Material matWall;
+    private static Material matWood, matSlat, matBlack, matRedWood, matDeck, matRoof, matRoofThatch,
+        matRoofJapanese, matConcrete, matGlass, matDark, matGold, matShoji, matLamp, matWater, matSnow,
+        matLeaf, matPink, matRed, matMetal, matHay, matFabric, matOrange, matWall, matClay, matBatik;
     private static Material[] matLogs;
 
     public static void EnsureMaterials()
@@ -96,19 +64,16 @@ public static partial class ProceduralHouseBuilder
         matFabric       = GetOrCreateMat("M_House_Fabric", litShader, new Color(0.20f, 0.25f, 0.30f), 0.10f);
         matOrange       = GetOrCreateMat("M_House_Orange", litShader, new Color(0.92f, 0.40f, 0.08f), 0.40f);
         matWall         = GetOrCreateMat("M_House_Wall", litShader, new Color(0.90f, 0.86f, 0.78f), 0.15f);
+        matClay         = GetOrCreateMat("M_House_Clay", litShader, new Color(0.62f, 0.34f, 0.20f), 0.20f);   // tanah liat (kendi, tungku)
+        matBatik        = GetOrCreateMat("M_House_Batik", litShader, new Color(0.13f, 0.17f, 0.36f), 0.10f);  // kain batik indigo
 
-        // Lampu pijar hangat (Emissive)
         matLamp = GetOrCreateMat("M_House_Lamp", litShader, new Color(1.0f, 0.85f, 0.45f), 0.5f);
         matLamp.EnableKeyword("_EMISSION");
         matLamp.SetColor("_EmissionColor", new Color(1.0f, 0.85f, 0.45f) * 4.5f);
 
-        // Kaca transparan URP (Glass)
         matGlass = GetOrCreateMat("M_House_Glass", litShader, new Color(0.65f, 0.80f, 0.90f, 0.35f), 0.95f, isTransparent: true);
-
-        // Air kolam / danau (Water)
         matWater = GetOrCreateMat("M_House_Water", litShader, new Color(0.15f, 0.45f, 0.65f, 0.80f), 0.90f, isTransparent: true);
 
-        // 4 variasi balok kayu log cabin
         matLogs = new Material[4];
         for (int i = 0; i < 4; i++)
         {
@@ -119,11 +84,9 @@ public static partial class ProceduralHouseBuilder
         AssetDatabase.SaveAssets();
     }
 
-    /// <summary>Buat folder beserta seluruh folder induknya (CreateFolder hanya menerima satu level).</summary>
     private static void EnsureFolder(string path)
     {
         if (AssetDatabase.IsValidFolder(path)) return;
-
         string parent = System.IO.Path.GetDirectoryName(path).Replace('\\', '/');
         string leaf = System.IO.Path.GetFileName(path);
         if (!AssetDatabase.IsValidFolder(parent)) EnsureFolder(parent);
@@ -146,11 +109,11 @@ public static partial class ProceduralHouseBuilder
 
         if (isTransparent)
         {
-            mat.SetFloat("_Surface", 1); // 1 = Transparent in URP Lit
-            mat.SetFloat("_Blend", 0);   // Alpha blending
-            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); // tanpa keyword ini URP tetap merender opaque
+            mat.SetFloat("_Surface", 1);
+            mat.SetFloat("_Blend", 0);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
             mat.SetOverrideTag("RenderType", "Transparent");
-            mat.SetShaderPassEnabled("ShadowCaster", false); // kaca & air tidak membuat bayangan pekat
+            mat.SetShaderPassEnabled("ShadowCaster", false);
             mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
             mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             mat.SetInt("_ZWrite", 0);
@@ -162,9 +125,8 @@ public static partial class ProceduralHouseBuilder
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  PRIMITIVE BUILDERS (BOX, CYLINDER, CONE, SPHERE, GABLE, HIP)
+    //  PRIMITIF DASAR
     // ─────────────────────────────────────────────────────────────────────
-
     private static GameObject Box(
         GameObject parent, float w, float h, float d, Material mat,
         Vector3 pos, Vector3 rotEuler = default, bool collider = true)
@@ -185,7 +147,6 @@ public static partial class ProceduralHouseBuilder
 
         var col = go.GetComponent<BoxCollider>();
         if (col && !collider) Object.DestroyImmediate(col);
-
         return go;
     }
 
@@ -197,7 +158,6 @@ public static partial class ProceduralHouseBuilder
         go.transform.SetParent(parent.transform, false);
         go.transform.localPosition = pos;
         go.transform.localRotation = Quaternion.Euler(rotEuler);
-        // Unity primitive cylinder diameter 1, height 2
         go.transform.localScale = new Vector3(r * 2f, h * 0.5f, r * 2f);
 
         var mr = go.GetComponent<MeshRenderer>();
@@ -210,7 +170,6 @@ public static partial class ProceduralHouseBuilder
 
         var col = go.GetComponent<CapsuleCollider>();
         if (col && !collider) Object.DestroyImmediate(col);
-
         return go;
     }
 
@@ -234,7 +193,6 @@ public static partial class ProceduralHouseBuilder
 
         var col = go.GetComponent<SphereCollider>();
         if (col) Object.DestroyImmediate(col);
-
         return go;
     }
 
@@ -266,7 +224,6 @@ public static partial class ProceduralHouseBuilder
 
         var col = go.AddComponent<MeshCollider>();
         col.sharedMesh = mesh;
-
         return go;
     }
 
@@ -288,7 +245,6 @@ public static partial class ProceduralHouseBuilder
 
             Vector3 p0 = new Vector3(Mathf.Sin(a0) * r, -h * 0.5f, Mathf.Cos(a0) * r);
             Vector3 p1 = new Vector3(Mathf.Sin(a1) * r, -h * 0.5f, Mathf.Cos(a1) * r);
-
             Vector3 sideNorm = Vector3.Cross(p1 - p0, apex - p0).normalized;
 
             int start = verts.Count;
@@ -297,7 +253,6 @@ public static partial class ProceduralHouseBuilder
             verts.Add(p1);   norms.Add(sideNorm); uvs.Add(new Vector2(1f, 0f));
             tris.Add(start); tris.Add(start + 1); tris.Add(start + 2);
 
-            // Base bottom cap
             start = verts.Count;
             verts.Add(baseCenter); norms.Add(Vector3.down); uvs.Add(new Vector2(0.5f, 0.5f));
             verts.Add(p1);         norms.Add(Vector3.down); uvs.Add(new Vector2(1f, 0f));
@@ -315,7 +270,7 @@ public static partial class ProceduralHouseBuilder
 
     private static GameObject GableTriangle(
         GameObject parent, float baseWidth, float height, float thickness,
-        Material mat, Vector3 pos, float ryDeg = 0f)
+        Material mat, Vector3 pos, float ryDeg = 0f, bool collider = true)
     {
         var go = new GameObject("GableTriangle");
         go.transform.SetParent(parent.transform, false);
@@ -339,6 +294,11 @@ public static partial class ProceduralHouseBuilder
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
         mr.receiveShadows = true;
 
+        if (collider)
+        {
+            var mc = go.AddComponent<MeshCollider>();
+            mc.sharedMesh = mesh;
+        }
         return go;
     }
 
@@ -348,26 +308,18 @@ public static partial class ProceduralHouseBuilder
         float hw = w * 0.5f;
         float ht = t * 0.5f;
 
-        // 3 front vertices, 3 back vertices
         Vector3[] v = new Vector3[]
         {
-            // Front face (+Z)
             new Vector3(-hw, 0, ht), new Vector3(hw, 0, ht), new Vector3(0, h, ht),
-            // Back face (-Z)
             new Vector3(-hw, 0, -ht), new Vector3(0, h, -ht), new Vector3(hw, 0, -ht)
         };
 
         int[] tris = new int[]
         {
-            // Front
             0, 1, 2,
-            // Back
             3, 4, 5,
-            // Bottom
             0, 3, 5, 0, 5, 1,
-            // Left slope
             0, 2, 4, 0, 4, 3,
-            // Right slope
             1, 5, 4, 1, 4, 2
         };
 
@@ -403,7 +355,6 @@ public static partial class ProceduralHouseBuilder
 
         var col = go.AddComponent<MeshCollider>();
         col.sharedMesh = mesh;
-
         return go;
     }
 
@@ -412,26 +363,18 @@ public static partial class ProceduralHouseBuilder
         var m = new Mesh();
         Vector3[] v = new Vector3[]
         {
-            new Vector3(-hx, y0,  hz), // 0 front left
-            new Vector3( hx, y0,  hz), // 1 front right
-            new Vector3( hx, y0, -hz), // 2 back right
-            new Vector3(-hx, y0, -hz), // 3 back left
-            new Vector3(-rx, y1,  0),  // 4 ridge left
-            new Vector3( rx, y1,  0)   // 5 ridge right
+            new Vector3(-hx, y0,  hz), new Vector3( hx, y0,  hz),
+            new Vector3( hx, y0, -hz), new Vector3(-hx, y0, -hz),
+            new Vector3(-rx, y1,  0),  new Vector3( rx, y1,  0)
         };
 
         int[] tris = new int[]
         {
-            // Front trapezoid
             0, 1, 5,   0, 5, 4,
-            // Back trapezoid
             2, 3, 4,   2, 4, 5,
-            // Right triangle
             1, 2, 5,
-            // Left triangle
             3, 0, 4,
-            // Bottom ceiling
-            0, 3, 2,   0, 2, 1
+            0, 3, 2,   0, 2, 1      // langit-langit (terlihat dari dalam rumah)
         };
 
         m.vertices = v;
@@ -441,25 +384,35 @@ public static partial class ProceduralHouseBuilder
         return m;
     }
 
-    private static void Window(GameObject parent, float w, float h, Vector3 pos, float ryDeg = 0f)
+    private static GameObject Group(GameObject parent, string name, Vector3 pos, float yawDeg)
     {
-        float rad = ryDeg * Mathf.Deg2Rad;
-        Vector3 off = new Vector3(Mathf.Sin(rad) * 0.05f, 0, Mathf.Cos(rad) * 0.05f);
+        var g = new GameObject(name);
+        g.transform.SetParent(parent.transform, false);
+        g.transform.localPosition = pos;
+        g.transform.localRotation = Quaternion.Euler(0, yawDeg, 0);
+        return g;
+    }
 
-        // Frame
-        Box(parent, w + 0.18f, h + 0.18f, 0.12f, matDark, pos, new Vector3(0, ryDeg, 0), false);
-        // Glass
-        Box(parent, w, h, 0.04f, matGlass, pos + off, new Vector3(0, ryDeg, 0), false);
+    // Jendela: rangka tipis + kaca (tanpa collider) — bagian dalam rumah tetap terlihat.
+    private static void Window(GameObject parent, float w, float h, Vector3 pos, float ryDeg = 0f, Material pane = null)
+    {
+        var g = Group(parent, "Window", pos, ryDeg);
+        Material p = pane ? pane : matGlass;
+        const float b = 0.07f;
+        Box(g, w + b * 2f, b, 0.14f, matDark, new Vector3(0, h * 0.5f + b * 0.5f, 0), default, false);
+        Box(g, w + b * 2f, b, 0.14f, matDark, new Vector3(0, -h * 0.5f - b * 0.5f, 0), default, false);
+        Box(g, b, h, 0.14f, matDark, new Vector3(-w * 0.5f - b * 0.5f, 0, 0), default, false);
+        Box(g, b, h, 0.14f, matDark, new Vector3(w * 0.5f + b * 0.5f, 0, 0), default, false);
+        Box(g, 0.04f, h, 0.06f, matDark, Vector3.zero, default, false);
+        Box(g, w, 0.04f, 0.06f, matDark, Vector3.zero, default, false);
+        Box(g, w, h, 0.03f, p, Vector3.zero, default, false);
     }
 
     private static void Lantern(GameObject parent, Vector3 pos, Color? customLightColor = null)
     {
         Color lightCol = customLightColor ?? new Color(1.0f, 0.85f, 0.45f);
-
-        // Emissive Sphere
         Sphere(parent, 0.12f, matLamp, pos);
 
-        // Realtime Point Light for atmospheric night glow
         var lightGo = new GameObject("Lantern_PointLight");
         lightGo.transform.SetParent(parent.transform, false);
         lightGo.transform.localPosition = pos;
@@ -473,9 +426,367 @@ public static partial class ProceduralHouseBuilder
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  MASTER DISPATCHER
+    //  DINDING BERLUBANG (pintu & jendela) + RUANGAN
     // ─────────────────────────────────────────────────────────────────────
+    private struct WallOpening
+    {
+        public float center, width, sill, head;
+        public bool glass;
+        public Material pane;
+        public WallOpening(float center, float width, float sill, float head, bool glass = false, Material pane = null)
+        { this.center = center; this.width = width; this.sill = sill; this.head = head; this.glass = glass; this.pane = pane; }
+    }
 
+    // Pintu: lubang dari lantai setinggi h
+    private static WallOpening Door(float c, float w, float floorY, float h = 2.3f)
+        => new WallOpening(c, w, floorY, floorY + h, false);
+
+    // Jendela berkaca: ambang sillH di atas lantai, tinggi h
+    private static WallOpening Win(float c, float w, float floorY, float sillH = 0.95f, float h = 1.15f, Material pane = null)
+        => new WallOpening(c, w, floorY + sillH, floorY + sillH + h, true, pane);
+
+    private static void WallPiece(GameObject root, bool alongX, float fixedPos,
+        float a, float b, float y0, float y1, float t, Material mat)
+    {
+        float len = b - a, h = y1 - y0;
+        if (len < 0.01f || h < 0.01f) return;
+        float mid = (a + b) * 0.5f;
+        Box(root,
+            alongX ? len : t, h, alongX ? t : len,
+            mat,
+            new Vector3(alongX ? mid : fixedPos, (y0 + y1) * 0.5f, alongX ? fixedPos : mid));
+    }
+
+    // alongX=true: tembok memanjang di sumbu X pada z=fixedPos (center lubang = koordinat X).
+    // alongX=false: memanjang di sumbu Z pada x=fixedPos (center lubang = koordinat Z).
+    private static void WallRun(GameObject root, bool alongX, float fixedPos, float min, float max,
+        float y0, float y1, float t, Material mat, WallOpening[] ops)
+    {
+        if (ops == null) ops = new WallOpening[0];
+        System.Array.Sort(ops, (p, q) => p.center.CompareTo(q.center));
+        float cur = min;
+        foreach (var op in ops)
+        {
+            float l = op.center - op.width * 0.5f;
+            float r = op.center + op.width * 0.5f;
+            WallPiece(root, alongX, fixedPos, cur, l, y0, y1, t, mat);
+            WallPiece(root, alongX, fixedPos, l, r, y0, op.sill, t, mat);
+            WallPiece(root, alongX, fixedPos, l, r, op.head, y1, t, mat);
+            cur = r;
+            if (op.glass)
+            {
+                float yc = (op.sill + op.head) * 0.5f;
+                Vector3 wp = alongX ? new Vector3(op.center, yc, fixedPos) : new Vector3(fixedPos, yc, op.center);
+                Window(root, op.width, op.head - op.sill, wp, alongX ? 0f : 90f, op.pane);
+            }
+        }
+        WallPiece(root, alongX, fixedPos, cur, max, y0, y1, t, mat);
+    }
+
+    private static void Room(GameObject root, float cx, float cz, float hx, float hz,
+        float y0, float y1, float t, Material mat,
+        WallOpening[] front, WallOpening[] back, WallOpening[] left, WallOpening[] right,
+        Material post = null)
+    {
+        WallRun(root, true,  cz + hz, cx - hx - t * 0.5f, cx + hx + t * 0.5f, y0, y1, t, mat, front);
+        WallRun(root, true,  cz - hz, cx - hx - t * 0.5f, cx + hx + t * 0.5f, y0, y1, t, mat, back);
+        WallRun(root, false, cx - hx, cz - hz + t * 0.5f, cz + hz - t * 0.5f, y0, y1, t, mat, left);
+        WallRun(root, false, cx + hx, cz - hz + t * 0.5f, cz + hz - t * 0.5f, y0, y1, t, mat, right);
+
+        if (post)
+            foreach (float sx in new[] { -1f, 1f })
+                foreach (float sz in new[] { -1f, 1f })
+                    Box(root, t + 0.1f, y1 - y0 + 0.04f, t + 0.1f, post,
+                        new Vector3(cx + sx * hx, (y0 + y1) * 0.5f, cz + sz * hz), default, false);
+    }
+
+    // Dinding balok gelondongan (log) dengan lubang: baris yang menabrak lubang dipotong.
+    private static void LogWall(GameObject root, bool alongX, float fixedPos, float min, float max,
+        float floorY, int rows, float R, WallOpening[] ops)
+    {
+        System.Array.Sort(ops, (p, q) => p.center.CompareTo(q.center));
+        for (int i = 0; i < rows; i++)
+        {
+            float yC = floorY + R + 0.3f * i;
+            Material m = matLogs[(i + (alongX ? 0 : 1)) % 4];
+            float cur = min;
+            foreach (var op in ops)
+            {
+                bool cut = yC + R > op.sill && yC - R < op.head;
+                if (!cut) continue;
+                float l = op.center - op.width * 0.5f, r = op.center + op.width * 0.5f;
+                LogSeg(root, alongX, fixedPos, cur, l, yC, R, m);
+                cur = r;
+            }
+            LogSeg(root, alongX, fixedPos, cur, max, yC, R, m);
+        }
+        foreach (var op in ops)
+        {
+            if (!op.glass) continue;
+            float yc = (op.sill + op.head) * 0.5f;
+            Vector3 wp = alongX ? new Vector3(op.center, yc, fixedPos) : new Vector3(fixedPos, yc, op.center);
+            Window(root, op.width, op.head - op.sill, wp, alongX ? 0f : 90f, op.pane);
+        }
+    }
+
+    private static void LogSeg(GameObject root, bool alongX, float fixedPos, float a, float b, float yC, float R, Material m)
+    {
+        float len = b - a;
+        if (len < 0.05f) return;
+        float mid = (a + b) * 0.5f;
+        Cylinder(root, R, len, m,
+            new Vector3(alongX ? mid : fixedPos, yC, alongX ? fixedPos : mid),
+            alongX ? new Vector3(0, 0, 90f) : new Vector3(90f, 0, 0));
+    }
+
+    // Tangga balok padat. start = dasar anak tangga pertama; naik ke arah +Z lokal setelah diputar yaw.
+    private static void Stairs(GameObject root, Vector3 start, float yawDeg, int steps, float rise, float run, float width, Material mat)
+    {
+        var g = Group(root, "Stairs", start, yawDeg);
+        for (int i = 0; i < steps; i++)
+        {
+            float hgt = rise * (i + 1);
+            Box(g, width, hgt, run, mat, new Vector3(0, hgt * 0.5f, run * (i + 0.5f)));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  FURNITUR TRADISIONAL  (pos = titik di lantai; yaw memutar, depan = +Z lokal)
+    // ─────────────────────────────────────────────────────────────────────
+    private static void Dipan(GameObject root, Vector3 pos, float yaw)
+    {
+        var g = Group(root, "Dipan", pos, yaw);
+        foreach (float lx in new[] { -0.9f, 0.9f })
+            foreach (float lz in new[] { -0.45f, 0.45f })
+                Box(g, 0.1f, 0.36f, 0.1f, matWood, new Vector3(lx, 0.18f, lz), default, false);
+        Box(g, 2.0f, 0.08f, 1.1f, matDeck, new Vector3(0, 0.40f, 0));
+        Box(g, 1.92f, 0.12f, 1.02f, matBatik, new Vector3(0, 0.50f, 0), default, false);          // kasur berkain batik
+        Box(g, 0.5f, 0.14f, 0.7f, matWall, new Vector3(-0.68f, 0.62f, 0), default, false);        // bantal
+        Box(g, 0.75f, 0.08f, 1.02f, matRed, new Vector3(0.55f, 0.58f, 0), default, false);        // selimut
+        Box(g, 0.08f, 0.95f, 1.14f, matRedWood, new Vector3(-1.0f, 0.7f, 0), default, false);     // papan kepala
+        Box(g, 0.09f, 0.08f, 1.0f, matGold, new Vector3(-1.0f, 1.2f, 0), default, false);         // ukiran emas
+    }
+
+    private static void MejaMakan(GameObject root, Vector3 pos, float yaw, float w = 1.3f, float d = 0.8f)
+    {
+        var g = Group(root, "MejaMakan", pos, yaw);
+        Box(g, w, 0.08f, d, matWood, new Vector3(0, 0.76f, 0));
+        foreach (float lx in new[] { -1f, 1f })
+            foreach (float lz in new[] { -1f, 1f })
+                Box(g, 0.08f, 0.72f, 0.08f, matWood, new Vector3(lx * (w * 0.5f - 0.08f), 0.36f, lz * (d * 0.5f - 0.08f)), default, false);
+        Box(g, w - 0.2f, 0.05f, 0.05f, matWood, new Vector3(0, 0.3f, 0), default, false);
+    }
+
+    private static void Dingklik(GameObject root, Vector3 pos)
+    {
+        var g = Group(root, "Dingklik", pos, 0f);
+        Cylinder(g, 0.22f, 0.06f, matWood, new Vector3(0, 0.44f, 0), default, false);
+        foreach (float lx in new[] { -0.12f, 0.12f })
+            foreach (float lz in new[] { -0.12f, 0.12f })
+                Box(g, 0.06f, 0.42f, 0.06f, matWood, new Vector3(lx, 0.21f, lz), default, false);
+    }
+
+    private static void Lemari(GameObject root, Vector3 pos, float yaw)
+    {
+        var g = Group(root, "LemariUkir", pos, yaw);
+        Box(g, 1.2f, 1.9f, 0.55f, matRedWood, new Vector3(0, 0.95f, 0));
+        Box(g, 1.3f, 0.12f, 0.62f, matWood, new Vector3(0, 1.96f, 0), default, false);
+        Box(g, 0.02f, 1.7f, 0.02f, matDark, new Vector3(0, 0.95f, 0.285f), default, false);
+        foreach (float sx in new[] { -0.3f, 0.3f })
+        {
+            Box(g, 0.42f, 0.8f, 0.02f, matWood, new Vector3(sx, 1.2f, 0.285f), default, false);
+            Box(g, 0.34f, 0.04f, 0.025f, matGold, new Vector3(sx, 1.65f, 0.29f), default, false);
+        }
+        Sphere(g, 0.04f, matGold, new Vector3(-0.07f, 0.95f, 0.3f));
+        Sphere(g, 0.04f, matGold, new Vector3(0.07f, 0.95f, 0.3f));
+    }
+
+    private static void Kendi(GameObject root, Vector3 pos, float s)
+    {
+        Sphere(root, 0.13f * s, matClay, pos + Vector3.up * (0.13f * s));
+        Cylinder(root, 0.05f * s, 0.14f * s, matClay, pos + Vector3.up * (0.30f * s), default, false);
+        Cylinder(root, 0.065f * s, 0.03f * s, matClay, pos + Vector3.up * (0.385f * s), default, false);
+    }
+
+    private static void RakDapur(GameObject root, Vector3 pos, float yaw)
+    {
+        var g = Group(root, "RakDapur", pos, yaw);
+        foreach (float by in new[] { 1.35f, 1.8f })
+            Box(g, 1.5f, 0.05f, 0.28f, matWood, new Vector3(0, by, 0.14f), default, false);
+        foreach (float sx in new[] { -0.7f, 0.7f })
+            Box(g, 0.05f, 0.5f, 0.05f, matWood, new Vector3(sx, 1.58f, 0.04f), default, false);
+        Kendi(g, new Vector3(-0.45f, 1.375f, 0.14f), 1f);
+        Kendi(g, new Vector3(-0.1f, 1.375f, 0.14f), 0.8f);
+        Cylinder(g, 0.12f, 0.1f, matMetal, new Vector3(0.4f, 1.43f, 0.14f), default, false);
+        Cylinder(g, 0.1f, 0.08f, matClay, new Vector3(0.3f, 1.87f, 0.14f), default, false);
+        Cylinder(g, 0.08f, 0.1f, matClay, new Vector3(-0.3f, 1.88f, 0.14f), default, false);
+    }
+
+    // Pawon: tungku tanah liat dengan periuk
+    private static void Tungku(GameObject root, Vector3 pos, float yaw)
+    {
+        var g = Group(root, "TungkuPawon", pos, yaw);
+        Box(g, 1.0f, 0.55f, 0.7f, matClay, new Vector3(0, 0.275f, 0));
+        Box(g, 0.96f, 0.06f, 0.66f, matDark, new Vector3(0, 0.58f, 0), default, false);
+        Cylinder(g, 0.2f, 0.28f, matMetal, new Vector3(-0.22f, 0.75f, 0), default, false);
+        Cylinder(g, 0.16f, 0.22f, matClay, new Vector3(0.25f, 0.72f, 0), default, false);
+        Box(g, 0.4f, 0.22f, 0.04f, matDark, new Vector3(0, 0.2f, 0.36f), default, false);
+        Box(g, 0.28f, 0.08f, 0.02f, matLamp, new Vector3(0, 0.12f, 0.365f), default, false);   // bara menyala
+        for (int i = 0; i < 3; i++)
+            Cylinder(g, 0.06f, 0.5f, matWood, new Vector3(0.75f, 0.07f + i * 0.1f, 0.0f + (i % 2) * 0.05f), new Vector3(90f, 0, 0), false);
+    }
+
+    private static void Gentong(GameObject root, Vector3 pos)
+    {
+        Sphere(root, 0.32f, matClay, pos + Vector3.up * 0.34f, new Vector3(1f, 1.05f, 1f));
+        Cylinder(root, 0.17f, 0.12f, matClay, pos + Vector3.up * 0.68f, default, false);
+    }
+
+    private static void Bakul(GameObject root, Vector3 pos)
+    {
+        Cylinder(root, 0.25f, 0.28f, matHay, pos + Vector3.up * 0.14f, default, false);
+        Cylinder(root, 0.2f, 0.04f, matLeaf, pos + Vector3.up * 0.29f, default, false);
+    }
+
+    private static void Peti(GameObject root, Vector3 pos, float yaw)
+    {
+        var g = Group(root, "PetiKayu", pos, yaw);
+        Box(g, 0.9f, 0.5f, 0.5f, matWood, new Vector3(0, 0.25f, 0));
+        Box(g, 0.94f, 0.08f, 0.54f, matDeck, new Vector3(0, 0.54f, 0), default, false);
+        foreach (float sx in new[] { -0.3f, 0.3f })
+            Box(g, 0.06f, 0.52f, 0.52f, matMetal, new Vector3(sx, 0.26f, 0), default, false);
+    }
+
+    private static void Tikar(GameObject root, Vector3 pos, float yaw, float w, float d)
+    {
+        var g = Group(root, "TikarAnyaman", pos, yaw);
+        Box(g, w, 0.025f, d, matHay, new Vector3(0, 0.0125f, 0), default, false);
+        foreach (float sz in new[] { -1f, 1f })
+            Box(g, w, 0.03f, 0.07f, matBatik, new Vector3(0, 0.015f, sz * (d * 0.5f - 0.035f)), default, false);
+        foreach (float sx in new[] { -1f, 1f })
+            Box(g, 0.07f, 0.03f, d - 0.14f, matBatik, new Vector3(sx * (w * 0.5f - 0.035f), 0.015f, 0), default, false);
+    }
+
+    private static void KainBatik(GameObject root, Vector3 center, float yaw, float w, float h)
+    {
+        var g = Group(root, "KainBatik", center, yaw);
+        Box(g, w, h, 0.04f, matBatik, Vector3.zero, default, false);
+        Box(g, w, 0.05f, 0.05f, matGold, new Vector3(0, h * 0.5f - 0.03f, 0), default, false);
+        Box(g, w, 0.05f, 0.05f, matGold, new Vector3(0, -h * 0.5f + 0.03f, 0), default, false);
+        Box(g, w * 0.25f, w * 0.25f, 0.045f, matGold, Vector3.zero, new Vector3(0, 0, 45f), false);
+    }
+
+    private static void Pelita(GameObject root, Vector3 pos)
+    {
+        Cylinder(root, 0.05f, 0.06f, matClay, pos + Vector3.up * 0.03f, default, false);
+        Sphere(root, 0.035f, matLamp, pos + Vector3.up * 0.1f);
+    }
+
+    private static void Bale(GameObject root, Vector3 pos, float yaw, float w, float d)
+    {
+        var g = Group(root, "BaleBale", pos, yaw);
+        Box(g, w, 0.12f, d, matDeck, new Vector3(0, 0.45f, 0));
+        foreach (float sx in new[] { -1f, 1f })
+            foreach (float sz in new[] { -1f, 1f })
+                Box(g, 0.12f, 0.4f, 0.12f, matWood, new Vector3(sx * (w * 0.5f - 0.1f), 0.2f, sz * (d * 0.5f - 0.1f)), default, false);
+        Tikar(g, new Vector3(0, 0.51f, 0), 0f, w - 0.2f, d - 0.2f);
+    }
+
+    private static void Lesung(GameObject root, Vector3 pos)
+    {
+        Cylinder(root, 0.3f, 0.5f, matWood, pos + Vector3.up * 0.25f, default, false);
+        Cylinder(root, 0.2f, 0.04f, matDark, pos + Vector3.up * 0.5f, default, false);
+        Cylinder(root, 0.04f, 1.3f, matWood, pos + new Vector3(0.38f, 0.65f, 0.1f), new Vector3(0, 0, 10f), false);
+    }
+
+    private static void GamelanSet(GameObject root, Vector3 pos, float yaw)
+    {
+        var g = Group(root, "Gamelan", pos, yaw);
+        foreach (float sx in new[] { -0.95f, 0.95f })
+            Box(g, 0.1f, 1.6f, 0.1f, matRedWood, new Vector3(sx, 0.8f, 0), default, false);
+        Box(g, 2.0f, 0.1f, 0.1f, matRedWood, new Vector3(0, 1.55f, 0), default, false);
+        Cylinder(g, 0.3f, 0.05f, matGold, new Vector3(-0.5f, 1.0f, 0), new Vector3(90f, 0, 0), false);
+        Cylinder(g, 0.38f, 0.05f, matGold, new Vector3(0.1f, 0.95f, 0), new Vector3(90f, 0, 0), false);
+        Cylinder(g, 0.24f, 0.05f, matGold, new Vector3(0.65f, 1.05f, 0), new Vector3(90f, 0, 0), false);
+        Box(g, 1.6f, 0.2f, 0.4f, matWood, new Vector3(0, 0.3f, 1.0f));
+        for (int i = 0; i < 6; i++)
+            Box(g, 0.2f, 0.02f, 0.34f, matGold, new Vector3(-0.65f + i * 0.26f, 0.41f, 1.0f), default, false);
+        Cylinder(g, 0.14f, 0.5f, matWood, new Vector3(-0.9f, 0.3f, 1.9f), new Vector3(0, 0, 90f), false);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  PENATA FURNITUR OTOMATIS (public: dipakai juga oleh BuildModularHouse)
+    //  cx,cz,hx,hz = pusat & setengah ukuran ruang (diukur ke as tembok); y = permukaan lantai.
+    //  Depan ruang = +Z. doorX = posisi X pintu agar meja tidak menghalangi.
+    // ─────────────────────────────────────────────────────────────────────
+    public const int FBed = 1, FWardrobe = 2, FKitchen = 4, FDining = 8, FChest = 16, FMat = 32, FAll = 63;
+
+    public static void FurnishInterior(GameObject root, float cx, float cz, float hx, float hz,
+        float y, float doorX, int flags, float ceilingY = -1f)
+    {
+        EnsureMaterials();
+        if (ceilingY < 0f) ceilingY = y + 2.8f;
+
+        float x0 = cx - hx + 0.2f, x1 = cx + hx - 0.2f, zb = cz - hz + 0.15f;
+        float avail = x1 - x0;
+        float bedEnd = x0, kitStart = x1;
+        bool diningRight = false;
+
+        // Belakang-kiri: dipan + kain batik
+        if ((flags & FBed) != 0 && avail >= 2.4f)
+        {
+            Dipan(root, new Vector3(x0 + 1.0f, y, zb + 0.6f), 0f);
+            KainBatik(root, new Vector3(x0 + 1.0f, y + 1.6f, zb), 0f, 1.3f, 0.9f);
+            bedEnd = x0 + 2.0f;
+        }
+
+        // Belakang-kanan: dapur (pawon, rak, gentong, bakul)
+        if ((flags & FKitchen) != 0 && avail >= 3.0f)
+        {
+            Tungku(root, new Vector3(x1 - 0.5f, y, zb + 0.35f), 0f);
+            RakDapur(root, new Vector3(x1 - 0.7f, y, zb), 0f);
+            Gentong(root, new Vector3(x1 - 1.5f, y, zb + 0.4f));
+            kitStart = x1 - 1.95f;
+            if (avail >= 4.4f)
+            {
+                Bakul(root, new Vector3(x1 - 2.05f, y, zb + 0.3f));
+                kitStart = x1 - 2.35f;
+            }
+        }
+
+        // Lemari ukir di antara dipan dan dapur
+        if ((flags & FWardrobe) != 0 && kitStart - bedEnd >= 1.5f)
+            Lemari(root, new Vector3((bedEnd + kitStart) * 0.5f, y, zb + 0.28f), 0f);
+
+        // Meja makan + dingklik (hanya di ruang lebar, dan tidak di jalur pintu)
+        if ((flags & FDining) != 0 && avail >= 4.4f)
+        {
+            float tx = Mathf.Abs(doorX - (x0 + 0.9f)) > 1.7f ? x0 + 0.9f : x1 - 0.9f;
+            diningRight = tx > cx;
+            float tz = cz + 0.35f;
+            MejaMakan(root, new Vector3(tx, y, tz), 0f, 1.3f, 0.8f);
+            Dingklik(root, new Vector3(tx - 0.35f, y, tz + 0.62f));
+            Dingklik(root, new Vector3(tx + 0.35f, y, tz - 0.62f));
+            Pelita(root, new Vector3(tx, y + 0.8f, tz));
+            Kendi(root, new Vector3(tx + 0.42f, y + 0.8f, tz + 0.15f), 0.7f);
+        }
+
+        // Peti kayu di dinding samping
+        if ((flags & FChest) != 0)
+            Peti(root, new Vector3(diningRight ? x0 + 0.25f : x1 - 0.25f, y, cz + hz * 0.45f), 90f);
+
+        // Tikar anyaman di tengah
+        if ((flags & FMat) != 0)
+            Tikar(root, new Vector3(cx + hx * 0.2f, y, cz + 0.1f), 0f, 1.8f, 1.2f);
+
+        // Lentera gantung
+        Box(root, 0.02f, 0.5f, 0.02f, matDark, new Vector3(cx, ceilingY - 0.3f, cz - 0.3f), default, false);
+        Lantern(root, new Vector3(cx, ceilingY - 0.6f, cz - 0.3f));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  DISPATCHER
+    // ─────────────────────────────────────────────────────────────────────
     public static GameObject BuildHouse(
         HouseStyle style, Vector3 worldPos, Quaternion worldRot, Transform parent = null, string customName = null)
     {
@@ -501,498 +812,489 @@ public static partial class ProceduralHouseBuilder
             case HouseStyle.Minka:    BuildMinka(root); break;
             case HouseStyle.Chalet:   BuildChalet(root); break;
         }
-
         return root;
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  1. LOG CABIN (Pondok Kayu Klasik Rimba)
-    // ─────────────────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+    //  1. LOG CABIN
+    // ═════════════════════════════════════════════════════════════════════
     private static void BuildCabin(GameObject root)
     {
-        // Pondasi Batu
+        const float fy = 0.16f;   // permukaan lantai dalam
         Box(root, 8.7f, 0.55f, 6.7f, matConcrete, new Vector3(0, -0.175f, 0));
-        // Badan Interior
-        Box(root, 7.7f, 3.0f, 5.7f, matDark, new Vector3(0, 1.5f, 0));
+        Box(root, 7.7f, 0.08f, 5.7f, matDeck, new Vector3(0, 0.12f, 0));
 
-        // Balok Log Kayu Bertumpuk (10 Baris Melingkar)
         float R = 0.17f;
-        for (int i = 0; i < 10; i++)
-        {
-            float yF = 0.15f + 0.3f * i;
-            float yS = 0.30f + 0.3f * i;
-            Material mF = matLogs[i % 4];
-            Material mS = matLogs[(i + 1) % 4];
+        var front = new[] { Door(0f, 1.2f, fy, 2.2f), Win(-2.6f, 1.4f, fy, 0.9f, 1.1f), Win(2.6f, 1.4f, fy, 0.9f, 1.1f) };
+        var back  = new[] { Win(-1.8f, 1.4f, fy, 0.9f, 1.1f) };
+        var left  = new[] { Win(-1.6f, 1.4f, fy, 0.9f, 1.1f) };
+        var right = new[] { Win(1.8f, 1.4f, fy, 0.9f, 1.1f) };
+        LogWall(root, true,  3f,  -4.35f, 4.35f, fy, 10, R, front);
+        LogWall(root, true, -3f,  -4.35f, 4.35f, fy, 10, R, back);
+        LogWall(root, false, -4f, -3.35f, 3.35f, fy, 10, R, left);
+        LogWall(root, false,  4f, -3.35f, 3.35f, fy, 10, R, right);
 
-            // Depan (Z = 3) dan Belakang (Z = -3) memanjang di sumbu X
-            Cylinder(root, R, 8.7f, mF, new Vector3(0, yF, 3f), new Vector3(0, 0, 90f), false);
-            Cylinder(root, R, 8.7f, mF, new Vector3(0, yF, -3f), new Vector3(0, 0, 90f), false);
+        // Bingkai pintu
+        Box(root, 0.12f, 2.25f, 0.34f, matDark, new Vector3(-0.66f, 1.28f, 3f), default, false);
+        Box(root, 0.12f, 2.25f, 0.34f, matDark, new Vector3(0.66f, 1.28f, 3f), default, false);
+        Box(root, 1.44f, 0.12f, 0.34f, matDark, new Vector3(0, 2.4f, 3f), default, false);
+        // Daun pintu terbuka ke dalam
+        Box(root, 1.0f, 2.1f, 0.07f, matSlat, new Vector3(-0.55f, 1.2f, 2.45f), new Vector3(0, 90f, 0), false);
 
-            // Samping Kiri (X = -4) dan Kanan (X = 4) memanjang di sumbu Z
-            Cylinder(root, R, 6.7f, mS, new Vector3(-4f, yS, 0), new Vector3(90f, 0, 0), false);
-            Cylinder(root, R, 6.7f, mS, new Vector3(4f, yS, 0), new Vector3(90f, 0, 0), false);
-        }
-
-        // Jendela Kaca Depan & Samping
-        Window(root, 1.4f, 1.1f, new Vector3(-2.6f, 1.55f, 3.05f), 0);
-        Window(root, 1.4f, 1.1f, new Vector3(2.6f, 1.55f, 3.05f), 0);
-        Window(root, 1.4f, 1.1f, new Vector3(-4.05f, 1.55f, -1.6f), -90f);
-        Window(root, 1.4f, 1.1f, new Vector3(4.05f, 1.55f, 1.8f), 90f);
-
-        // Pintu Kayu Masuk
-        Box(root, 1.0f, 2.15f, 0.1f, matSlat, new Vector3(0, 1.075f, 3.2f), collider: false);
-        Box(root, 0.12f, 2.25f, 0.3f, matDark, new Vector3(-0.56f, 1.1f, 3.2f), collider: false);
-        Box(root, 0.12f, 2.25f, 0.3f, matDark, new Vector3(0.56f, 1.1f, 3.2f), collider: false);
-        Box(root, 1.24f, 0.12f, 0.3f, matDark, new Vector3(0, 2.2f, 3.2f), collider: false);
-
-        // Atap Pelana Miring
+        // Atap pelana
         float pitchAngle = Mathf.Atan(2.333f / 3.5f) * Mathf.Rad2Deg;
         Box(root, 8.9f, 0.14f, 4.206f, matRoof, new Vector3(0, 3.833f, 1.75f), new Vector3(pitchAngle, 0, 0));
         Box(root, 8.9f, 0.14f, 4.206f, matRoof, new Vector3(0, 3.833f, -1.75f), new Vector3(-pitchAngle, 0, 0));
-        Box(root, 8.95f, 0.16f, 0.34f, matDark, new Vector3(0, 5.03f, 0), collider: false);
-
-        // Gable Segitiga Samping
+        Box(root, 8.95f, 0.16f, 0.34f, matDark, new Vector3(0, 5.03f, 0), default, false);
         GableTriangle(root, 6.2f, 2.05f, 0.15f, matSlat, new Vector3(-3.95f, 3.0f, 0), -90f);
         GableTriangle(root, 6.2f, 2.05f, 0.15f, matSlat, new Vector3(3.95f, 3.0f, 0), 90f);
 
-        // Teras Depan
-        Box(root, 8.8f, 0.75f, 2.2f, matDeck, new Vector3(0, -0.025f, 4.1f));
+        // Balok melintang di dalam
+        foreach (float bx in new[] { -2.6f, 0f, 2.6f })
+            Box(root, 0.2f, 0.2f, 6.0f, matWood, new Vector3(bx, 3.15f, 0), default, false);
+
+        // Teras depan setinggi lantai
+        Box(root, 8.8f, 0.2f, 2.2f, matDeck, new Vector3(0, 0.06f, 4.1f));
         Box(root, 8.9f, 0.12f, 2.6f, matRoof, new Vector3(0, 2.5f, 4.3f), new Vector3(5.5f, 0, 0));
         for (float x = -4.1f; x <= 4.11f; x += 2.73f)
-        {
-            Cylinder(root, 0.1f, 2.15f, matLogs[0], new Vector3(x, 1.42f, 5.3f));
-        }
+            Cylinder(root, 0.1f, 2.3f, matLogs[0], new Vector3(x, 1.3f, 5.3f));
+        Box(root, 1.8f, 0.1f, 0.6f, matDeck, new Vector3(0, 0.05f, 5.5f));
+        Lantern(root, new Vector3(1.0f, 1.9f, 3.4f));
 
-        // Tangga Teras
-        Box(root, 1.8f, 0.25f, 0.6f, matDeck, new Vector3(0, -0.15f, 5.5f));
-        Box(root, 1.8f, 0.15f, 0.6f, matDeck, new Vector3(0, -0.275f, 6.05f));
-
-        // Lentera Teras
-        Lantern(root, new Vector3(1.0f, 1.9f, 3.3f));
-
-        // Cerobong Asap Batu
+        // Cerobong batu (di luar dinding kanan)
         Box(root, 1.1f, 6.0f, 1.5f, matConcrete, new Vector3(4.75f, 2.6f, 0));
-        Box(root, 1.3f, 0.15f, 1.7f, matDark, new Vector3(4.75f, 5.65f, 0));
+        Box(root, 1.3f, 0.15f, 1.7f, matDark, new Vector3(4.75f, 5.65f, 0), default, false);
 
-        // Tumpukan Kayu Bakar di Samping
+        // Kayu bakar
         for (int r = 0; r < 4; r++)
-        {
             for (int c = 0; c < 4 - r; c++)
-            {
                 Cylinder(root, 0.12f, 1.6f, matLogs[(r + c) % 4],
-                    new Vector3(-4.65f, -0.25f + r * 0.21f, 0.7f + c * 0.25f + r * 0.125f),
-                    new Vector3(90f, 0, 0), false);
-            }
-        }
+                    new Vector3(-4.65f, 0.1f + r * 0.21f, 0.7f + c * 0.25f + r * 0.125f), new Vector3(90f, 0, 0), false);
+
+        FurnishInterior(root, 0f, 0f, 3.85f, 2.85f, fy, 0f, FAll, 3.05f);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  2. MODERN WOOD VILLA (Villa Kayu Kaca Minimalis)
-    // ─────────────────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+    //  2. MODERN WOOD VILLA (lantai 1 + lantai 2 lewat tangga luar & balkon)
+    // ═════════════════════════════════════════════════════════════════════
     private static void BuildModern(GameObject root)
     {
-        // Fondasi & Dek Lantai
+        const float fy = 0.04f;
         Box(root, 10.2f, 0.4f, 6.2f, matDark, new Vector3(0, -0.2f, 0));
         Box(root, 9.8f, 0.04f, 5.8f, matDeck, new Vector3(0, 0.02f, 0));
 
-        // Dinding Kayu Slat
-        Box(root, 10.0f, 3.0f, 0.2f, matSlat, new Vector3(0, 1.5f, -2.9f));
-        Box(root, 3.0f, 3.0f, 6.0f, matSlat, new Vector3(-3.5f, 1.5f, 0));
-        Box(root, 0.2f, 3.0f, 6.0f, matSlat, new Vector3(4.9f, 1.5f, 0));
-        Box(root, 10.2f, 0.3f, 6.5f, matDark, new Vector3(0, 3.15f, 0.1f));
+        // Lantai 1: ruang tamu/dapur (kanan) + kamar (kiri, sekat di x=-2)
+        Room(root, 0f, 0f, 4.9f, 2.9f, fy, 3.0f, 0.2f, matSlat,
+            new[] { new WallOpening(1.45f, 6.9f, fy, 3.0f) },       // fasad kaca (diisi panel di bawah)
+            new[] { Win(-3.2f, 1.4f, fy, 0.9f, 1.4f), Win(1.0f, 1.6f, fy, 0.9f, 1.4f), Win(3.6f, 1.2f, fy, 0.9f, 1.4f) },
+            new[] { Win(-1.0f, 1.4f, fy, 0.9f, 1.4f) },
+            new[] { Win(0f, 1.6f, fy, 0.9f, 1.4f) });
+        WallRun(root, false, -2.0f, -2.8f, 2.8f, fy, 3.0f, 0.15f, matSlat, new[] { Door(0.6f, 1.0f, fy, 2.2f) });
 
-        // Fasad Kaca Besar Lantai 1
-        Box(root, 6.8f, 2.9f, 0.04f, matGlass, new Vector3(1.4f, 1.5f, 3.0f), collider: false);
-        for (int i = 0; i < 5; i++)
-        {
-            Box(root, 0.08f, 3.0f, 0.14f, matDark, new Vector3(-2f + i * 1.7f, 1.5f, 3.0f), collider: false);
-        }
+        // Fasad kaca dengan celah pintu (x 0.8..2.0)
+        Box(root, 2.8f, 2.9f, 0.04f, matGlass, new Vector3(-0.6f, 1.5f, 2.9f));
+        Box(root, 2.9f, 2.9f, 0.04f, matGlass, new Vector3(3.45f, 1.5f, 2.9f));
+        foreach (float mx in new[] { -2.0f, 0.8f, 2.0f, 4.9f })
+            Box(root, 0.08f, 3.0f, 0.14f, matDark, new Vector3(mx, 1.5f, 2.9f), default, false);
+        Box(root, 1.3f, 0.1f, 0.14f, matDark, new Vector3(1.4f, 2.95f, 2.9f), default, false);
 
-        // Lantai 2 Cantilever Box
-        Box(root, 6.5f, 2.8f, 5.5f, matSlat, new Vector3(-2.25f, 4.7f, 0.75f));
-        Box(root, 4.5f, 1.0f, 0.03f, matGlass, new Vector3(-2.55f, 4.75f, 3.55f), collider: false);
-        Box(root, 7.2f, 0.25f, 6.2f, matDark, new Vector3(-2.25f, 6.2f, 0.75f));
+        // Pelat lantai 2 / atap lantai 1
+        Box(root, 10.7f, 0.3f, 6.5f, matDark, new Vector3(-0.25f, 3.15f, 0.1f));
 
-        // Teras & Kolam Refleksi
+        // Lantai 2 (kamar tidur utama)
+        Room(root, -2.25f, 0.75f, 3.25f, 2.75f, 3.3f, 6.0f, 0.2f, matSlat,
+            new[] { Door(-2.25f, 1.0f, 3.3f, 2.2f), Win(-4.3f, 1.2f, 3.3f, 0.9f, 1.3f), Win(-0.2f, 1.2f, 3.3f, 0.9f, 1.3f) },
+            new[] { Win(-2.25f, 2.0f, 3.3f, 0.9f, 1.3f) },
+            new[] { Win(0.75f, 1.6f, 3.3f, 0.9f, 1.3f) },
+            new[] { Win(0.75f, 1.6f, 3.3f, 0.9f, 1.3f) });
+        Box(root, 7.2f, 0.25f, 6.2f, matDark, new Vector3(-2.25f, 6.12f, 0.75f));
+
+        // Balkon depan lantai 2 + pagar
+        Box(root, 8.2f, 0.3f, 1.8f, matDeck, new Vector3(-3.0f, 3.15f, 4.4f));
+        Box(root, 8.2f, 0.06f, 0.06f, matDark, new Vector3(-3.0f, 4.2f, 5.25f), default, false);
+        for (int i = 0; i < 6; i++)
+            Box(root, 0.06f, 0.9f, 0.06f, matDark, new Vector3(-7.0f + i * 1.6f, 3.75f, 5.25f), default, false);
+        // Tangga luar menuju balkon (16 anak tangga, tinggi total 3.3 m)
+        Stairs(root, new Vector3(-6.4f, 0f, -1.3f), 0f, 16, 0.20625f, 0.3f, 1.0f, matDeck);
+
+        // Teras & kolam refleksi
         Box(root, 7.4f, 0.3f, 4.0f, matDeck, new Vector3(-2.3f, -0.15f, 5.0f));
         Box(root, 5.4f, 0.3f, 1.2f, matConcrete, new Vector3(4.1f, -0.15f, 3.6f));
         Box(root, 5.4f, 0.3f, 1.0f, matConcrete, new Vector3(4.1f, -0.15f, 7.7f));
         Box(root, 0.6f, 0.3f, 3.0f, matConcrete, new Vector3(1.7f, -0.15f, 5.7f));
         Box(root, 0.4f, 0.3f, 3.0f, matConcrete, new Vector3(6.4f, -0.15f, 5.7f));
-        // Air Kolam
-        Box(root, 4.2f, 0.02f, 3.0f, matWater, new Vector3(4.1f, -0.08f, 5.7f), collider: false);
+        Box(root, 4.2f, 0.02f, 3.0f, matWater, new Vector3(4.1f, -0.08f, 5.7f), default, false);
 
-        // Lampu Taman & Lentera Minimalis
-        Lantern(root, new Vector3(0, 2.5f, -0.2f));
         Lantern(root, new Vector3(-5.6f, 0.3f, 7.8f));
         Lantern(root, new Vector3(7.0f, 0.3f, 8.6f));
-
-        // Stepping Stones
         for (int i = 0; i < 6; i++)
-        {
-            Cylinder(root, 0.5f, 0.08f, matConcrete,
-                new Vector3(Mathf.Sin(i * 1.6f) * 0.5f - 0.2f, -0.15f, 8.6f + i * 1.2f), collider: true);
-        }
+            Cylinder(root, 0.5f, 0.08f, matConcrete, new Vector3(Mathf.Sin(i * 1.6f) * 0.5f - 0.2f, -0.15f, 8.6f + i * 1.2f));
+
+        // Furnitur: kamar bawah, ruang tamu-dapur, kamar atas
+        FurnishInterior(root, -3.45f, 0f, 1.45f, 2.9f, fy, -2.0f, FBed, 2.95f);
+        FurnishInterior(root, 1.45f, 0f, 3.4f, 2.9f, fy, 1.4f, FKitchen | FDining | FWardrobe | FChest | FMat, 2.95f);
+        FurnishInterior(root, -2.25f, 0.75f, 3.2f, 2.7f, 3.3f, -2.25f, FBed | FWardrobe | FDining | FChest | FMat, 5.95f);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  3. RUMAH PANGGUNG (Panggung Kayu Nusantara)
-    // ─────────────────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+    //  3. RUMAH PANGGUNG NUSANTARA
+    // ═════════════════════════════════════════════════════════════════════
     private static void BuildPanggung(GameObject root)
     {
-        // 8 Pilar Kayu Tinggi (Tiang Stilt)
+        const float fy = 2.125f;   // permukaan lantai panggung
+
         float[] xs = { -3.6f, -1.2f, 1.2f, 3.6f };
         float[] zs = { -2.2f, 3.8f };
         foreach (var x in xs)
-        {
             foreach (var z in zs)
-            {
                 Cylinder(root, 0.18f, 2.5f, matWood, new Vector3(x, 1.0f, z));
-            }
-        }
 
-        // Lantai Dek Terangkat (Y = 2.0m)
         Box(root, 8.8f, 0.25f, 7.0f, matDeck, new Vector3(0, 2.0f, 0.75f));
 
-        // Dinding Kayu Panggung
-        Box(root, 8.0f, 2.4f, 0.15f, matSlat, new Vector3(0, 3.3f, -2.5f));
-        Box(root, 0.15f, 2.4f, 5.0f, matSlat, new Vector3(-4.0f, 3.3f, 0));
-        Box(root, 0.15f, 2.4f, 5.0f, matSlat, new Vector3(4.0f, 3.3f, 0));
-        Box(root, 2.6f, 2.4f, 0.15f, matSlat, new Vector3(-2.7f, 3.3f, 2.5f));
-        Box(root, 2.6f, 2.4f, 0.15f, matSlat, new Vector3(2.7f, 3.3f, 2.5f));
+        Room(root, 0f, 0f, 4.0f, 2.5f, fy, 5.15f, 0.15f, matSlat,
+            new[] { Door(0f, 1.3f, fy, 2.3f), Win(-2.7f, 1.2f, fy, 0.9f, 1.1f), Win(2.7f, 1.2f, fy, 0.9f, 1.1f) },
+            new[] { Win(-1.5f, 1.2f, fy, 0.9f, 1.1f), Win(1.5f, 1.2f, fy, 0.9f, 1.1f) },
+            new[] { Win(0f, 1.4f, fy, 0.9f, 1.1f) },
+            new[] { Win(0f, 1.4f, fy, 0.9f, 1.1f) }, matWood);
 
-        // Jendela Tradisional
-        Window(root, 2.8f, 2.2f, new Vector3(0, 3.25f, 2.5f), 0);
-        Window(root, 1.2f, 1.0f, new Vector3(-2.7f, 3.5f, 2.6f), 0);
-        Window(root, 1.2f, 1.0f, new Vector3(2.7f, 3.5f, 2.6f), 0);
-
-        // Atap Pelana Tinggi
+        // Atap pelana tinggi
         float roofPitch = Mathf.Atan(2.4f / 3.4f) * Mathf.Rad2Deg;
         Box(root, 9.4f, 0.15f, 4.16f, matRoof, new Vector3(0, 5.8f, 1.7f), new Vector3(roofPitch, 0, 0));
         Box(root, 9.4f, 0.15f, 4.16f, matRoof, new Vector3(0, 5.8f, -1.7f), new Vector3(-roofPitch, 0, 0));
-        Box(root, 9.5f, 0.18f, 0.30f, matDark, new Vector3(0, 6.95f, 0), collider: false);
-
-        // Gable Segitiga
+        Box(root, 9.5f, 0.18f, 0.30f, matDark, new Vector3(0, 6.95f, 0), default, false);
         GableTriangle(root, 6.0f, 2.3f, 0.15f, matSlat, new Vector3(-4.1f, 4.5f, 0), -90f);
         GableTriangle(root, 6.0f, 2.3f, 0.15f, matSlat, new Vector3(4.1f, 4.5f, 0), 90f);
 
-        // Tangga Kayu Menuju Teras
+        // Tangga kayu ke veranda
         for (int i = 0; i < 6; i++)
-        {
             Box(root, 1.6f, 0.12f, 0.45f, matDeck, new Vector3(0, 1.85f - i * 0.38f, 4.5f + i * 0.45f));
-        }
 
-        // Pagar Teras
-        Box(root, 3.2f, 0.08f, 0.08f, matDark, new Vector3(-2.6f, 3.1f, 4.15f), collider: false);
-        Box(root, 3.2f, 0.08f, 0.08f, matDark, new Vector3(2.6f, 3.1f, 4.15f), collider: false);
+        // Pagar veranda (celah di tengah untuk tangga)
+        Box(root, 3.2f, 0.08f, 0.08f, matDark, new Vector3(-2.6f, 3.1f, 4.15f), default, false);
+        Box(root, 3.2f, 0.08f, 0.08f, matDark, new Vector3(2.6f, 3.1f, 4.15f), default, false);
+        foreach (float px in new[] { -4.1f, -1.1f, 1.1f, 4.1f })
+            Box(root, 0.08f, 1.0f, 0.08f, matDark, new Vector3(px, 2.6f, 4.15f), default, false);
 
-        // Lentera Gantung Teras
-        Lantern(root, new Vector3(-1.5f, 4.0f, 2.7f));
-        Lantern(root, new Vector3(1.5f, 4.0f, 2.7f));
+        Lantern(root, new Vector3(-1.5f, 4.0f, 2.8f));
+        Lantern(root, new Vector3(1.5f, 4.0f, 2.8f));
+
+        FurnishInterior(root, 0f, 0f, 3.9f, 2.4f, fy, 0f, FAll, 5.0f);
+        Lesung(root, new Vector3(3.3f, fy, 3.4f));     // lesung & alu di veranda
+        Bakul(root, new Vector3(-3.3f, fy, 3.5f));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  4. A-FRAME CABIN (Kabin Segitiga Curam)
-    // ─────────────────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+    //  4. A-FRAME CABIN
+    // ═════════════════════════════════════════════════════════════════════
     private static void BuildAFrame(GameObject root)
     {
         float angleZ = Mathf.Atan2(6.2f, 3.2f) * Mathf.Rad2Deg;
 
-        // Atap Segitiga Miring Kiri & Kanan (Menyentuh Tanah)
         Box(root, 6.98f, 0.2f, 7.6f, matRoof, new Vector3(-1.6f, 3.1f, 0), new Vector3(0, 0, angleZ));
         Box(root, 6.98f, 0.2f, 7.6f, matRoof, new Vector3(1.6f, 3.1f, 0), new Vector3(0, 0, -angleZ));
-        Box(root, 0.3f, 0.3f, 7.7f, matDark, new Vector3(0, 6.25f, 0), collider: false);
+        Box(root, 0.3f, 0.3f, 7.7f, matDark, new Vector3(0, 6.25f, 0), default, false);
 
-        // Lantai Dek & Sun Deck Terbuka
-        Box(root, 6.4f, 0.3f, 7.4f, matDeck, new Vector3(0, 0, 0));
-        Box(root, 6.4f, 0.3f, 3.6f, matDeck, new Vector3(0, 0, 5.5f));
+        Box(root, 6.4f, 0.3f, 7.4f, matDeck, new Vector3(0, 0, 0));          // lantai (atas 0.15)
+        Box(root, 6.4f, 0.3f, 3.6f, matDeck, new Vector3(0, 0, 5.5f));       // dek depan
 
-        // Fasad Kaca Penuh Depan
-        GableTriangle(root, 6.0f, 5.8f, 0.12f, matGlass, new Vector3(0, 0.15f, 3.7f), 0);
-        // Dinding Belakang
+        // Fasad depan: kaca segitiga (tanpa collider) + dinding kayu bertingkat dengan celah pintu
+        GableTriangle(root, 6.0f, 5.8f, 0.12f, matGlass, new Vector3(0, 0.15f, 3.7f), 0f, false);
+        float zf = 3.7f;
+        foreach (float s in new[] { -1f, 1f })
+        {
+            float a = s < 0 ? -2.75f : 0.6f, b = s < 0 ? -0.6f : 2.75f;
+            WallPiece(root, true, zf, a, b, 0.15f, 0.65f, 0.12f, matSlat);
+            a = s < 0 ? -2.45f : 0.6f; b = s < 0 ? -0.6f : 2.45f;
+            WallPiece(root, true, zf, a, b, 0.65f, 1.2f, 0.12f, matSlat);
+            a = s < 0 ? -1.84f : 0.6f; b = s < 0 ? -0.6f : 1.84f;
+            WallPiece(root, true, zf, a, b, 1.2f, 2.4f, 0.12f, matSlat);
+        }
+        WallPiece(root, true, zf, -0.6f, 0.6f, 2.2f, 2.4f, 0.12f, matSlat);
+        Box(root, 0.1f, 2.1f, 0.16f, matDark, new Vector3(-0.66f, 1.2f, zf), default, false);
+        Box(root, 0.1f, 2.1f, 0.16f, matDark, new Vector3(0.66f, 1.2f, zf), default, false);
+        foreach (float y in new[] { 2.6f, 4.0f })
+            Box(root, 6f * (1f - y / 5.8f), 0.1f, 0.1f, matDark, new Vector3(0, 0.15f + y, 3.72f), default, false);
+
+        // Dinding belakang kayu (solid, ber-collider)
         GableTriangle(root, 6.0f, 5.8f, 0.15f, matSlat, new Vector3(0, 0.15f, -3.7f), 180f);
 
-        // Rangka Kayu Hitam Fasad
-        Box(root, 0.12f, 5.8f, 0.1f, matDark, new Vector3(0, 3.0f, 3.72f), collider: false);
-        for (float y = 1.2f; y <= 4.0f; y += 1.4f)
-        {
-            Box(root, 6f * (1f - y / 5.8f), 0.1f, 0.1f, matDark, new Vector3(0, 0.15f + y, 3.72f), collider: false);
-        }
-
-        // Pagar Teras
-        Box(root, 6.4f, 0.08f, 0.08f, matDark, new Vector3(0, 1.0f, 7.2f), collider: false);
-
-        // Cerobong Pipa Logam Modern
+        Box(root, 6.4f, 0.08f, 0.08f, matDark, new Vector3(0, 1.0f, 7.2f), default, false);
         Cylinder(root, 0.12f, 3.2f, matDark, new Vector3(1.8f, 4.2f, -1.0f));
 
-        // Api Unggun Luar (Fire Pit)
+        // Api unggun
         Cylinder(root, 0.85f, 0.25f, matConcrete, new Vector3(0, -0.05f, 9.5f));
         Cone(root, 0.35f, 0.8f, matOrange, new Vector3(0, 0.35f, 9.5f));
-        // Bangku Kayu Gelondongan di Sekitar Api
         Box(root, 0.7f, 0.45f, 0.6f, matWood, new Vector3(-1.7f, 0.15f, 9.5f));
         Box(root, 0.7f, 0.45f, 0.6f, matWood, new Vector3(1.7f, 0.15f, 9.5f));
 
-        // Lentera Dek
         Lantern(root, new Vector3(-2.9f, 1.6f, 7.2f));
         Lantern(root, new Vector3(2.9f, 1.6f, 7.2f));
+
+        // Ruang sempit: dipan, dapur, tikar (tinggi atap dihitung agar tidak menembus)
+        FurnishInterior(root, 0f, 0f, 2.0f, 3.3f, 0.15f, 0f, FBed | FKitchen | FMat, 2.9f);
+        Dingklik(root, new Vector3(-1.0f, 0.15f, 1.7f));
+        Dingklik(root, new Vector3(-1.5f, 0.15f, 2.2f));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  5. JOGLO TROPIS (Pendopo Tradisional Jawa)
-    // ─────────────────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+    //  5. JOGLO (pendopo terbuka + gedhong hollow yang bisa dimasuki)
+    // ═════════════════════════════════════════════════════════════════════
     private static void BuildJoglo(GameObject root)
     {
-        // Umpak / Lantai Batu Utama
+        const float fy = 0.15f;
         Box(root, 10.4f, 0.5f, 10.4f, matConcrete, new Vector3(0, -0.1f, 0));
 
-        // 8 Tiang Penyangga Teras Luar
         float[] coords = { -4f, 0f, 4f };
         foreach (var x in coords)
-        {
             foreach (var z in coords)
             {
                 if (x == 0 && z == 0) continue;
                 Cylinder(root, 0.16f, 2.8f, matWood, new Vector3(x, 1.55f, z));
                 Lantern(root, new Vector3(x * 0.88f, 2.5f, z * 0.88f));
             }
-        }
 
-        // 4 SOKO GURU (Tiang Utama Jati di Tengah)
         float[] sg = { -1.5f, 1.5f };
         foreach (var x in sg)
-        {
             foreach (var z in sg)
-            {
                 Cylinder(root, 0.22f, 4.4f, matWood, new Vector3(x, 2.35f, z));
-            }
-        }
 
-        // Ruang Inti Tengah (Gedhong)
-        Box(root, 3.4f, 2.8f, 3.4f, matSlat, new Vector3(0, 1.55f, 0));
-        Window(root, 1.2f, 2.0f, new Vector3(0, 1.2f, 1.72f), 0);
+        // Gedhong (ruang inti) — berongga
+        Room(root, 0f, 0f, 1.7f, 1.7f, fy, 3.0f, 0.2f, matSlat,
+            new[] { Door(0f, 1.1f, fy, 2.2f) },
+            new[] { Win(0f, 1.0f, fy, 1.0f, 1.0f) },
+            new[] { Win(0f, 1.0f, fy, 1.0f, 1.0f) },
+            new[] { Win(0f, 1.0f, fy, 1.0f, 1.0f) });
 
-        // Atap Joglo Dua Tingkat
-        // Tingkat 1: Atap Piramida Lebar Rendah
+        // Atap tumpang
         Cone(root, 7.35f, 1.4f, matRoofThatch, new Vector3(0, 3.6f, 0), 45f, 4);
-        // Tumpangsari Balok Kayu
-        Box(root, 5.0f, 1.0f, 5.0f, matSlat, new Vector3(0, 4.1f, 0));
-        // Tingkat 2: Atap Piramida Curam Menjulang
+        Box(root, 5.0f, 1.0f, 5.0f, matSlat, new Vector3(0, 4.1f, 0), default, false);
         Cone(root, 4.5f, 1.5f, matRoofThatch, new Vector3(0, 5.35f, 0), 45f, 4);
-        // Mahkota Puncak (Makutho)
-        Cylinder(root, 0.08f, 0.9f, matDark, new Vector3(0, 6.6f, 0), collider: false);
+        Cylinder(root, 0.08f, 0.9f, matDark, new Vector3(0, 6.6f, 0), default, false);
         Sphere(root, 0.14f, matDark, new Vector3(0, 7.1f, 0));
 
-        // Tangga Masuk
         Box(root, 3.0f, 0.25f, 0.6f, matConcrete, new Vector3(0, -0.05f, 5.3f));
         Box(root, 3.0f, 0.15f, 0.6f, matConcrete, new Vector3(0, -0.20f, 5.9f));
 
-        // Kolam Teratai Sisi Kiri & Kanan
+        // Kolam teratai
         for (int s = -1; s <= 1; s += 2)
         {
-            Cylinder(root, 3.8f, 0.08f, matWater, new Vector3(s * 8.5f, -0.2f, 1.5f), collider: false);
-            // Daun & Bunga Teratai
+            Cylinder(root, 3.8f, 0.08f, matWater, new Vector3(s * 8.5f, -0.2f, 1.5f), default, false);
             for (int i = 0; i < 5; i++)
             {
                 float px = s * 8.5f + Mathf.Sin(i * 1.5f) * 1.8f;
                 float pz = 1.5f + Mathf.Cos(i * 1.5f) * 1.8f;
-                Cylinder(root, 0.35f, 0.02f, matLeaf, new Vector3(px, -0.16f, pz), collider: false);
+                Cylinder(root, 0.35f, 0.02f, matLeaf, new Vector3(px, -0.16f, pz), default, false);
                 if (i % 2 == 0) Sphere(root, 0.12f, matPink, new Vector3(px, -0.1f, pz));
             }
         }
+
+        // Isi gedhong: lemari ukir, peti, tikar, kain batik, pelita
+        Lemari(root, new Vector3(0f, fy, -1.3f), 0f);
+        Peti(root, new Vector3(1.3f, fy, 0.3f), 90f);
+        Tikar(root, new Vector3(-0.2f, fy, 0.3f), 0f, 1.6f, 1.2f);
+        KainBatik(root, new Vector3(-1.57f, fy + 1.6f, 0f), 90f, 1.2f, 1.0f);
+        Pelita(root, new Vector3(-0.2f, fy, 0.3f));
+        Dingklik(root, new Vector3(-0.9f, fy, 0.9f));
+
+        // Isi pendopo: gamelan, bale-bale, tikar besar, lesung
+        GamelanSet(root, new Vector3(-2.9f, fy, 2.6f), 0f);
+        Bale(root, new Vector3(2.9f, fy, 2.7f), 0f, 2.4f, 1.6f);
+        Tikar(root, new Vector3(0f, fy, 3.0f), 0f, 3.0f, 1.4f);
+        Lesung(root, new Vector3(3.3f, fy, -2.8f));
+        Dingklik(root, new Vector3(-3.0f, fy, -2.7f));
+        Dingklik(root, new Vector3(-2.3f, fy, -2.9f));
+        Gentong(root, new Vector3(-3.4f, fy, -1.2f));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  6. PONDOK DANAU (Lakeside Dock Cabin)
-    // ─────────────────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+    //  6. PONDOK DANAU
+    // ═════════════════════════════════════════════════════════════════════
     private static void BuildDanau(GameObject root)
     {
-        // Dek Fondasi Tepi Air
+        const float fy = 0.15f;
         Box(root, 6.4f, 0.4f, 4.8f, matDeck, new Vector3(0, -0.15f, 0));
         Box(root, 6.0f, 0.2f, 4.0f, matDeck, new Vector3(0, 0.05f, 0));
 
-        // Dinding Kabin
-        Box(root, 6.0f, 2.6f, 0.2f, matSlat, new Vector3(0, 1.5f, -2.0f));
-        Box(root, 0.2f, 2.6f, 4.0f, matSlat, new Vector3(-3.0f, 1.5f, 0));
-        Box(root, 0.2f, 2.6f, 4.0f, matSlat, new Vector3(3.0f, 1.5f, 0));
-        Box(root, 2.2f, 2.6f, 0.2f, matSlat, new Vector3(-1.9f, 1.5f, 2.0f));
-        Box(root, 1.0f, 2.6f, 0.2f, matSlat, new Vector3(2.5f, 1.5f, 2.0f));
+        Room(root, 0f, 0f, 3.0f, 2.0f, fy, 2.8f, 0.2f, matSlat,
+            new[] { Door(0.6f, 1.4f, fy, 2.3f), Win(-1.9f, 1.2f, fy, 0.9f, 1.1f) },
+            new[] { Win(-1.0f, 1.2f, fy, 0.9f, 1.1f), Win(1.5f, 1.2f, fy, 0.9f, 1.1f) },
+            new[] { Win(0f, 1.2f, fy, 0.9f, 1.1f) },
+            new[] { Win(0f, 1.2f, fy, 0.9f, 1.1f) }, matWood);
 
-        // Pintu Kaca Geser Menghadap Danau
-        Window(root, 2.8f, 2.4f, new Vector3(0.6f, 1.4f, 2.0f), 0);
+        // Atap pelana pendek
+        float rise = 1.6f, half = 2.6f, baseY = 2.5f;
+        float pitch = Mathf.Atan(rise / half) * Mathf.Rad2Deg;
+        float slope = Mathf.Sqrt(half * half + rise * rise);
+        float midY = baseY + rise * 0.5f + 0.09f;
+        Box(root, 6.6f, 0.15f, slope, matRoof, new Vector3(0, midY, half * 0.5f), new Vector3(pitch, 0, 0));
+        Box(root, 6.6f, 0.15f, slope, matRoof, new Vector3(0, midY, -half * 0.5f), new Vector3(-pitch, 0, 0));
+        Box(root, 6.7f, 0.14f, 0.3f, matDark, new Vector3(0, baseY + rise + 0.02f, 0), default, false);
+        GableTriangle(root, half * 2f, rise, 0.15f, matSlat, new Vector3(-3.05f, baseY, 0), -90f);
+        GableTriangle(root, half * 2f, rise, 0.15f, matSlat, new Vector3(3.05f, baseY, 0), 90f);
 
-        // Atap Miring Pelana
-        Box(root, 7.6f, 0.15f, 5.8f, matRoof, new Vector3(0, 3.1f, 0.2f), new Vector3(0, 0, 7f));
-        // Cerobong Asap
-        Box(root, 0.7f, 4.4f, 0.7f, matConcrete, new Vector3(-2.2f, 2.4f, -1.4f));
+        Box(root, 0.7f, 4.4f, 0.7f, matConcrete, new Vector3(-2.2f, 2.4f, -2.35f));   // cerobong (di luar)
 
-        // Teras Menghadap Air
+        // Teras & dermaga
         Box(root, 6.4f, 0.2f, 2.4f, matDeck, new Vector3(0, 0.05f, 3.2f));
         Box(root, 6.8f, 0.1f, 2.6f, matRoof, new Vector3(0, 2.85f, 3.3f), new Vector3(6f, 0, 0));
         Cylinder(root, 0.1f, 2.7f, matWood, new Vector3(-3.0f, 1.4f, 4.2f));
         Cylinder(root, 0.1f, 2.7f, matWood, new Vector3(3.0f, 1.4f, 4.2f));
-
-        // Dermaga Kayu Panjang (Pier / Jetty)
         Box(root, 1.8f, 0.14f, 9.0f, matDeck, new Vector3(0, -0.05f, 9.2f));
-        // 8 Pilar Penyangga Dermaga di Dalam Air
         for (int i = 0; i < 4; i++)
         {
             float z = 6.0f + i * 2.4f;
             Cylinder(root, 0.1f, 1.4f, matWood, new Vector3(-0.85f, -0.5f, z));
             Cylinder(root, 0.1f, 1.4f, matWood, new Vector3(0.85f, -0.5f, z));
         }
-
-        // Permukaan Air Danau
-        Box(root, 24f, 0.05f, 20f, matWater, new Vector3(0, -0.2f, 12f), collider: false);
-
-        // Perahu Kayu Kecil (Sampan) di Samping Dermaga
+        Box(root, 24f, 0.05f, 20f, matWater, new Vector3(0, -0.2f, 12f), default, false);
         var boat = Sphere(root, 1.0f, matWood, new Vector3(2.5f, -0.15f, 10.5f), new Vector3(0.6f, 0.35f, 1.8f));
         boat.name = "SampanKayu";
+        Lantern(root, new Vector3(1.2f, 2.3f, 2.9f));
 
-        Lantern(root, new Vector3(1.2f, 2.3f, 2.1f));
+        FurnishInterior(root, 0f, 0f, 2.9f, 1.9f, fy, 0.6f, FAll, 2.75f);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  7. BARN MODERN (Lumbung Gandum Modern)
-    // ─────────────────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+    //  7. BARN (lumbung/kandang): pintu geser terbuka, kandang kuda, gerobak
+    // ═════════════════════════════════════════════════════════════════════
     private static void BuildBarn(GameObject root)
     {
-        // Dinding Kayu Papan Hitam
-        Box(root, 0.2f, 3.2f, 9.0f, matBlack, new Vector3(-3.5f, 1.6f, 0));
-        Box(root, 0.2f, 3.2f, 9.0f, matBlack, new Vector3(3.5f, 1.6f, 0));
-        Box(root, 7.0f, 3.2f, 0.2f, matBlack, new Vector3(0, 1.6f, -4.5f));
-        Box(root, 7.0f, 3.2f, 0.2f, matBlack, new Vector3(0, 1.6f, 4.5f));
+        const float fy = 0.1f;
+        Box(root, 7.2f, 0.1f, 9.2f, matDeck, new Vector3(0, 0.05f, 0));
 
-        // Pintu Gerbang Lumbung Besar dengan Palang X
-        Box(root, 3.2f, 2.7f, 0.1f, matSlat, new Vector3(0, 1.4f, 4.62f));
-        Box(root, 0.1f, 3.3f, 0.06f, matDark, new Vector3(0, 1.4f, 4.7f), new Vector3(0, 0, 42f), collider: false);
-        Box(root, 0.1f, 3.3f, 0.06f, matDark, new Vector3(0, 1.4f, 4.7f), new Vector3(0, 0, -42f), collider: false);
+        Room(root, 0f, 0f, 3.5f, 4.5f, fy, 3.2f, 0.2f, matBlack,
+            new[] { Door(0f, 3.2f, fy, 2.9f) },
+            null,
+            new[] { Win(-2.0f, 1.2f, fy, 1.1f, 0.9f), Win(2.0f, 1.2f, fy, 1.1f, 0.9f) },
+            new[] { Win(-2.0f, 1.2f, fy, 1.1f, 0.9f), Win(2.0f, 1.2f, fy, 1.1f, 0.9f) });
 
-        // Jendela Hayloft Atas
+        // Dua daun pintu geser dibuka ke samping (tanpa collider)
+        foreach (float s in new[] { -1f, 1f })
+        {
+            Box(root, 1.6f, 2.8f, 0.1f, matSlat, new Vector3(s * 2.4f, 1.5f, 4.65f), default, false);
+            Box(root, 0.1f, 3.2f, 0.06f, matDark, new Vector3(s * 2.4f, 1.5f, 4.72f), new Vector3(0, 0, 42f), false);
+            Box(root, 0.1f, 3.2f, 0.06f, matDark, new Vector3(s * 2.4f, 1.5f, 4.72f), new Vector3(0, 0, -42f), false);
+        }
         Window(root, 1.6f, 1.0f, new Vector3(0, 4.3f, 4.56f), 0);
 
-        // Atap Gambrel / Mansard Khas Barn (2 Sudut Kemiringan)
-        // Lereng Bawah yang Curam (Angle ~54 deg)
+        // Atap gambrel
         Box(root, 2.35f, 0.15f, 9.6f, matDark, new Vector3(2.85f, 4.15f, 0), new Vector3(0, 0, -54f));
         Box(root, 2.35f, 0.15f, 9.6f, matDark, new Vector3(-2.85f, 4.15f, 0), new Vector3(0, 0, 54f));
-        // Lereng Atas yang Landai (Angle ~28 deg)
         Box(root, 2.6f, 0.15f, 9.6f, matDark, new Vector3(1.1f, 5.65f, 0), new Vector3(0, 0, -28f));
         Box(root, 2.6f, 0.15f, 9.6f, matDark, new Vector3(-1.1f, 5.65f, 0), new Vector3(0, 0, 28f));
-
-        // Gable Dinding Depan & Belakang Gambrel
         GableTriangle(root, 7.0f, 3.0f, 0.15f, matSlat, new Vector3(0, 3.2f, 4.5f), 0);
         GableTriangle(root, 7.0f, 3.0f, 0.15f, matSlat, new Vector3(0, 3.2f, -4.5f), 180f);
 
-        // Silo Logam Gandum di Samping
+        // Silo & jerami bulat di luar
         Cylinder(root, 1.2f, 7.0f, matMetal, new Vector3(-6.0f, 3.15f, -2.0f));
         Sphere(root, 1.2f, matMetal, new Vector3(-6.0f, 6.65f, -2.0f), new Vector3(1f, 0.6f, 1f));
-
-        // 5 Gulungan Jerami Bulat (Round Hay Bales)
         for (int i = 0; i < 5; i++)
+            Cylinder(root, 0.5f, 0.9f, matHay, new Vector3(5.5f, 0.45f + (i / 3) * 0.9f, 1f + i * 0.5f), new Vector3(0, 0, 90f));
+
+        // Interior: 3 kandang kuda di sisi kiri (sekat + palung)
+        foreach (float dz in new[] { -1.95f, 0.55f, 3.05f })
+            Box(root, 1.6f, 1.3f, 0.08f, matWood, new Vector3(-2.7f, 0.75f, dz));
+        foreach (float tz in new[] { -3.2f, -0.7f, 1.8f })
         {
-            Cylinder(root, 0.5f, 0.9f, matHay,
-                new Vector3(5.5f, 0.45f + (i / 3) * 0.9f, 1f + i * 0.5f), new Vector3(0, 0, 90f));
+            Box(root, 0.5f, 0.4f, 1.4f, matWood, new Vector3(-3.2f, 0.3f, tz));
+            Box(root, 0.4f, 0.1f, 1.2f, matHay, new Vector3(-3.2f, 0.52f, tz), default, false);
         }
 
+        // Interior: gerobak, tumpukan jerami, meja kerja, rak perkakas
+        Box(root, 1.6f, 0.2f, 2.4f, matWood, new Vector3(2.4f, 0.7f, -2.0f));
+        foreach (float wx in new[] { -1f, 1f })
+            Cylinder(root, 0.45f, 0.1f, matWood, new Vector3(2.4f + wx * 0.95f, 0.55f, -2.0f), new Vector3(0, 0, 90f));
+        for (int i = 0; i < 6; i++)
+            Box(root, 1.0f, 0.8f, 0.8f, matHay, new Vector3(2.9f - (i % 2) * 0.1f, 0.5f + (i / 3) * 0.8f, 1.2f + (i % 3) * 0.85f));
+        Box(root, 1.8f, 0.08f, 0.7f, matWood, new Vector3(0, 0.9f, -3.9f));
+        foreach (float lx in new[] { -0.8f, 0.8f })
+            Box(root, 0.08f, 0.85f, 0.08f, matWood, new Vector3(lx, 0.47f, -3.9f), default, false);
+        Box(root, 2.0f, 0.08f, 0.1f, matWood, new Vector3(0, 1.8f, -4.3f), default, false);
+        Gentong(root, new Vector3(0.9f, fy, -3.4f));
+        Peti(root, new Vector3(-0.9f, fy, -3.6f), 0f);
+
+        Box(root, 0.03f, 0.6f, 0.03f, matDark, new Vector3(0, 3.0f, 0), default, false);
+        Lantern(root, new Vector3(0, 2.7f, 0));
         Lantern(root, new Vector3(-1.9f, 2.8f, 4.75f));
         Lantern(root, new Vector3(1.9f, 2.8f, 4.75f));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  8. RUMAH POHON (Treehouse Rimba Kanopi)
-    // ─────────────────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+    //  8. RUMAH POHON (tangga balok panjang menuju dek, kabin berongga)
+    // ═════════════════════════════════════════════════════════════════════
     private static void BuildPohon(GameObject root)
     {
-        // Batang Pohon Raksasa Penopang (Tinggi 10m)
+        const float fy = 5.15f;
         Cylinder(root, 1.1f, 10.0f, matWood, new Vector3(0, 4.65f, 0));
-        // Dahan-Dahan Besar Menjalar
-        Cylinder(root, 0.25f, 3.5f, matWood, new Vector3(-1.4f, 7.5f, -0.5f), new Vector3(0, 0, 45f));
-        Cylinder(root, 0.25f, 3.5f, matWood, new Vector3(1.4f, 7.3f, 0.8f), new Vector3(0, 0, -45f));
+        Cylinder(root, 0.25f, 3.5f, matWood, new Vector3(-1.4f, 7.5f, -0.5f), new Vector3(0, 0, 45f), false);
+        Cylinder(root, 0.25f, 3.5f, matWood, new Vector3(1.4f, 7.3f, 0.8f), new Vector3(0, 0, -45f), false);
 
-        // Dedaunan Kanopi Lebat Raksasa
         Sphere(root, 3.4f, matLeaf, new Vector3(0, 11.2f, 0));
         Sphere(root, 2.6f, matLeaf, new Vector3(-2.8f, 10.6f, 0.5f));
         Sphere(root, 2.4f, matLeaf, new Vector3(2.8f, 11.2f, -2.0f));
 
-        // Dek Kayu Bertengger di Ketinggian 5m
         Box(root, 7.0f, 0.3f, 6.0f, matDeck, new Vector3(1.2f, 5.0f, 0));
 
-        // Rumah Kabin Mungil di Atas Dek
-        Box(root, 3.0f, 2.2f, 3.0f, matSlat, new Vector3(2.4f, 6.25f, 0));
+        Room(root, 2.4f, 0f, 1.5f, 1.5f, fy, 7.35f, 0.15f, matSlat,
+            new[] { Door(2.4f, 1.0f, fy, 2.1f) },
+            new[] { Win(2.4f, 0.9f, fy, 0.9f, 0.9f) },
+            new[] { Win(0f, 0.9f, fy, 0.9f, 0.9f) },
+            new[] { Win(0f, 0.9f, fy, 0.9f, 0.9f) }, matWood);
         Cone(root, 2.9f, 1.6f, matRoofThatch, new Vector3(2.4f, 8.2f, 0), 45f, 4);
 
-        // Jendela Rumah Pohon
-        Window(root, 0.9f, 0.9f, new Vector3(2.4f, 6.4f, 1.56f), 0);
-        Window(root, 0.9f, 0.9f, new Vector3(3.96f, 6.4f, 0), 90f);
-
-        // Pagar Tali & Kayu Pembatas Dek
-        Box(root, 7.0f, 0.08f, 0.08f, matDark, new Vector3(1.2f, 6.05f, 3.0f), collider: false);
-        Box(root, 7.0f, 0.08f, 0.08f, matDark, new Vector3(1.2f, 6.05f, -3.0f), collider: false);
-
-        // Lampu Tali Hiasan (Fairy String Lights)
-        for (float x = -1.8f; x <= 4.41f; x += 1.4f)
-        {
+        // Pagar dek
+        Box(root, 7.0f, 0.08f, 0.08f, matDark, new Vector3(1.2f, 6.05f, 3.0f), default, false);
+        Box(root, 7.0f, 0.08f, 0.08f, matDark, new Vector3(1.2f, 6.05f, -3.0f), default, false);
+        for (float x = -1.8f; x <= 4.41f; x += 2.1f)
             Lantern(root, new Vector3(x, 6.2f, 3.0f));
-        }
 
-        // Tangga Kayu Menuju Dek dari Tanah
-        for (float y = 0f; y < 5.0f; y += 0.45f)
-        {
-            Box(root, 0.6f, 0.06f, 0.08f, matWood, new Vector3(-1.4f, y, 3.4f));
-        }
+        // Tangga balok 25 anak tangga: dari tanah (z=10.4) naik ke tepi dek (z=3)
+        Stairs(root, new Vector3(3.2f, 0f, 10.4f), 180f, 25, 0.206f, 0.3f, 1.2f, matDeck);
 
-        // Jembatan Gantung Menuju Gardu Pandang Kedua
+        // Jembatan & gardu kedua
         Box(root, 6.0f, 0.1f, 1.2f, matDeck, new Vector3(7.7f, 5.0f, 0));
-        // Gardu Pandang Kedua
         Box(root, 3.2f, 0.25f, 3.2f, matDeck, new Vector3(11.3f, 5.0f, 0));
         Cylinder(root, 0.5f, 9.0f, matWood, new Vector3(11.3f, 4.2f, 0));
         Sphere(root, 2.2f, matLeaf, new Vector3(11.3f, 9.5f, 0));
         Lantern(root, new Vector3(12.6f, 5.4f, 1.4f));
+
+        // Isi kabin mungil
+        FurnishInterior(root, 2.4f, 0f, 1.5f, 1.5f, fy, 2.4f, FBed | FChest | FMat, 7.25f);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  9. RUMAH GADANG (Istana Tradisional Minangkabau)
-    // ─────────────────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+    //  9. RUMAH GADANG (Minangkabau)
+    // ═════════════════════════════════════════════════════════════════════
     private static void BuildGadang(GameObject root)
     {
-        // 10 Tiang Tonggak Kayu Berdiri Miring Melengkung
+        const float fy = 1.925f;
+
         float[] xs = { -4f, -2f, 0f, 2f, 4f };
         float[] zs = { -1.6f, 1.6f };
         foreach (var x in xs)
-        {
             foreach (var z in zs)
-            {
                 Cylinder(root, 0.18f, 2.2f, matWood, new Vector3(x, 0.75f, z));
-            }
-        }
 
-        // Lantai Dek Utama yang Luas
         Box(root, 10.6f, 0.25f, 5.4f, matDeck, new Vector3(0, 1.8f, 0));
 
-        // Dinding Merah Kayu Berukir Splay Keluar (Mengembang ke Atas)
-        Box(root, 10.0f, 2.4f, 0.15f, matRedWood, new Vector3(0, 3.15f, 2.0f), new Vector3(5.7f, 0, 0));
-        Box(root, 10.0f, 2.4f, 0.15f, matRedWood, new Vector3(0, 3.15f, -2.0f), new Vector3(-5.7f, 0, 0));
-        Box(root, 0.15f, 2.4f, 4.0f, matRedWood, new Vector3(5.0f, 3.15f, 0), new Vector3(0, 0, -5.7f));
-        Box(root, 0.15f, 2.4f, 4.0f, matRedWood, new Vector3(-5.0f, 3.15f, 0), new Vector3(0, 0, 5.7f));
+        // Dinding kayu merah berongga: pintu tengah + 4 jendela di antara tiang ukiran emas
+        Room(root, 0f, 0f, 5.0f, 2.0f, fy, 4.95f, 0.15f, matRedWood,
+            new[] { Door(0f, 1.5f, fy, 2.4f), Win(-1.68f, 1.0f, fy, 0.9f, 1.3f), Win(1.68f, 1.0f, fy, 0.9f, 1.3f),
+                    Win(-3.36f, 1.0f, fy, 0.9f, 1.3f), Win(3.36f, 1.0f, fy, 0.9f, 1.3f) },
+            new[] { Win(-3.0f, 1.0f, fy, 0.9f, 1.3f), Win(0f, 1.0f, fy, 0.9f, 1.3f), Win(3.0f, 1.0f, fy, 0.9f, 1.3f) },
+            new[] { Win(0f, 1.0f, fy, 0.9f, 1.3f) },
+            new[] { Win(0f, 1.0f, fy, 0.9f, 1.3f) }, matWood);
 
-        // Ornamen Ukiran Garis Emas Khas Minang
+        // Ukiran garis emas di fasad (di antara pintu/jendela)
         for (int i = 0; i < 6; i++)
-        {
-            Box(root, 0.12f, 2.2f, 0.06f, matGold, new Vector3(-4.2f + i * 1.68f, 3.15f, 2.12f), collider: false);
-        }
-        Box(root, 10.0f, 0.12f, 0.06f, matGold, new Vector3(0, 2.2f, 2.1f), collider: false);
-        Box(root, 10.0f, 0.12f, 0.06f, matGold, new Vector3(0, 4.1f, 2.17f), collider: false);
+            Box(root, 0.12f, 2.2f, 0.06f, matGold, new Vector3(-4.2f + i * 1.68f, 3.15f, 2.1f), default, false);
+        Box(root, 10.0f, 0.12f, 0.06f, matGold, new Vector3(0, 4.55f, 2.1f), default, false);
 
-        // Jendela Megah Fasad Depan
-        Window(root, 1.0f, 1.2f, new Vector3(-2.5f, 3.4f, 2.1f), 0);
-        Window(root, 1.0f, 1.2f, new Vector3(0f, 3.4f, 2.1f), 0);
-        Window(root, 1.0f, 1.2f, new Vector3(2.5f, 3.4f, 2.1f), 0);
-
-        // ATAP GONJONG MELENGKUNG TANDUK KERBAU (Swept Parabolic Horn Roof)
+        // Atap gonjong tanduk kerbau
         float ey = 4.2f;
         for (int i = 0; i < 14; i++)
         {
             float x = -6.2f + i * 0.95f;
-            // Rumus kelengkungan gonjong: puncak melengkung tajam di ujung
             float h = 6.6f + 1.9f * Mathf.Pow(Mathf.Abs(x) / 6.4f, 2.3f);
             float hNext = 6.6f + 1.9f * Mathf.Pow(Mathf.Abs(x + 0.4f) / 6.4f, 2.3f);
             float hPrev = 6.6f + 1.9f * Mathf.Pow(Mathf.Abs(x - 0.4f) / 6.4f, 2.3f);
@@ -1002,298 +1304,210 @@ public static partial class ProceduralHouseBuilder
             float roll = -Mathf.Atan(dh) * Mathf.Rad2Deg;
             float length = Mathf.Sqrt(9f + (h - ey) * (h - ey));
 
-            Box(root, 1.02f, 0.14f, length, matRoofThatch,
-                new Vector3(x, (h + ey) * 0.5f, 1.5f), new Vector3(pitch, 0, roll));
-            Box(root, 1.02f, 0.14f, length, matRoofThatch,
-                new Vector3(x, (h + ey) * 0.5f, -1.5f), new Vector3(-pitch, 0, roll));
+            Box(root, 1.02f, 0.14f, length, matRoofThatch, new Vector3(x, (h + ey) * 0.5f, 1.5f), new Vector3(pitch, 0, roll));
+            Box(root, 1.02f, 0.14f, length, matRoofThatch, new Vector3(x, (h + ey) * 0.5f, -1.5f), new Vector3(-pitch, 0, roll));
         }
-
-        // Ujung Tanduk Gonjong Emas Menjulang di Sisi Luar
         Cylinder(root, 0.12f, 1.7f, matGold, new Vector3(-6.7f, 8.8f, 0), new Vector3(0, 0, 28f), false);
         Cylinder(root, 0.12f, 1.7f, matGold, new Vector3(6.7f, 8.8f, 0), new Vector3(0, 0, -28f), false);
 
-        // Tangga Masuk Teras
+        // Tangga masuk
         for (int i = 0; i < 4; i++)
-        {
             Box(root, 2.0f, 0.15f, 0.5f, matDeck, new Vector3(0, 1.7f - i * 0.4f, 3.2f + i * 0.5f));
-        }
 
-        // Lentera Gerbang
-        Lantern(root, new Vector3(-1.4f, 2.4f, 3.0f));
-        Lantern(root, new Vector3(1.4f, 2.4f, 3.0f));
+        Lantern(root, new Vector3(-1.4f, 2.8f, 2.9f));
+        Lantern(root, new Vector3(1.4f, 2.8f, 2.9f));
 
-        // Lumbung Padi Rangkiang Tradisional di Samping Rumah Gadang
+        // Rangkiang (lumbung padi) di samping
         var rangkiang = new GameObject("Rangkiang_Padi");
         rangkiang.transform.SetParent(root.transform, false);
         rangkiang.transform.localPosition = new Vector3(10.0f, 0, 0);
-
         for (int a = -1; a <= 1; a += 2)
             for (int b = -1; b <= 1; b += 2)
                 Cylinder(rangkiang, 0.12f, 1.3f, matWood, new Vector3(a * 0.9f, 0.3f, b * 0.9f));
         Box(rangkiang, 2.4f, 1.4f, 2.4f, matRedWood, new Vector3(0, 1.7f, 0));
         Cone(rangkiang, 2.3f, 1.3f, matRoofThatch, new Vector3(0, 3.05f, 0), 45f, 4);
+
+        // Isi rumah gadang
+        FurnishInterior(root, 0f, 0f, 5.0f, 2.0f, fy, 0f, FAll, 4.9f);
+        KainBatik(root, new Vector3(0f, fy + 1.9f, -1.9f), 0f, 2.4f, 1.1f);
+        Tikar(root, new Vector3(1.4f, fy, 1.0f), 0f, 2.6f, 1.0f);
+        Lemari(root, new Vector3(-1.2f, fy, -1.62f), 0f);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  10. MINKA TRADISIONAL (Rumah Tradisional Jepang Zen)
-    // ─────────────────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+    //  10. MINKA TRADISIONAL JEPANG (tatami, irori, tokonoma, futon)
+    // ═════════════════════════════════════════════════════════════════════
     private static void BuildMinka(GameObject root)
     {
-        // Fondasi Batu Alam Jepang
+        const float fy = 0.22f;
         Box(root, 10.4f, 0.4f, 7.4f, matConcrete, new Vector3(0, -0.15f, 0));
-        // Badan Dinding Plester Putih
-        Box(root, 8.4f, 2.4f, 5.4f, matWall, new Vector3(0, 1.4f, 0));
+        Box(root, 8.2f, 0.12f, 5.2f, matDeck, new Vector3(0, 0.16f, 0));
 
-        // Rangka Kayu Ekspos Tiang & Balok (Post-and-Beam Timber Frame)
+        // Engawa
+        Box(root, 9.0f, 0.18f, 1.8f, matDeck, new Vector3(0, 0.13f, 3.6f));
+        Box(root, 0.18f, 0.18f, 6.4f, matDeck, new Vector3(-4.9f, 0.13f, 0));
+        Box(root, 0.18f, 0.18f, 6.4f, matDeck, new Vector3(4.9f, 0.13f, 0));
+
+        // Dinding plester dengan pintu geser terbuka & jendela shoji
+        Room(root, 0f, 0f, 4.2f, 2.7f, fy, 2.75f, 0.2f, matWall,
+            new[] { Win(-2.9f, 1.8f, fy, 0.15f, 2.0f, matShoji), Door(0f, 1.8f, fy, 2.2f), Win(2.9f, 1.8f, fy, 0.15f, 2.0f, matShoji) },
+            new[] { Win(-2.5f, 1.8f, fy, 0.9f, 1.2f, matShoji), Win(2.5f, 1.8f, fy, 0.9f, 1.2f, matShoji) },
+            new[] { Win(0f, 2.0f, fy, 0.9f, 1.2f, matShoji) },
+            new[] { Win(0f, 2.0f, fy, 0.9f, 1.2f, matShoji) });
+
+        // Rangka kayu ekspos (tidak di jalur pintu)
         for (float x = -4.2f; x <= 4.21f; x += 1.4f)
         {
-            Box(root, 0.14f, 2.4f, 0.14f, matWood, new Vector3(x, 1.4f, 2.75f), collider: false);
-            Box(root, 0.14f, 2.4f, 0.14f, matWood, new Vector3(x, 1.4f, -2.75f), collider: false);
+            if (Mathf.Abs(x) > 0.1f) Box(root, 0.14f, 2.53f, 0.14f, matWood, new Vector3(x, 1.485f, 2.75f), default, false);
+            Box(root, 0.14f, 2.53f, 0.14f, matWood, new Vector3(x, 1.485f, -2.75f), default, false);
         }
         for (float z = -2.7f; z <= 2.71f; z += 1.35f)
         {
-            Box(root, 0.14f, 2.4f, 0.14f, matWood, new Vector3(4.25f, 1.4f, z), collider: false);
-            Box(root, 0.14f, 2.4f, 0.14f, matWood, new Vector3(-4.25f, 1.4f, z), collider: false);
+            Box(root, 0.14f, 2.53f, 0.14f, matWood, new Vector3(4.25f, 1.485f, z), default, false);
+            Box(root, 0.14f, 2.53f, 0.14f, matWood, new Vector3(-4.25f, 1.485f, z), default, false);
         }
 
-        // Pintu Geser Kertas Shoji Jepang
-        for (int i = 0; i < 4; i++)
-        {
-            Box(root, 2.1f, 2.1f, 0.03f, matShoji, new Vector3(-3.15f + i * 2.1f, 1.4f, 2.78f), collider: false);
-        }
+        // Pintu shoji yang digeser terbuka (menumpuk di sisi pintu)
+        Box(root, 0.9f, 2.1f, 0.03f, matShoji, new Vector3(-1.35f, 1.3f, 2.83f), default, false);
+        Box(root, 0.9f, 2.1f, 0.03f, matShoji, new Vector3(1.35f, 1.3f, 2.83f), default, false);
 
-        // Teras Dek Engawa Berkeliling
-        Box(root, 9.0f, 0.18f, 1.8f, matDeck, new Vector3(0, 0.12f, 3.6f));
-        Box(root, 0.18f, 0.18f, 6.4f, matDeck, new Vector3(-4.9f, 0.12f, 0));
-        Box(root, 0.18f, 0.18f, 6.4f, matDeck, new Vector3(4.9f, 0.12f, 0));
+        // Atap irimoya; langit-langit di y=2.75 menutup ruangan
+        HipRoof(root, 6.3f, 4.9f, 2.4f, 2.75f, 5.2f, matRoofJapanese);
+        Box(root, 4.8f, 0.22f, 0.3f, matDark, new Vector3(0, 5.25f, 0), default, false);
 
-        // Atap Irimoya / Limas Hip Roof Jepang (Genteng Abu-Abu Tua)
-        HipRoof(root, 6.3f, 4.9f, 2.4f, 3.0f, 5.4f, matRoofJapanese);
-        Box(root, 4.8f, 0.22f, 0.3f, matDark, new Vector3(0, 5.42f, 0), collider: false);
-
-        // Halaman Pasir / Kerikil Zen
-        Box(root, 13.0f, 0.05f, 9.0f, matConcrete, new Vector3(0, -0.2f, 8.5f), collider: false);
-        // Batu Zen
+        // Taman zen, torii, toro, kolam koi, sakura
+        Box(root, 13.0f, 0.05f, 9.0f, matConcrete, new Vector3(0, -0.2f, 8.5f), default, false);
         Sphere(root, 0.5f, matConcrete, new Vector3(-3f, -0.1f, 8f), new Vector3(1f, 0.6f, 1f));
         Sphere(root, 0.5f, matConcrete, new Vector3(2f, -0.1f, 11f), new Vector3(1f, 0.6f, 1f));
-
-        // Gerbang Torii Merah di Depan Halaman
         Cylinder(root, 0.18f, 3.6f, matRed, new Vector3(-2.6f, 1.5f, 14.0f));
         Cylinder(root, 0.18f, 3.6f, matRed, new Vector3(2.6f, 1.5f, 14.0f));
-        Box(root, 7.0f, 0.25f, 0.3f, matRed, new Vector3(0, 3.4f, 14.0f));
-        Box(root, 6.0f, 0.20f, 0.25f, matRed, new Vector3(0, 2.8f, 14.0f));
-
-        // Lentera Batu Jepang (Toro Stone Lantern)
+        Box(root, 7.0f, 0.25f, 0.3f, matRed, new Vector3(0, 3.4f, 14.0f), default, false);
+        Box(root, 6.0f, 0.20f, 0.25f, matRed, new Vector3(0, 2.8f, 14.0f), default, false);
         Cylinder(root, 0.25f, 0.5f, matConcrete, new Vector3(-4.0f, 0.1f, 6.5f));
         Cylinder(root, 0.12f, 0.9f, matConcrete, new Vector3(-4.0f, 0.6f, 6.5f));
         Lantern(root, new Vector3(-4.0f, 1.2f, 6.5f));
         Cone(root, 0.55f, 0.4f, matConcrete, new Vector3(-4.0f, 1.65f, 6.5f), 45f, 4);
-
-        // Kolam Ikan Koi
-        Cylinder(root, 2.6f, 0.05f, matWater, new Vector3(6.5f, -0.2f, 7.0f), collider: false);
-        // Ikan Koi Oranye Berenang
+        Cylinder(root, 2.6f, 0.05f, matWater, new Vector3(6.5f, -0.2f, 7.0f), default, false);
         for (int i = 0; i < 3; i++)
-        {
-            Sphere(root, 0.15f, matOrange,
-                new Vector3(6.5f + Mathf.Sin(i * 2f) * 1.2f, -0.18f, 7.0f + Mathf.Cos(i * 2f) * 1.2f),
-                new Vector3(0.5f, 0.3f, 1.6f));
-        }
-
-        // Pohon Sakura Pink (Cherry Blossom)
+            Sphere(root, 0.15f, matOrange, new Vector3(6.5f + Mathf.Sin(i * 2f) * 1.2f, -0.18f, 7.0f + Mathf.Cos(i * 2f) * 1.2f), new Vector3(0.5f, 0.3f, 1.6f));
         Cylinder(root, 0.2f, 3.5f, matWood, new Vector3(-6.5f, 1.4f, 1.0f));
         Sphere(root, 1.4f, matPink, new Vector3(-6.5f, 3.6f, 1.0f));
         Sphere(root, 1.2f, matPink, new Vector3(-5.8f, 4.0f, 1.5f));
-    }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  11. RUMAH PANGGUNG NUSANTARA (Gaya Rumah Adat Tropis Indonesia)
-    // ─────────────────────────────────────────────────────────────────────
-    //  11. CHALET SALJU PEGUNUNGAN (Versi Tembok Kayu yang BISA DIMASUKI)
-    // ─────────────────────────────────────────────────────────────────────
-    //  11. CHALET SALJU PEGUNUNGAN (Versi Tembok Kayu yang BISA DIMASUKI)
-    // ─────────────────────────────────────────────────────────────────────
-    // ── Ukuran bangunan (satu tempat agar mudah disesuaikan) ──
-    private const float ChaletHalfX   = 4.0f;   // setengah lebar (sumbu X) — as tembok samping
-    private const float ChaletHalfZ   = 3.0f;   // setengah kedalaman (sumbu Z) — as tembok depan/belakang
-    private const float ChaletWallT   = 0.25f;  // tebal tembok
-    private const float ChaletFloorY  = 0.30f;  // permukaan fondasi / dasar tembok
-    private const float ChaletWallTop = 3.60f;  // puncak tembok
-
-    private struct WallOpening
-    {
-        public float center, width, sill, head;
-        public WallOpening(float center, float width, float sill, float head)
-        { this.center = center; this.width = width; this.sill = sill; this.head = head; }
-    }
-
-    // Potong satu potongan tembok (kotak berkollider)
-    private static void WallPiece(GameObject root, bool alongX, float fixedPos,
-        float a, float b, float y0, float y1, Material mat)
-    {
-        float len = b - a, h = y1 - y0;
-        if (len < 0.01f || h < 0.01f) return;
-        float mid = (a + b) * 0.5f;
-        Box(root,
-            alongX ? len : ChaletWallT, h, alongX ? ChaletWallT : len,
-            mat,
-            new Vector3(alongX ? mid : fixedPos, (y0 + y1) * 0.5f, alongX ? fixedPos : mid));
-    }
-
-    // Tembok kayu dengan lubang (pintu/jendela). alongX=true: tembok memanjang di sumbu X pada z=fixedPos.
-    private static void WoodWall(GameObject root, bool alongX, float fixedPos,
-        float min, float max, WallOpening[] ops, Material mat)
-    {
-        System.Array.Sort(ops, (p, q) => p.center.CompareTo(q.center));
-        float cur = min;
-        foreach (var op in ops)
+        // ── Interior ──
+        // Tatami: 4 kolom x 2 baris besar + 1 baris sempit di depan
+        for (int c = 0; c < 4; c++)
         {
-            float left = op.center - op.width * 0.5f;
-            float right = op.center + op.width * 0.5f;
-            WallPiece(root, alongX, fixedPos, cur, left, ChaletFloorY, ChaletWallTop, mat);      // tembok penuh sebelum lubang
-            WallPiece(root, alongX, fixedPos, left, right, ChaletFloorY, op.sill, mat);           // bawah jendela
-            WallPiece(root, alongX, fixedPos, left, right, op.head, ChaletWallTop, mat);          // atas lubang
-            cur = right;
+            float tx = -2.7f + c * 1.8f;
+            Tikar(root, new Vector3(tx, fy, -1.5f), 0f, 1.76f, 1.76f);
+            Tikar(root, new Vector3(tx, fy, 0.3f), 0f, 1.76f, 1.76f);
+            Tikar(root, new Vector3(tx, fy, 1.95f), 0f, 1.76f, 0.9f);
         }
-        WallPiece(root, alongX, fixedPos, cur, max, ChaletFloorY, ChaletWallTop, mat);
+
+        // Irori (tungku lantai) + ketel gantung
+        Box(root, 1.3f, 0.1f, 1.3f, matDark, new Vector3(0f, fy + 0.05f, -0.6f), default, false);
+        Box(root, 1.0f, 0.02f, 1.0f, matConcrete, new Vector3(0f, fy + 0.11f, -0.6f), default, false);
+        Box(root, 0.3f, 0.02f, 0.3f, matOrange, new Vector3(0f, fy + 0.125f, -0.6f), default, false);
+        Box(root, 0.02f, 1.3f, 0.02f, matDark, new Vector3(0f, fy + 1.4f, -0.6f), default, false);
+        Cylinder(root, 0.2f, 0.3f, matDark, new Vector3(0f, fy + 0.8f, -0.6f), default, false);
+
+        // Chabudai (meja rendah) + zabuton (bantal duduk)
+        var cg = Group(root, "Chabudai", new Vector3(-2.7f, fy, 1.0f), 0f);
+        Box(cg, 1.1f, 0.06f, 0.8f, matWood, new Vector3(0, 0.34f, 0), default, false);
+        foreach (float lx in new[] { -0.45f, 0.45f })
+            foreach (float lz in new[] { -0.3f, 0.3f })
+                Box(cg, 0.06f, 0.32f, 0.06f, matWood, new Vector3(lx, 0.16f, lz), default, false);
+        Box(cg, 0.5f, 0.08f, 0.5f, matRed, new Vector3(-0.9f, 0.04f, 0), default, false);
+        Box(cg, 0.5f, 0.08f, 0.5f, matRed, new Vector3(0.9f, 0.04f, 0), default, false);
+        Box(cg, 0.5f, 0.08f, 0.5f, matRed, new Vector3(0, 0.04f, 0.65f), default, false);
+        Pelita(root, new Vector3(-2.7f, fy + 0.37f, 1.0f));
+
+        // Tokonoma: ceruk dengan gulungan lukisan & vas
+        Box(root, 1.8f, 0.12f, 0.7f, matWood, new Vector3(2.5f, fy + 0.06f, -2.15f));
+        KainBatik(root, new Vector3(2.5f, fy + 1.5f, -2.45f), 0f, 0.7f, 1.5f);
+        Kendi(root, new Vector3(3.0f, fy + 0.12f, -2.15f), 0.8f);
+
+        // Tansu (lemari) & peti
+        Lemari(root, new Vector3(-2.3f, fy, -2.3f), 0f);
+        Peti(root, new Vector3(-3.6f, fy, -2.3f), 0f);
+
+        // Futon di tatami depan-kanan
+        Box(root, 1.0f, 0.1f, 1.9f, matBatik, new Vector3(3.1f, fy + 0.08f, 0.9f), default, false);
+        Box(root, 0.6f, 0.12f, 0.35f, matWall, new Vector3(3.1f, fy + 0.17f, 1.55f), default, false);
+
+        Box(root, 0.02f, 0.5f, 0.02f, matDark, new Vector3(0f, 2.5f, 0.8f), default, false);
+        Lantern(root, new Vector3(0f, 2.15f, 0.8f));
     }
 
-    private static void BuildChaletSalju(GameObject root)
+    // ═════════════════════════════════════════════════════════════════════
+    //  11. CHALET SALJU PEGUNUNGAN
+    // ═════════════════════════════════════════════════════════════════════
+    private static void BuildChalet(GameObject root)
     {
-        float xo = ChaletHalfX + ChaletWallT * 0.5f;   // batas luar tembok depan/belakang
-        float zo = ChaletHalfZ + ChaletWallT * 0.5f;   // batas luar tembok samping
-
-        // ── Fondasi batu rendah + lantai papan di dalam ──
+        const float fy = 0.30f;
         Box(root, 8.5f, 0.30f, 6.5f, matConcrete, new Vector3(0, 0.15f, 0));
-        Box(root, 7.6f, 0.06f, 5.6f, matDeck,     new Vector3(0, 0.33f, 0));
+        Box(root, 7.6f, 0.06f, 5.6f, matDeck, new Vector3(0, 0.33f, 0));
 
-        // ── Tembok kayu (semua berlubang pintu/jendela) ──
-        // Depan (z=+3): pintu di tengah + dua jendela
-        WoodWall(root, true, ChaletHalfZ, -xo, xo, new[]
-        {
-            new WallOpening( 0.0f, 1.3f, ChaletFloorY, 2.5f),   // pintu
-            new WallOpening(-2.3f, 1.3f, 1.2f, 2.4f),
-            new WallOpening( 2.3f, 1.3f, 1.2f, 2.4f),
-        }, matSlat);
+        Room(root, 0f, 0f, 4.0f, 3.0f, fy, 3.6f, 0.25f, matSlat,
+            new[] { Door(0f, 1.3f, fy, 2.2f), Win(-2.3f, 1.3f, fy, 0.9f, 1.2f), Win(2.3f, 1.3f, fy, 0.9f, 1.2f) },
+            new[] { Win(-1.5f, 1.3f, fy, 0.9f, 1.2f) },
+            new[] { Win(-1.4f, 1.2f, fy, 0.9f, 1.2f), Win(1.4f, 1.2f, fy, 0.9f, 1.2f) },
+            new[] { Win(-1.4f, 1.2f, fy, 0.9f, 1.2f), Win(1.4f, 1.2f, fy, 0.9f, 1.2f) }, matWood);
 
-        // Belakang (z=-3): satu jendela (sisi kanan dipakai perapian)
-        WoodWall(root, true, -ChaletHalfZ, -xo, xo, new[]
-        {
-            new WallOpening(-1.5f, 1.3f, 1.2f, 2.4f),
-        }, matSlat);
+        // Bingkai pintu + daun pintu terbuka
+        Box(root, 0.10f, 2.2f, 0.34f, matWood, new Vector3(-0.70f, 1.40f, 3f), default, false);
+        Box(root, 0.10f, 2.2f, 0.34f, matWood, new Vector3(0.70f, 1.40f, 3f), default, false);
+        Box(root, 1.50f, 0.12f, 0.34f, matDark, new Vector3(0, 2.56f, 3f), default, false);
+        Box(root, 1.2f, 2.15f, 0.07f, matWood, new Vector3(-0.62f, 1.38f, 2.35f), new Vector3(0, 90f, 0), false);
 
-        // Samping kiri & kanan: dua jendela masing-masing
-        foreach (float sx in new[] { -ChaletHalfX, ChaletHalfX })
-        {
-            WoodWall(root, false, sx, -zo, zo, new[]
-            {
-                new WallOpening(-1.4f, 1.2f, 1.2f, 2.4f),
-                new WallOpening( 1.4f, 1.2f, 1.2f, 2.4f),
-            }, matSlat);
-        }
-
-        // Tiang sudut kayu
-        foreach (float cx in new[] { -ChaletHalfX, ChaletHalfX })
-            foreach (float cz in new[] { -ChaletHalfZ, ChaletHalfZ })
-                Box(root, 0.32f, ChaletWallTop - ChaletFloorY + 0.05f, 0.32f, matWood,
-                    new Vector3(cx, (ChaletWallTop + ChaletFloorY) * 0.5f, cz), collider: false);
-
-        // ── Kaca & bingkai jendela (di bidang tembok, di dalam lubang) ──
-        Window(root, 1.3f, 1.2f, new Vector3(-2.3f, 1.8f,  ChaletHalfZ),  0f);
-        Window(root, 1.3f, 1.2f, new Vector3( 2.3f, 1.8f,  ChaletHalfZ),  0f);
-        Window(root, 1.3f, 1.2f, new Vector3(-1.5f, 1.8f, -ChaletHalfZ), 180f);
-        Window(root, 1.2f, 1.2f, new Vector3(-ChaletHalfX, 1.8f, -1.4f), -90f);
-        Window(root, 1.2f, 1.2f, new Vector3(-ChaletHalfX, 1.8f,  1.4f), -90f);
-        Window(root, 1.2f, 1.2f, new Vector3( ChaletHalfX, 1.8f, -1.4f),  90f);
-        Window(root, 1.2f, 1.2f, new Vector3( ChaletHalfX, 1.8f,  1.4f),  90f);
-
-        // ── Bingkai pintu + daun pintu terbuka (tanpa collider supaya tidak menghalangi) ──
-        Box(root, 0.10f, 2.2f, 0.34f, matWood, new Vector3(-0.70f, 1.40f, ChaletHalfZ), collider: false);
-        Box(root, 0.10f, 2.2f, 0.34f, matWood, new Vector3( 0.70f, 1.40f, ChaletHalfZ), collider: false);
-        Box(root, 1.50f, 0.12f, 0.34f, matDark, new Vector3(0, 2.56f, ChaletHalfZ), collider: false);
-        // Daun pintu terbuka ke dalam (engsel di kiri)
-        Box(root, 1.2f, 2.15f, 0.07f, matWood,
-            new Vector3(-0.62f, 1.38f, ChaletHalfZ - 0.65f), new Vector3(0, 90f, 0), collider: false);
-
-        // ── Teras depan setinggi lantai + tangga 1 anak tangga ──
+        // Teras + tangga
         Box(root, 8.0f, 0.14f, 1.9f, matDeck, new Vector3(0, 0.23f, 3.95f));
         Box(root, 1.8f, 0.15f, 0.5f, matDeck, new Vector3(0, 0.075f, 5.15f));
-
-        // Pagar teras (ada celah di tengah untuk jalan masuk)
         foreach (float px in new[] { -4.0f, -2.5f, -0.9f, 0.9f, 2.5f, 4.0f })
-            Box(root, 0.1f, 0.95f, 0.1f, matWood, new Vector3(px, 0.78f, 4.75f), collider: false);
-        Box(root, 3.1f, 0.08f, 0.12f, matWood, new Vector3(-2.45f, 1.25f, 4.75f), collider: false);
-        Box(root, 3.1f, 0.08f, 0.12f, matWood, new Vector3( 2.45f, 1.25f, 4.75f), collider: false);
-        Box(root, 3.1f, 0.05f, 0.06f, matWood, new Vector3(-2.45f, 0.80f, 4.75f), collider: false);
-        Box(root, 3.1f, 0.05f, 0.06f, matWood, new Vector3( 2.45f, 0.80f, 4.75f), collider: false);
-        // Tiang penyangga atap teras
+            Box(root, 0.1f, 0.95f, 0.1f, matWood, new Vector3(px, 0.78f, 4.75f), default, false);
+        Box(root, 3.1f, 0.08f, 0.12f, matWood, new Vector3(-2.45f, 1.25f, 4.75f), default, false);
+        Box(root, 3.1f, 0.08f, 0.12f, matWood, new Vector3(2.45f, 1.25f, 4.75f), default, false);
+        Box(root, 3.1f, 0.05f, 0.06f, matWood, new Vector3(-2.45f, 0.80f, 4.75f), default, false);
+        Box(root, 3.1f, 0.05f, 0.06f, matWood, new Vector3(2.45f, 0.80f, 4.75f), default, false);
         Cylinder(root, 0.11f, 2.3f, matWood, new Vector3(-3.9f, 1.45f, 4.55f));
-        Cylinder(root, 0.11f, 2.3f, matWood, new Vector3( 3.9f, 1.45f, 4.55f));
+        Cylinder(root, 0.11f, 2.3f, matWood, new Vector3(3.9f, 1.45f, 4.55f));
 
-        // ── Atap curam menjorok ke teras + mantel salju ──
-        // baseY dipilih agar sisi bawah atap tepat bertemu puncak tembok depan/belakang (z = ±3).
+        // Atap curam + mantel salju
         float rise = 3.0f, half = 4.6f, baseY = 2.6f;
         float pitch = Mathf.Atan(rise / half) * Mathf.Rad2Deg;
         float slope = Mathf.Sqrt(half * half + rise * rise);
         float midY = baseY + rise * 0.5f + 0.09f;
-        Box(root, 9.2f, 0.18f, slope, matRoof, new Vector3(0, midY,  half * 0.5f), new Vector3( pitch, 0, 0));
+        Box(root, 9.2f, 0.18f, slope, matRoof, new Vector3(0, midY, half * 0.5f), new Vector3(pitch, 0, 0));
         Box(root, 9.2f, 0.18f, slope, matRoof, new Vector3(0, midY, -half * 0.5f), new Vector3(-pitch, 0, 0));
-
         float cos = Mathf.Cos(pitch * Mathf.Deg2Rad), sin = Mathf.Sin(pitch * Mathf.Deg2Rad);
-        float off = 0.15f; // tebal salju bertumpu di normal atap
+        float off = 0.15f;
         Box(root, 9.3f, 0.14f, slope - 0.3f, matSnow,
-            new Vector3(0, midY + off * cos,  half * 0.5f + off * sin), new Vector3( pitch, 0, 0), collider: false);
+            new Vector3(0, midY + off * cos, half * 0.5f + off * sin), new Vector3(pitch, 0, 0), false);
         Box(root, 9.3f, 0.14f, slope - 0.3f, matSnow,
-            new Vector3(0, midY + off * cos, -half * 0.5f - off * sin), new Vector3(-pitch, 0, 0), collider: false);
+            new Vector3(0, midY + off * cos, -half * 0.5f - off * sin), new Vector3(-pitch, 0, 0), false);
+        Box(root, 9.3f, 0.16f, 0.30f, matDark, new Vector3(0, baseY + rise + 0.02f, 0), default, false);
+        Box(root, 9.4f, 0.20f, 0.55f, matSnow, new Vector3(0, baseY + rise + 0.18f, 0), default, false);
+        GableTriangle(root, half * 2f, rise, 0.15f, matSlat, new Vector3(-4.0f, baseY, 0), -90f);
+        GableTriangle(root, half * 2f, rise, 0.15f, matSlat, new Vector3(4.0f, baseY, 0), 90f);
 
-        Box(root, 9.3f, 0.16f, 0.30f, matDark, new Vector3(0, baseY + rise + 0.02f, 0), collider: false);
-        Box(root, 9.4f, 0.20f, 0.55f, matSnow, new Vector3(0, baseY + rise + 0.18f, 0), collider: false);
-
-        // Gable samping (menutup segitiga di atas tembok samping)
-        GableTriangle(root, half * 2f, rise, 0.15f, matSlat, new Vector3(-ChaletHalfX, baseY, 0), -90f);
-        GableTriangle(root, half * 2f, rise, 0.15f, matSlat, new Vector3( ChaletHalfX, baseY, 0),  90f);
-
-        // ── Interior: balok melintang atap ──
         foreach (float bx in new[] { -2.8f, 0f, 2.8f })
-            Box(root, 0.22f, 0.22f, 6.0f, matWood, new Vector3(bx, 3.45f, 0), collider: false);
+            Box(root, 0.22f, 0.22f, 6.0f, matWood, new Vector3(bx, 3.45f, 0), default, false);
 
-        // ── Interior: perapian batu + cerobong menembus atap (di sudut belakang kanan) ──
-        Box(root, 1.0f, 6.2f, 1.0f, matConcrete, new Vector3(2.2f, 3.4f, -2.3f));          // badan perapian + cerobong
-        Box(root, 1.8f, 0.12f, 1.3f, matConcrete, new Vector3(2.2f, 0.36f, -1.45f), collider: false); // lantai tungku
-        Box(root, 0.55f, 0.55f, 0.06f, matDark, new Vector3(2.2f, 0.75f, -1.78f), collider: false);   // mulut tungku
-        Box(root, 1.2f, 0.12f, 1.2f, matDark, new Vector3(2.2f, 6.55f, -2.3f), collider: false);
-        Box(root, 1.1f, 0.08f, 1.1f, matSnow, new Vector3(2.2f, 6.65f, -2.3f), collider: false);
+        // Perapian batu + cerobong (sudut belakang kanan)
+        Box(root, 1.0f, 6.2f, 1.0f, matConcrete, new Vector3(2.2f, 3.4f, -2.3f));
+        Box(root, 1.8f, 0.12f, 1.3f, matConcrete, new Vector3(2.2f, 0.36f, -1.45f), default, false);
+        Box(root, 0.55f, 0.55f, 0.06f, matDark, new Vector3(2.2f, 0.75f, -1.78f), default, false);
+        Box(root, 0.3f, 0.12f, 0.03f, matLamp, new Vector3(2.2f, 0.52f, -1.79f), default, false);
+        Box(root, 1.2f, 0.12f, 1.2f, matDark, new Vector3(2.2f, 6.55f, -2.3f), default, false);
+        Box(root, 1.1f, 0.08f, 1.1f, matSnow, new Vector3(2.2f, 6.65f, -2.3f), default, false);
 
-        // ── Interior: tempat tidur (kiri belakang) ──
-        Box(root, 2.0f, 0.35f, 1.2f, matWood, new Vector3(-2.85f, 0.535f, -2.2f));
-        Box(root, 1.9f, 0.14f, 1.1f, matSnow, new Vector3(-2.85f, 0.78f, -2.2f), collider: false);
-        Box(root, 0.5f, 0.12f, 0.8f, matSnow, new Vector3(-3.55f, 0.90f, -2.2f), collider: false);   // bantal
-        Box(root, 0.12f, 0.9f, 1.2f, matWood, new Vector3(-3.88f, 0.80f, -2.2f), collider: false);   // sandaran kepala
-
-        // ── Interior: meja + dua kursi ──
-        Box(root, 1.2f, 0.08f, 0.8f, matWood, new Vector3(-1.8f, 1.05f, 0.9f));
-        foreach (float lx in new[] { -2.3f, -1.3f })
-            foreach (float lz in new[] { 0.6f, 1.2f })
-                Box(root, 0.08f, 0.69f, 0.08f, matWood, new Vector3(lx, 0.705f, lz), collider: false);
-        Box(root, 0.45f, 0.06f, 0.45f, matWood, new Vector3(-1.8f, 0.62f, 1.55f));
-        Box(root, 0.45f, 0.06f, 0.45f, matWood, new Vector3(-1.8f, 0.62f, 0.25f));
-
-        // ── Interior: rak dinding di tembok belakang ──
-        Box(root, 1.6f, 0.06f, 0.3f, matWood, new Vector3(-1.5f, 2.6f, -2.8f), collider: false);
-
-        // ── Lentera: dalam (gantung dari balok), dua di teras ──
-        Box(root, 0.03f, 0.35f, 0.03f, matDark, new Vector3(0f, 3.25f, 0.5f), collider: false);
-        Lantern(root, new Vector3(0f, 2.95f, 0.5f));
         Lantern(root, new Vector3(-3.9f, 2.2f, 4.3f));
-        Lantern(root, new Vector3( 3.9f, 2.2f, 4.3f));
+        Lantern(root, new Vector3(3.9f, 2.2f, 4.3f));
+        Sphere(root, 1.0f, matSnow, new Vector3(-5.0f, 0.05f, 2.5f), new Vector3(1.6f, 0.25f, 1.2f));
+        Sphere(root, 1.0f, matSnow, new Vector3(5.2f, 0.05f, -1.5f), new Vector3(1.4f, 0.22f, 1.5f));
 
-        // ── Timbunan salju di tanah ──
-        Sphere(root, 1.0f, matSnow, new Vector3(-5.0f, 0.05f,  2.5f), new Vector3(1.6f, 0.25f, 1.2f));
-        Sphere(root, 1.0f, matSnow, new Vector3( 5.2f, 0.05f, -1.5f), new Vector3(1.4f, 0.22f, 1.5f));
-    }
-
-    private static void BuildChalet(GameObject root)
-    {
-        BuildChaletSalju(root);
+        // Furnitur tradisional (perapian berfungsi sebagai dapur)
+        FurnishInterior(root, 0f, 0f, 3.9f, 2.9f, fy, 0f, FBed | FWardrobe | FDining | FChest | FMat, 3.4f);
     }
 }
 #endif
