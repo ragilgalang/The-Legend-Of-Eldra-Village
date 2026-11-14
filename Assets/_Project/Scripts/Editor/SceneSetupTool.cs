@@ -50,6 +50,7 @@ public static partial class SceneSetupTool
             "--- FAUNA & ANIMALS ---", "--- EXPANSION ZONES ---", "--- MEGA EXPANSION ---",
             "--- ZONE TRIGGERS ---", "--- ENEMY SPAWNERS ---", "--- VILLAGE DETAILS ---", "Village_Yard_Fences",
             "--- CHUNK RENDER DISTANCE ---",
+            "--- JUNGLE BIOME ---", "--- JUNGLE PORTAL (VILLAGE) ---",
             "Managers", "HUD", "CameraRig", "Ground",
             "EXPANSION_ZONES", "MegaExpansion", "ZoneTriggers", "NightSpawner",
             "Zone_North_Mountain", "Zone_South_Swamp", "Zone_West_Fishing", "Zone_East_Cliffs",
@@ -112,6 +113,9 @@ public static partial class SceneSetupTool
         // 9d. MEGA EKSPANSI PETA — 4 Zona Lanjutan (total peta 1000x1000m):
         //     Puncak Salju Utara, Hutan Peri Selatan, Kuil Laut Barat, Ngarai Api Timur
         SetupMegaExpansion(slavicMat, grassTuftMat);
+
+        // 9d-2. PORTAL + JUNGLE BIOME — Hutan Rimba Belantara di (350, 0, 350)
+        SetupJungleBiome(slavicMat, grassTuftMat);
 
         // 9e. Zone Trigger & Batas Wilayah (BoxCollider music/weather per zona)
         SetupZoneTriggers();
