@@ -18,10 +18,13 @@ namespace Eldara
 
         public float radius = 2f;
 
-        [Tooltip("Tinggi titik muncul pemain di atas posisi objek (lantai bangunan + sedikit ruang).")]
-        public float offsetSpawnY = 0.3f;
+        [Tooltip("Tinggi titik muncul pemain di atas posisi objek (lantai bangunan + ruang CharacterController).")]
+        public float offsetSpawnY = 1.55f;
 
-        public Vector3 PosisiSpawn => transform.position + Vector3.up * offsetSpawnY;
+        [Tooltip("Offset maju/mundur titik muncul pemain (ke arah tangga/depan).")]
+        public float offsetSpawnZ = 0.5f;
+
+        public Vector3 PosisiSpawn => transform.position + transform.rotation * new Vector3(0f, offsetSpawnY, offsetSpawnZ);
         public Quaternion RotasiSpawn => Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
 
         void OnTriggerEnter(Collider other)
@@ -41,13 +44,13 @@ namespace Eldara
                     : new Color(1f, 0.5f, 0.3f);
 
             Gizmos.color = warna;
-            Vector3 p = PosisiSpawn - Vector3.up * 0.3f;
+            Vector3 p = PosisiSpawn;
 
             UnityEditor.Handles.color = warna;
-            UnityEditor.Handles.DrawWireDisc(p + Vector3.up * 0.05f, Vector3.up, radius);
+            UnityEditor.Handles.DrawWireDisc(p - Vector3.up * 0.95f, Vector3.up, radius);
 
-            Gizmos.DrawLine(p, p + Vector3.up * 3f);
-            Gizmos.DrawWireSphere(p + Vector3.up * 3f, 0.25f);
+            Gizmos.DrawLine(p, p + Vector3.up * 2f);
+            Gizmos.DrawWireSphere(p + Vector3.up * 2f, 0.25f);
 
             Vector3 depan = transform.forward * radius;
             Gizmos.DrawLine(p + Vector3.up * 0.1f, p + Vector3.up * 0.1f + depan);
@@ -59,7 +62,7 @@ namespace Eldara
             string label = jenis == JenisSpawn.Gabungan ? "SPAWN AWAL & RESPAWN"
                 : jenis == JenisSpawn.Awal ? "SPAWN AWAL"
                 : (jadiCheckpoint ? "CHECKPOINT" : "RESPAWN");
-            UnityEditor.Handles.Label(p + Vector3.up * 3.6f, label);
+            UnityEditor.Handles.Label(p + Vector3.up * 2.4f, label);
         }
 #endif
     }

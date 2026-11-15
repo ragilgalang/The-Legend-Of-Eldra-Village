@@ -477,6 +477,7 @@ public static partial class SceneSetupTool
             var cc = playerCtrl.GetComponent<CharacterController>();
             if (cc != null) cc.enabled = false;
             playerCtrl.transform.SetPositionAndRotation(manager.spawnAwal.PosisiSpawn, manager.spawnAwal.RotasiSpawn);
+            Physics.SyncTransforms();
             if (cc != null) cc.enabled = true;
         }
     }
@@ -4199,7 +4200,7 @@ public static partial class SceneSetupTool
             Vector3.one * Random.Range(1.2f, 2.5f), root, slavicMat);
     }
 
-    // Area yang harus bebas pohon (sungai, tambang, dst.)
+    // Area yang harus bebas pohon (sungai, tambang, kuil spawn, dst.)
     static bool IsReservedSpot(float x, float z)
     {
         if (Mathf.Abs(x + 148f) < 6f && Mathf.Abs(z) < 64f) return true;               // Sungai Barat
@@ -4207,6 +4208,18 @@ public static partial class SceneSetupTool
         if (Vector2.Distance(p, new Vector2( 84f, 9f)) < 13f) return true;            // Tambang bijih besi
         if (Vector2.Distance(p, new Vector2(-84f, 9f)) < 13f) return true;            // Area balok kayu
         if (Vector2.Distance(p, new Vector2( 74f, 40f)) < 16f) return true;           // Treehouse Pengawas
+
+        // Sterilkan area Kuil Kebangkitan (SpawnUtama) dari pohon dan semak liar
+        var spawnGo = GameObject.Find("SpawnUtama");
+        if (spawnGo != null)
+        {
+            if (Vector2.Distance(p, new Vector2(spawnGo.transform.position.x, spawnGo.transform.position.z)) < 15f) return true;
+        }
+        else
+        {
+            if (Mathf.Abs(x) < 15f && z >= -105f && z <= -70f) return true;
+        }
+
         return false;
     }
 

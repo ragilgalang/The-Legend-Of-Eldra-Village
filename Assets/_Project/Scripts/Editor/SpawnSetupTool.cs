@@ -26,7 +26,7 @@ namespace Eldara.EditorTools
             EditorWindow.GetWindow<SpawnSetupWindow>(true, "Bangunan Spawn");
         }
 
-        public static void Buat(float jarakDariDesa = 45f, float arahDeg = 180f, bool paksaBuatUlang = false)
+        public static void Buat(float jarakDariDesa = 40f, float arahDeg = 180f, bool paksaBuatUlang = false)
         {
             CariDesa(out Vector3 pusatDesa, out float radiusDesa);
 
@@ -53,6 +53,16 @@ namespace Eldara.EditorTools
             {
                 Undo.RecordObject(utamaGo.transform, "Pindahkan spawn");
                 utamaGo.transform.SetPositionAndRotation(pos, rot);
+
+                // Perbarui offset komponen SpawnPoint jika masih nilai lama
+                var spLama = utamaGo.GetComponent<SpawnPoint>();
+                if (spLama != null)
+                {
+                    spLama.offsetSpawnY = TinggiLantai + 1.05f;
+                    spLama.offsetSpawnZ = 0.5f;
+                    EditorUtility.SetDirty(spLama);
+                }
+
                 EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
                 Debug.Log($"[Eldara] Kuil spawn dipindah ke {jarakDariDesa:0} m dari tepi desa.");
                 return;
@@ -148,7 +158,11 @@ namespace Eldara.EditorTools
             var sp = SiapkanRoot("SpawnUtama", pos, rot, JenisSpawn.Gabungan, induk);
             var r = sp.transform;
 
-            Bagian(PrimitiveType.Cylinder, "Fondasi", r, batu, new Vector3(0, -0.25f, 0), new Vector3(9f, 0.75f, 9f));
+            // Fondasi: pakai MeshCollider agar berupa silinder pipih sejati,
+            // BUKAN CapsuleCollider bawaan Unity yang melengkung 4.5m ke atas menembus atap!
+            var fondasi = Bagian(PrimitiveType.Cylinder, "Fondasi", r, batu, new Vector3(0, -0.25f, 0), new Vector3(9f, 0.75f, 9f), false);
+            fondasi.AddComponent<MeshCollider>();
+
             Tangga(r, batu, 4.4f, 3);
             Bagian(PrimitiveType.Cylinder, "CincinGlow", r, glowCoral,
                 new Vector3(0, TinggiLantai + 0.005f, 0), new Vector3(6.4f, 0.01f, 6.4f), false);
@@ -210,7 +224,8 @@ namespace Eldara.EditorTools
             var sp = root.AddComponent<SpawnPoint>();
             sp.jenis = jenis;
             sp.radius = 3f;
-            sp.offsetSpawnY = TinggiLantai + 0.3f;
+            sp.offsetSpawnY = TinggiLantai + 1.05f; // 0.5f + 1.05f = 1.55f (ketinggian tengah CharacterController)
+            sp.offsetSpawnZ = 0.5f;                 // 0.5m maju ke arah tangga/depan
 
             var trigger = root.AddComponent<BoxCollider>();
             trigger.isTrigger = true;
@@ -296,6 +311,7 @@ namespace Eldara.EditorTools
             go.transform.localPosition = pos;
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+            go.AddComponent<MeshCollider>();
         }
 
         static Vector3 KeTanah(Vector3 p)
@@ -363,7 +379,7 @@ namespace Eldara.EditorTools
 
     public class SpawnSetupWindow : EditorWindow
     {
-        float jarakDariDesa = 45f;
+        float jarakDariDesa = 40f;
         float arah = 180f;
 
         void OnGUI()
