@@ -48,13 +48,14 @@ public class ChunkRenderDistance : MonoBehaviour
     Vector3 lastViewerPos = new Vector3(float.MinValue, 0f, float.MinValue);
     float updateTimer;
 
-    // Daftar semua chunk grid terdaftar: koordinat -> GameObject
-    readonly Dictionary<Vector2Int, GameObject> registeredChunks = new Dictionary<Vector2Int, GameObject>();
+    // Daftar semua chunk grid terdaftar: koordinat -> daftar GameObject chunk (bisa dari rumput, pohon hutan, dll.)
+    readonly Dictionary<Vector2Int, List<GameObject>> registeredChunks = new Dictionary<Vector2Int, List<GameObject>>();
 
     void OnEnable()
     {
         Instance = this;
         FindPlayerTarget();
+        AutoDiscoverChunks();
         UpdateAll(true);
     }
 
@@ -65,6 +66,12 @@ public class ChunkRenderDistance : MonoBehaviour
 
     void Update()
     {
+        // Di Editor saat tidak Play Mode, JANGAN culling chunk agar objek di scene
+        // tidak tersimpan dalam keadaan mati (m_IsActive: 0)!
+#if UNITY_EDITOR
+        if (!Application.isPlaying) return;
+#endif
+
         updateTimer -= Time.deltaTime;
         if (updateTimer > 0f) return;
         updateTimer = 0.15f; // Cek ~6x per detik, sangat ringan
@@ -91,10 +98,65 @@ public class ChunkRenderDistance : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Otomatis mendeteksi dan mendaftarkan semua petak chunk (Chunk_X_Z) yang sudah ada di scene.
+    /// Memastikan runtime Play Mode selalu mengenali semua chunk tanpa bergantung pada memory Editor.
+    /// </summary>
+    public void AutoDiscoverChunks()
+    {
+        registeredChunks.Clear();
+
+        string[] containerNames = { "--- WILDERNESS ---", "--- GRASS FIELDS ---", "--- JUNGLE BIOME ---", "Jungle_Biome" };
+        foreach (var cName in containerNames)
+        {
+            var container = GameObject.Find(cName);
+            if (container == null) continue;
+
+            if (!container.activeSelf) container.SetActive(true);
+
+            for (int i = 0; i < container.transform.childCount; i++)
+            {
+                var child = container.transform.GetChild(i);
+                if (child.name.StartsWith("Chunk_"))
+                {
+                    // Jika --- 3D WILDFLOWERS --- tersasar masuk ke dalam Chunk, keluarkan ke container utama!
+                    var flowerChild = child.Find("--- 3D WILDFLOWERS ---");
+                    if (flowerChild != null)
+                    {
+                        flowerChild.SetParent(container.transform, true);
+                        flowerChild.gameObject.SetActive(true);
+                    }
+
+                    string[] parts = child.name.Split('_');
+                    if (parts.Length >= 3 && int.TryParse(parts[1], out int cx) && int.TryParse(parts[2], out int cz))
+                    {
+                        RegisterChunkInternal(new Vector2Int(cx, cz), child.gameObject);
+                    }
+                }
+                else if (child.name == "--- 3D WILDFLOWERS ---")
+                {
+                    child.gameObject.SetActive(true);
+                }
+            }
+        }
+    }
+
+    void RegisterChunkInternal(Vector2Int coord, GameObject chunkObj)
+    {
+        if (chunkObj == null) return;
+        if (!registeredChunks.TryGetValue(coord, out var list))
+        {
+            list = new List<GameObject>();
+            registeredChunks[coord] = list;
+        }
+        if (!list.Contains(chunkObj))
+            list.Add(chunkObj);
+    }
+
     public void RegisterChunk(Vector2Int coord, GameObject chunkObj)
     {
         if (chunkObj == null) return;
-        registeredChunks[coord] = chunkObj;
+        RegisterChunkInternal(coord, chunkObj);
 
         Vector3 viewerPos = GetViewerPosition();
         int currentChunkX = Mathf.FloorToInt(viewerPos.x / chunkSize);
@@ -139,14 +201,20 @@ public class ChunkRenderDistance : MonoBehaviour
         var toRemove = new List<Vector2Int>();
         foreach (var kvp in registeredChunks)
         {
-            if (kvp.Value == null) { toRemove.Add(kvp.Key); continue; }
+            var list = kvp.Value;
+            if (list == null || list.Count == 0) { toRemove.Add(kvp.Key); continue; }
+
             int dx = Mathf.Abs(kvp.Key.x - currentChunkX);
             int dz = Mathf.Abs(kvp.Key.y - currentChunkZ);
             bool shouldBeActive = dx <= renderDistance && dz <= renderDistance;
 
-            if (force || kvp.Value.activeSelf != shouldBeActive)
+            for (int i = list.Count - 1; i >= 0; i--)
             {
-                kvp.Value.SetActive(shouldBeActive);
+                if (list[i] == null) { list.RemoveAt(i); continue; }
+                if (force || list[i].activeSelf != shouldBeActive)
+                {
+                    list[i].SetActive(shouldBeActive);
+                }
             }
         }
         foreach (var k in toRemove) registeredChunks.Remove(k);
@@ -219,7 +287,8 @@ public class ChunkRenderDistance : MonoBehaviour
 
         foreach (var child in children)
         {
-            if (child.name.StartsWith("Chunk_")) continue;
+            // Jangan masukkan chunk lain atau sub-container (seperti --- 3D WILDFLOWERS ---) ke dalam chunk!
+            if (child.name.StartsWith("Chunk_") || child.name.StartsWith("---")) continue;
 
             Vector3 pos = child.position;
             int cx = Mathf.FloorToInt(pos.x / chunkSize);
@@ -243,7 +312,11 @@ public class ChunkRenderDistance : MonoBehaviour
     [MenuItem("Eldara/Biomes/Terapkan Chunk Render ke Seluruh Peta")]
     public static void ApplyToEntireWorldMenu()
     {
-        var manager = FindFirstObjectByType<ChunkRenderDistance>();
+#if UNITY_2023_1_OR_NEWER
+        var manager = Object.FindFirstObjectByType<ChunkRenderDistance>();
+#else
+        var manager = Object.FindObjectOfType<ChunkRenderDistance>();
+#endif
         if (manager == null)
         {
             var go = new GameObject("--- CHUNK RENDER DISTANCE ---");
@@ -291,7 +364,16 @@ public class ChunkRenderDistance : MonoBehaviour
         var mEast = GameObject.Find("Zone_FarEast_FireCanyon");
         if (mEast) manager.RegisterZone("Ngarai Api Timur", mEast, new Vector3(400f, 0f, 0f), 180f);
 
-        manager.UpdateAll(true);
+        // Di Editor, pastikan semua chunk tetap aktif tersimpan di scene agar tidak hilang
+        foreach (var kvp in manager.registeredChunks)
+        {
+            if (kvp.Value == null) continue;
+            foreach (var go in kvp.Value)
+            {
+                if (go != null) go.SetActive(true);
+            }
+        }
+
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
 
         if (!Application.isBatchMode)
