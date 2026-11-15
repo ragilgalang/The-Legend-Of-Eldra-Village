@@ -21,6 +21,9 @@ public class PlayerController : MonoBehaviour
             cc.radius = 0.38f;
             cc.center = new Vector3(0f, 0.925f, 0f);
         }
+        // Pastikan stepOffset & slopeLimit pas untuk mendaki tangga & ambang pintu
+        cc.stepOffset = 0.45f;
+        cc.slopeLimit = 55f;
     }
 
     void Start()

@@ -377,7 +377,8 @@ public static partial class SceneSetupTool
         cc.height = 1.85f;
         cc.radius = 0.38f;
         cc.center = new Vector3(0f, 0.925f, 0f);
-        cc.stepOffset = 0.35f;
+        cc.stepOffset  = 0.45f;   // Naikkan agar bisa menapaki anak tangga (~0.35m) dan ambang pintu
+        cc.slopeLimit  = 55f;     // Izinkan mendaki tangga miring ~55°
 
         // Bangun model karakter 3D Ki Wira secara prosedural
         KiWiraBuilder.BuildOn(player);
@@ -615,7 +616,28 @@ public static partial class SceneSetupTool
         var hall = InstantiateArtModel("EA03_Town_Building_Administrative _01a",
             new Vector3(0f, 0f, 38f), Quaternion.Euler(0, 180f, 0),
             new Vector3(1.15f, 1.15f, 1.15f), village.transform, slavicMat);
-        if (hall) { hall.name = "Bld_TownHall"; AddPorchLantern(hall.transform, new Vector3(0, 3.2f, -4f), range: 12f); }
+        if (hall) {
+            hall.name = "Bld_TownHall";
+            AddPorchLantern(hall.transform, new Vector3(0, 3.2f, -4f), range: 12f);
+
+            // ── Ramp tangga TownHall ──────────────────────────────────────────
+            // Skala bangunan 1.15×, tangga eksternal ada di sisi kanan (timur) bangunan.
+            // Dimensi tangga asli model: lebar ~1.8m, naik ~2.5m dalam horizontal ~2.5m → pitch ~45°.
+            // Dua ramp: (1) ramp lantai ke lantai-2 sisi kanan, (2) ambang pintu utama (ground floor).
+
+            // Ramp sisi kanan (tangga eksternal ke lantai 2)
+            // localPos Y = ½ dari ketinggian ramp agar pivot di tengah
+            AddStairRamp(hall.transform,
+                new Vector3( 5.5f, 1.3f, 1.0f),   // posisi lokal: sisi kanan, tinggi tengah ramp
+                new Vector3( 1.8f, 0.12f, 3.2f),   // size: lebar 1.8m, tipis, panjang lereng 3.2m
+                new Vector3(-40f,  0f,   0f));      // pitch -40° ke atas
+
+            // Ramp ambang pintu utama (ground floor, sisi depan → Z negatif karena rot 180)
+            AddStairRamp(hall.transform,
+                new Vector3( 0f,  0.18f, -4.5f),   // di depan pintu utama
+                new Vector3( 2.4f, 0.12f,  1.0f),  // lebar pintu, tipis, pendek
+                new Vector3(-15f,  0f,    0f));     // pitch ringan untuk hilangkan sill
+        }
 
         // 2. Rumah Gadang (Rumah Kepala Desa Adat - Sayap Barat Laut, menghadap Selatan ke promenade)
         ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Gadang,
@@ -1565,12 +1587,27 @@ public static partial class SceneSetupTool
         }
         else
         {
+            // Hanya LOD0 (atau mesh utama) yang mendapat collider.
+            bool hasAnyLod0 = false;
             foreach (var mf in instance.GetComponentsInChildren<MeshFilter>(true))
-                if (!mf.GetComponent<Collider>())
+                if (mf.gameObject.name.IndexOf("LOD0", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                { hasAnyLod0 = true; break; }
+
+            foreach (var mf in instance.GetComponentsInChildren<MeshFilter>(true))
+            {
+                string n = mf.gameObject.name;
+                if (hasAnyLod0 &&
+                    (n.IndexOf("LOD1", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     n.IndexOf("LOD2", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     n.IndexOf("LOD3", System.StringComparison.OrdinalIgnoreCase) >= 0))
+                    continue;
+
+                if (!mf.GetComponent<Collider>() && mf.sharedMesh != null)
                 {
                     var mc = mf.gameObject.AddComponent<MeshCollider>();
                     mc.sharedMesh = mf.sharedMesh;
                 }
+            }
         }
 
         return instance;
@@ -2062,6 +2099,21 @@ public static partial class SceneSetupTool
             }
             towerObj.name = tName;
             if (!towerObj.GetComponent<Tower>()) towerObj.AddComponent<Tower>();
+
+            // ── Ramp tangga Tower (sisi belakang/depan tergantung FBX) ───────
+            // EA03_Village_Tover_01a: tangga kayu eksternal menghadap Z- (depan menara).
+            // Tangga naik ~3.5m dalam horizontal ~2.5m → pitch ~54°.
+            // Ramp menutupi anak-anak tangga agar CharacterController tidak tersangkut.
+            AddStairRamp(towerObj.transform,
+                new Vector3( 0f, 1.75f, -2.0f),   // posisi lokal: depan menara, tengah ramp
+                new Vector3( 1.2f, 0.12f, 3.0f),  // lebar 1.2m, tipis, panjang lereng 3m
+                new Vector3(-55f,  0f,   0f));     // pitch -55°
+
+            // Ambang pintu atas (lantai 2 tower, kecil)
+            AddStairRamp(towerObj.transform,
+                new Vector3( 0f, 3.4f,  -1.0f),
+                new Vector3( 1.2f, 0.12f, 0.8f),
+                new Vector3(-10f,  0f,    0f));
 
             // Lentera Obor Menara Pengawas
             AddPorchLantern(towerObj.transform, new Vector3(0, 4.5f, 0), new Color(1f, 0.65f, 0.2f), 12f);
@@ -3970,9 +4022,24 @@ public static partial class SceneSetupTool
             }
             else
             {
+                // Hanya LOD0 (atau mesh utama) yang mendapat collider.
+                // Skip LOD1/LOD2/LOD3 agar tidak ada collider ganda yang memblok pemain.
+                bool hasAnyLod0 = false;
+                foreach (var mf in instance.GetComponentsInChildren<MeshFilter>(true))
+                    if (mf.gameObject.name.IndexOf("LOD0", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    { hasAnyLod0 = true; break; }
+
                 foreach (var mf in instance.GetComponentsInChildren<MeshFilter>(true))
                 {
-                    if (!mf.GetComponent<Collider>())
+                    string n = mf.gameObject.name;
+                    // Kalau FBX punya LOD0, skip semua yang bukan LOD0
+                    if (hasAnyLod0 &&
+                        (n.IndexOf("LOD1", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         n.IndexOf("LOD2", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         n.IndexOf("LOD3", System.StringComparison.OrdinalIgnoreCase) >= 0))
+                        continue;
+
+                    if (!mf.GetComponent<Collider>() && mf.sharedMesh != null)
                     {
                         var mc = mf.gameObject.AddComponent<MeshCollider>();
                         mc.sharedMesh = mf.sharedMesh;
@@ -3984,6 +4051,28 @@ public static partial class SceneSetupTool
         }
 
         return null;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  HELPER: RAMP TANGGA INVISIBLE
+    //  Tambah BoxCollider miring yang tidak terlihat di atas anak tangga supaya
+    //  CharacterController bisa mendaki tangga seperti menanjak di lereng.
+    //  localPos   : posisi lokal relatif ke parent (pivot kaki building)
+    //  size       : ukuran BoxCollider (lebar, tinggi sangat tipis, panjang lereng)
+    //  eulerAngles: rotasi lokal (misal pitch -35f untuk lereng ~35°)
+    // ─────────────────────────────────────────────────────────────────────
+    static void AddStairRamp(Transform parent, Vector3 localPos, Vector3 size, Vector3 eulerAngles)
+    {
+        var rampGo = new GameObject("_StairRamp");
+        rampGo.transform.SetParent(parent, false);
+        rampGo.transform.localPosition = localPos;
+        rampGo.transform.localEulerAngles = eulerAngles;
+
+        var box = rampGo.AddComponent<BoxCollider>();
+        box.size = size;
+        box.center = Vector3.zero;
+        // Tidak ada Renderer → invisible di game view
+        // Layer default "Default" sudah cukup untuk CharacterController
     }
 
     static GameObject GetOrCreateManagerRoot()
