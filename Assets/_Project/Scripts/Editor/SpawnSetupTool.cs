@@ -11,7 +11,6 @@ namespace Eldara.EditorTools
         const string FolderRoot = "Assets/Eldara";
         const string FolderMat = "Assets/Eldara/Materials";
 
-        [MenuItem("Eldara/Buat Spawn Point")]
         public static void Buat()
         {
 #if UNITY_2023_1_OR_NEWER
@@ -77,7 +76,7 @@ namespace Eldara.EditorTools
             return p;
         }
 
-        static SpawnPoint BuatMarker(string nama, Vector3 pos, Color warna, JenisSpawn jenis, Transform induk)
+        public static SpawnPoint BuatMarker(string nama, Vector3 pos, Color warna, JenisSpawn jenis, Transform induk)
         {
             var root = new GameObject(nama);
             Undo.RegisterCreatedObjectUndo(root, "Buat " + nama);

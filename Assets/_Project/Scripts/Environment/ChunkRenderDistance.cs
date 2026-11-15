@@ -309,7 +309,6 @@ public class ChunkRenderDistance : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-    [MenuItem("Eldara/Biomes/Terapkan Chunk Render ke Seluruh Peta")]
     public static void ApplyToEntireWorldMenu()
     {
 #if UNITY_2023_1_OR_NEWER

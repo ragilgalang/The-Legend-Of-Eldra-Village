@@ -268,7 +268,6 @@ public class JungleGrass : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-    [UnityEditor.MenuItem("Eldara/Biomes/Pasang Jungle Grass ke Objek Jungle")]
     public static void AttachJungleGrassMenu()
     {
         var biome = Object.FindFirstObjectByType<JungleBiomeGenerator>();

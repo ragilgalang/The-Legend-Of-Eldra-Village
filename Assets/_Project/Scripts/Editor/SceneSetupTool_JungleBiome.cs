@@ -32,7 +32,6 @@ public static partial class SceneSetupTool
 
     const string JungleArtFolder = "Assets/_Project/Art/JungleBiome";
 
-    [MenuItem("Eldara/Tambah Portal Jungle Biome")]
     public static void AddJunglePortalOnly()
     {
         if (Application.isPlaying)

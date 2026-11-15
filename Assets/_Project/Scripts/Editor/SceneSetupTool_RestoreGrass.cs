@@ -10,7 +10,6 @@ using UnityEngine;
 /// </summary>
 public static partial class SceneSetupTool
 {
-    [MenuItem("Eldara/Pulihkan Rumput & Bunga Desa")]
     public static void RestoreVillageGrassAndFlowers()
     {
         if (Application.isPlaying)

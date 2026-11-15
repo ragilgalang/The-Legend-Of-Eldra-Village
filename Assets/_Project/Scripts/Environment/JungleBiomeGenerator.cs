@@ -240,8 +240,6 @@ public class JungleBiomeGenerator : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-    [MenuItem("GameObject/3D Object/Jungle Biome", false, 10)]
-    [MenuItem("Eldara/Biomes/Buat & Generate Hutan Rimba Lengkap")]
     public static void CreateJungleBiomeObject()
     {
         // Cari atau buat objek Jungle_Biome
@@ -308,7 +306,6 @@ public class JungleBiomeGenerator : MonoBehaviour
             "Mantap!");
     }
 
-    [MenuItem("Eldara/Biomes/Hapus Hutan Rimba (Kembalikan Desa)")]
     public static void ClearJungleBiomeObject()
     {
         var go = GameObject.Find("Jungle_Biome");

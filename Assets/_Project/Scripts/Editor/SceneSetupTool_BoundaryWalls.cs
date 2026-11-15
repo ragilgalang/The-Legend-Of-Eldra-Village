@@ -53,7 +53,6 @@ public static partial class SceneSetupTool
     /// Untuk scene yang sudah jadi: hapus pohon pembatas di tepi peta lalu pasang dinding tak terlihat,
     /// tanpa membangun ulang seluruh dunia.
     /// </summary>
-    [MenuItem("Eldara/Ganti Pohon Perbatasan dengan Dinding Tak Terlihat")]
     public static void ReplaceBorderTreesWithWalls()
     {
         var mega = GameObject.Find("--- MEGA EXPANSION ---");

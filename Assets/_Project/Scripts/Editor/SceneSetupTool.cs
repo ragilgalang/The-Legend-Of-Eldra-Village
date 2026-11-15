@@ -5,6 +5,8 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Eldara;
+using Eldara.EditorTools;
 
 /// <summary>
 /// Tool pembangun dunia (World Builder) untuk Legenda Desa Eldara.
@@ -51,6 +53,7 @@ public static partial class SceneSetupTool
             "--- ZONE TRIGGERS ---", "--- ENEMY SPAWNERS ---", "--- VILLAGE DETAILS ---", "Village_Yard_Fences",
             "--- CHUNK RENDER DISTANCE ---",
             "--- JUNGLE BIOME ---", "--- JUNGLE PORTAL (VILLAGE) ---",
+            "SpawnPoints", "SpawnManager",
             "Managers", "HUD", "CameraRig", "Ground",
             "EXPANSION_ZONES", "MegaExpansion", "ZoneTriggers", "NightSpawner",
             "Zone_North_Mountain", "Zone_South_Swamp", "Zone_West_Fishing", "Zone_East_Cliffs",
@@ -58,13 +61,18 @@ public static partial class SceneSetupTool
             "Zone_FarWest_SeaTemple", "Zone_FarEast_FireCanyon",
             "ZoneConnectors", "ZoneConnectors_Mega",
         };
-        foreach (string nm in namaLama)
+        // Bersihkan objek lama aktif maupun inaktif
+        var activeRoots = EditorSceneManager.GetActiveScene().GetRootGameObjects();
+        foreach (var root in activeRoots)
         {
-            GameObject lama = GameObject.Find(nm);
-            while (lama != null)
+            if (root == null) continue;
+            foreach (string nm in namaLama)
             {
-                Object.DestroyImmediate(lama);
-                lama = GameObject.Find(nm);
+                if (root.name == nm)
+                {
+                    Object.DestroyImmediate(root);
+                    break;
+                }
             }
         }
 
@@ -178,7 +186,6 @@ public static partial class SceneSetupTool
         }
     }
 
-    [MenuItem("Eldara/Hapus Semua Pagar Liar & Penghalang")]
     public static void RemovePerimeterFences()
     {
         int count = 0;
@@ -440,6 +447,37 @@ public static partial class SceneSetupTool
         soSave.FindProperty("player").objectReferenceValue = playerCtrl;
         soSave.FindProperty("playerHealth").objectReferenceValue = playerHealth;
         soSave.ApplyModifiedProperties();
+
+        // Setup SpawnManager & Titik Spawn (Awal & Respawn)
+        var spawnMgr = managers.GetComponent<SpawnManager>();
+        if (!spawnMgr) spawnMgr = managers.AddComponent<SpawnManager>();
+        spawnMgr.pemain = playerCtrl != null ? playerCtrl.transform : null;
+        SetupSpawnPoints(spawnMgr);
+    }
+
+    static void SetupSpawnPoints(SpawnManager manager)
+    {
+        var scene = EditorSceneManager.GetActiveScene();
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            if (root != null && root.name == "SpawnPoints")
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        var induk = new GameObject("SpawnPoints");
+
+        // Titik spawn awal di pelataran alun-alun depan Balai Desa (0, 0.1, -5)
+        Vector3 posAwal = new Vector3(0f, 0.1f, -5f);
+        // Titik respawn di sisi timur alun-alun
+        Vector3 posRespawn = new Vector3(6f, 0.1f, -5f);
+
+        var awal = SpawnSetupTool.BuatMarker("SpawnAwal", posAwal, new Color(0.2f, 0.85f, 0.55f), JenisSpawn.Awal, induk.transform);
+        var respawn = SpawnSetupTool.BuatMarker("SpawnRespawn", posRespawn, new Color(1f, 0.5f, 0.3f), JenisSpawn.Respawn, induk.transform);
+
+        manager.spawnAwal = awal;
+        manager.spawnRespawn = respawn;
     }
 
     // ─────────────────────────────────────────────────────────────────────

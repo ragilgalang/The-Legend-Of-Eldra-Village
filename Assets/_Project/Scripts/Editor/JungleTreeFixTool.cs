@@ -10,7 +10,6 @@ using UnityEngine;
 /// </summary>
 public static class JungleTreeFixTool
 {
-    [MenuItem("Eldara/Perbaiki Pohon Rimba")]
     public static void Fix()
     {
         if (Application.isPlaying)
