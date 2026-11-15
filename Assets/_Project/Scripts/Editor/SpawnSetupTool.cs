@@ -140,6 +140,7 @@ namespace Eldara.EditorTools
             }
 
             pusat = b.center;
+            pusat.y = 0f; // Ketinggian dasar desa selalu di bidang datar Y = 0
             radius = Mathf.Max(b.extents.x, b.extents.z);
         }
 
@@ -316,6 +317,8 @@ namespace Eldara.EditorTools
 
         static Vector3 KeTanah(Vector3 p)
         {
+            p.y = 0f;
+
             var t = Terrain.activeTerrain;
             if (t != null)
             {
@@ -327,8 +330,26 @@ namespace Eldara.EditorTools
                     return p;
                 }
             }
-            if (Physics.Raycast(p + Vector3.up * 100f, Vector3.down, out var hit, 500f))
-                return hit.point;
+
+            var ground = GameObject.Find("Ground");
+            if (ground != null)
+            {
+                p.y = ground.transform.position.y;
+                return p;
+            }
+
+            if (Physics.Raycast(new Vector3(p.x, 30f, p.z), Vector3.down, out var hit, 50f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (!hit.collider.name.Contains("Tree") && !hit.collider.name.Contains("Leaf") &&
+                    !hit.collider.name.Contains("Bush") && !hit.collider.name.Contains("Roof") &&
+                    !hit.collider.name.Contains("Atap") && !hit.collider.name.Contains("Spawn"))
+                {
+                    p.y = hit.point.y;
+                    return p;
+                }
+            }
+
+            p.y = 0f;
             return p;
         }
 
