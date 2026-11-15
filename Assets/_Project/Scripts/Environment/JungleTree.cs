@@ -30,12 +30,17 @@ public class JungleTree : MonoBehaviour
     public Material leafMaterial;
     public Color leafTint = new Color(0.12f, 0.45f, 0.13f);
 
+    [HideInInspector] public int builtSeed;   // seed terakhir yang dipakai Build() (untuk rebuild identik)
+
+    const float TrunkSink = 0.4f;   // pangkal batang terkubur 40 cm agar tidak ada celah di bawah akar
+
     static Mesh _lumpy;
     static Material _bark, _leaf;
 
     // ---------------------------------------------------------------- BUILD
     public void Build(int seed)
     {
+        builtSeed = seed;
         Random.State old = Random.state;
         Random.InitState(seed);
 
@@ -45,7 +50,7 @@ public class JungleTree : MonoBehaviour
 
         // --- Batang
         Mesh trunk = BuildTube(height, baseRadius, topRadius, radialSegments, rings,
-                               buttressCount, buttressFlare, buttressHeight, bend, seed * 0.37f);
+                               buttressCount, buttressFlare, buttressHeight, bend, seed * 0.37f, TrunkSink);
 
         var barkParts = new List<CombineInstance>();
         barkParts.Add(new CombineInstance { mesh = trunk, transform = Matrix4x4.identity });
@@ -63,7 +68,7 @@ public class JungleTree : MonoBehaviour
             float len = Random.Range(canopyRadius * 0.5f, canopyRadius * 0.95f) * Mathf.Lerp(1f, 0.5f, y / height);
             Vector3 dir = new Vector3(Mathf.Cos(ang), Random.Range(0.25f, 0.7f), Mathf.Sin(ang)).normalized;
             float r = Mathf.Lerp(0.55f, 0.25f, y / height);
-            Vector3 pos = TrunkCenter(y / height, seed * 0.37f, bend, height);
+            Vector3 pos = TrunkCenter(y / height, seed * 0.37f, bend, height) ;
             pos.y = y;
 
             barkParts.Add(new CombineInstance
@@ -95,10 +100,9 @@ public class JungleTree : MonoBehaviour
         trunkGO.transform.SetParent(transform, false);
         trunkGO.AddComponent<MeshFilter>().sharedMesh = Combine(barkParts);
         trunkGO.AddComponent<MeshRenderer>().sharedMaterial = barkMaterial != null ? barkMaterial : DefaultBark();
-        var col = trunkGO.AddComponent<CapsuleCollider>();
-        col.radius = baseRadius * 0.9f;
-        col.height = height * 0.6f;
-        col.center = new Vector3(0, height * 0.3f, 0);
+
+        // Tabrakan: memakai bentuk batang yang sebenarnya (akar banir, lengkung, runcing), padat dua sisi.
+        AttachCollision(trunk);
 
         // --- Objek daun
         var leafGO = new GameObject("Canopy");
@@ -119,7 +123,6 @@ public class JungleTree : MonoBehaviour
 
     void AddLeaf(List<CombineInstance> list, Mesh lumpy, Vector3 pos)
     {
-        if (lumpy == null) return;
         float s = Random.Range(clusterSize.x, clusterSize.y);
         Quaternion rot = Quaternion.Euler(Random.Range(-15f, 15f), Random.value * 360f, Random.Range(-15f, 15f));
         list.Add(new CombineInstance
@@ -135,31 +138,39 @@ public class JungleTree : MonoBehaviour
         return new Vector3(Mathf.Sin(t * 3f + seed) * bend * t, t * h, Mathf.Cos(t * 2.3f + seed) * bend * t);
     }
 
-    /// <summary>Tabung meruncing dengan akar banir di dasar dan lengkung ringan.</summary>
+    /// <summary>
+    /// Tabung meruncing dengan akar banir di dasar dan lengkung ringan.
+    /// - Sisi luar menghadap keluar (urutan segitiga searah jarum jam, standar Unity).
+    /// - Noise kulit diambil di lingkaran sehingga sambungan (seam) rapat, tanpa retakan.
+    /// - 'sink' menenggelamkan pangkal ke tanah.
+    /// </summary>
     public static Mesh BuildTube(float h, float baseR, float topR, int radial, int rings,
-                                 int lobes, float flare, float flareH, float bend, float seed)
+                                 int lobes, float flare, float flareH, float bend, float seed, float sink = 0f)
     {
         int vc = (rings + 1) * (radial + 1);
         var verts = new Vector3[vc];
         var uvs = new Vector2[vc];
         var tris = new int[rings * radial * 6];
+        float total = h + sink;
 
         for (int i = 0; i <= rings; i++)
         {
             float t = i / (float)rings;
-            float y = t * h;
-            float r = Mathf.Lerp(baseR, topR, Mathf.Pow(t, 0.8f));
-            float fl = flare * Mathf.Exp(-y / Mathf.Max(0.01f, flareH));
-            Vector3 center = TrunkCenter(t, seed, bend, h);
+            float y = t * total - sink;                  // y < 0 = bagian yang terkubur
+            float tt = Mathf.Clamp01(y / h);             // 0..1 sepanjang batang yang terlihat
+            float r = Mathf.Lerp(baseR, topR, Mathf.Pow(tt, 0.8f));
+            float fl = flare * Mathf.Exp(-Mathf.Max(0f, y) / Mathf.Max(0.01f, flareH));
+            Vector3 center = TrunkCenter(tt, seed, bend, h);
 
             for (int j = 0; j <= radial; j++)
             {
                 float a = j / (float)radial * Mathf.PI * 2f;
+                float ca = Mathf.Cos(a), sa = Mathf.Sin(a);
                 float lobe = lobes > 0 ? Mathf.Pow(Mathf.Abs(Mathf.Cos(a * lobes * 0.5f)), 3f) : 0f;
-                float noise = (Mathf.PerlinNoise(a * 2f + seed, y * 0.4f) - 0.5f) * 0.12f * r; // tekstur kulit kasar
-                float rr = r * (1f + fl * lobe) + noise;
+                float n = (Mathf.PerlinNoise(ca * 1.5f + 20f + seed, sa * 1.5f + 20f + y * 0.4f) - 0.5f) * 0.12f * r;
+                float rr = r * (1f + fl * lobe) + n;
                 int idx = i * (radial + 1) + j;
-                verts[idx] = new Vector3(center.x + Mathf.Cos(a) * rr, y, center.z + Mathf.Sin(a) * rr);
+                verts[idx] = new Vector3(center.x + ca * rr, y, center.z + sa * rr);
                 uvs[idx] = new Vector2(j / (float)radial * 3f, y / 4f);
             }
         }
@@ -170,13 +181,74 @@ public class JungleTree : MonoBehaviour
             {
                 int a = i * (radial + 1) + j;
                 int b = a + radial + 1;
-                tris[ti++] = a; tris[ti++] = a + 1; tris[ti++] = b;
-                tris[ti++] = a + 1; tris[ti++] = b + 1; tris[ti++] = b;
+                tris[ti++] = a; tris[ti++] = b; tris[ti++] = a + 1;
+                tris[ti++] = a + 1; tris[ti++] = b; tris[ti++] = b + 1;
             }
 
         var m = new Mesh { name = "TubeMesh" };
         m.vertices = verts; m.uv = uvs; m.triangles = tris;
         m.RecalculateNormals();
+
+        // samakan normal di seam supaya tidak ada garis bayangan
+        var nrm = m.normals;
+        for (int i = 0; i <= rings; i++)
+        {
+            int s0 = i * (radial + 1), s1 = s0 + radial;
+            Vector3 avg = (nrm[s0] + nrm[s1]).normalized;
+            nrm[s0] = avg; nrm[s1] = avg;
+        }
+        m.normals = nrm;
+        m.RecalculateBounds();
+        return m;
+    }
+
+    // Membuat collider batang dari mesh. Dipakai Build() dan perbaikan otomatis pohon lama.
+    void AttachCollision(Mesh shape)
+    {
+        var old = transform.Find("TrunkCollision");
+        if (old != null)
+        {
+            if (Application.isPlaying) Destroy(old.gameObject); else DestroyImmediate(old.gameObject);
+        }
+        var colGO = new GameObject("TrunkCollision");
+        colGO.transform.SetParent(transform, false);
+        colGO.AddComponent<MeshCollider>().sharedMesh = MakeSolidShell(shape);
+
+        // Rigidbody kinematik supaya pohon yang bergoyang (JungleTreeSway) tidak membebani physics sebagai collider statis.
+        var rb = GetComponent<Rigidbody>();
+        if (rb == null) rb = gameObject.AddComponent<Rigidbody>();
+        rb.isKinematic = true;
+        rb.useGravity = false;
+    }
+
+    // Pohon yang dibangun dengan kode lama (tersimpan di scene) hanya punya collider kapsul kecil.
+    // Saat game mulai, collider itu diganti otomatis dengan collider padat sesuai bentuk batang.
+    void Awake()
+    {
+        var trunk = transform.Find("Trunk");
+        if (trunk == null || transform.Find("TrunkCollision") != null) return;
+
+        var cap = trunk.GetComponent<CapsuleCollider>();
+        if (cap != null) Destroy(cap);
+        var mf = trunk.GetComponent<MeshFilter>();
+        if (mf != null && mf.sharedMesh != null) AttachCollision(mf.sharedMesh);
+    }
+
+    /// <summary>Salinan mesh dengan segitiga dua arah: padat dari luar maupun dalam (untuk MeshCollider).</summary>
+    static Mesh MakeSolidShell(Mesh src)
+    {
+        var t = src.triangles;
+        var both = new int[t.Length * 2];
+        t.CopyTo(both, 0);
+        for (int i = 0; i < t.Length; i += 3)
+        {
+            both[t.Length + i] = t[i];
+            both[t.Length + i + 1] = t[i + 2];
+            both[t.Length + i + 2] = t[i + 1];
+        }
+        var m = new Mesh { name = "TrunkCollisionMesh" };
+        m.vertices = src.vertices;
+        m.triangles = both;
         m.RecalculateBounds();
         return m;
     }
@@ -186,18 +258,6 @@ public class JungleTree : MonoBehaviour
     {
         if (_lumpy != null) return _lumpy;
         Mesh src = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
-        if (src == null)
-        {
-            var temp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            var mf = temp.GetComponent<MeshFilter>();
-            if (mf != null && mf.sharedMesh != null)
-                src = mf.sharedMesh;
-            if (Application.isPlaying) Destroy(temp);
-            else DestroyImmediate(temp);
-        }
-
-        if (src == null) return null;
-
         var verts = src.vertices;
         for (int i = 0; i < verts.Length; i++)
         {
@@ -207,7 +267,6 @@ public class JungleTree : MonoBehaviour
             verts[i] = v * (0.75f + n * 0.5f + n2 * 0.18f);
         }
         _lumpy = new Mesh { name = "LumpySphere" };
-        _lumpy.hideFlags = HideFlags.DontSave;
         _lumpy.vertices = verts;
         _lumpy.triangles = src.triangles;
         _lumpy.uv = src.uv;
