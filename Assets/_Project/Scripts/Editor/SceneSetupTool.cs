@@ -2358,7 +2358,7 @@ public static partial class SceneSetupTool
     static void SetupFaunaAndAnimals()
     {
         // Bersihkan objek ikan darat & fauna lama jika ada
-        foreach (var fish in Object.FindObjectsByType<FishController>(FindObjectsSortMode.None))
+        foreach (var fish in Object.FindObjectsOfType<FishController>())
         {
             if (fish) Object.DestroyImmediate(fish.gameObject);
         }

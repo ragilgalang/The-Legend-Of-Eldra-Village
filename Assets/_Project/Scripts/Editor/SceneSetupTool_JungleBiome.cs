@@ -59,11 +59,15 @@ public static partial class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
     static void SetupJungleBiome(Material slavicMat, Material grassMat)
     {
-        // Bersihkan hasil build sebelumnya
-        foreach (string nm in new[] { "--- JUNGLE BIOME ---", "--- JUNGLE PORTAL (VILLAGE) ---" })
+        // Bersihkan hasil build sebelumnya (termasuk yang sedang inactive)
+        var activeScene = EditorSceneManager.GetActiveScene();
+        var rootObjects = activeScene.GetRootGameObjects();
+        foreach (var go in rootObjects)
         {
-            var old = GameObject.Find(nm);
-            while (old != null) { Object.DestroyImmediate(old); old = GameObject.Find(nm); }
+            if (go != null && (go.name == "--- JUNGLE BIOME ---" || go.name == "--- JUNGLE PORTAL (VILLAGE) ---"))
+            {
+                Object.DestroyImmediate(go);
+            }
         }
 
         var villageRoot = new GameObject("--- JUNGLE PORTAL (VILLAGE) ---");
@@ -119,12 +123,20 @@ public static partial class SceneSetupTool
             stoneMat, darkStone, runeMat, vineMat, groundMat, glowMat, woodMat, energy1, energy2, glowCol, out var jGate);
         jGate.destination = villageArrival;
 
-        // Daftarkan zona Jungle ke ChunkRenderDistance agar render optimal & langsung muncul saat teleport
+        // Pastikan jungleRoot dan villageRoot selalu aktif
+        jungleRoot.SetActive(true);
+        villageRoot.SetActive(true);
+
+        // Daftarkan zona Jungle ke ChunkRenderDistance agar tidak di-cull secara salah
+#if UNITY_2023_1_OR_NEWER
         var crd = ChunkRenderDistance.Instance ?? Object.FindFirstObjectByType<ChunkRenderDistance>();
+#else
+        var crd = ChunkRenderDistance.Instance ?? Object.FindObjectOfType<ChunkRenderDistance>();
+#endif
         if (crd != null)
         {
             crd.RegisterZone("Hutan Rimba Belantara", jungleRoot, JungleCenter, 220f);
-            crd.UpdateAll(true);
+            EditorUtility.SetDirty(crd);
         }
     }
 
@@ -835,6 +847,8 @@ public static partial class SceneSetupTool
         var mr = go.AddComponent<MeshRenderer>();
         Color c = Color.Lerp(new Color(0.10f, 0.40f, 0.12f), new Color(0.25f, 0.55f, 0.18f), Random.value);
         mr.sharedMaterial = JungleTree.MakeMaterial(c, 0.1f);
+        var bush = go.AddComponent<JungleBush>();
+        bush.seed = seed;
 
         Random.state = old;
     }

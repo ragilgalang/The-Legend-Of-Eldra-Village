@@ -19,7 +19,7 @@ public static class JungleTreeFixTool
             return;
         }
 
-        var trees = Object.FindObjectsByType<JungleTree>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var trees = Object.FindObjectsOfType<JungleTree>(true);
         foreach (var t in trees)
         {
             Undo.RegisterFullObjectHierarchyUndo(t.gameObject, "Perbaiki Pohon Rimba");

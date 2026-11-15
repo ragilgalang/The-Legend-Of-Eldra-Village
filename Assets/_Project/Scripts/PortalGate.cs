@@ -59,8 +59,7 @@ public class PortalGate : MonoBehaviour
         if (!destination)
         {
             string arrivalName = portalLabel.Contains("Desa") ? "Arrival_Village" : "Arrival_Jungle";
-            var arr = GameObject.Find(arrivalName);
-            if (arr) destination = arr.transform;
+            destination = FindTransformIncludingInactive(arrivalName);
             if (destination)
                 Debug.LogWarning($"[PortalGate] '{portalLabel}': destination auto-linked ke '{arrivalName}'. " +
                                  "Set manual di Inspector untuk hasil stabil.");
@@ -68,6 +67,32 @@ public class PortalGate : MonoBehaviour
                 Debug.LogError($"[PortalGate] '{portalLabel}': destination NULL dan tidak ditemukan '{arrivalName}' di scene! " +
                                "Jalankan ulang Setup Prototype Scene.");
         }
+    }
+
+    public static Transform FindTransformIncludingInactive(string targetName)
+    {
+        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if (!scene.isLoaded) return null;
+        var roots = scene.GetRootGameObjects();
+        foreach (var root in roots)
+        {
+            if (root.name == targetName) return root.transform;
+            var found = FindInChildren(root.transform, targetName);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    static Transform FindInChildren(Transform parent, string targetName)
+    {
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            var child = parent.GetChild(i);
+            if (child.name == targetName) return child;
+            var res = FindInChildren(child, targetName);
+            if (res != null) return res;
+        }
+        return null;
     }
 
     void OnDestroy()
@@ -104,8 +129,23 @@ public class PortalGate : MonoBehaviour
 
         if (!destination)
         {
+            string arrivalName = portalLabel.Contains("Desa") ? "Arrival_Village" : "Arrival_Jungle";
+            destination = FindTransformIncludingInactive(arrivalName);
+        }
+
+        if (!destination)
+        {
             Debug.LogError($"[PortalGate] '{portalLabel}': destination NULL — teleport dibatalkan!");
             return;
+        }
+
+        // Pastikan hierarki tujuan dan semua parent/root aktif!
+        Transform cur = destination;
+        while (cur != null)
+        {
+            if (!cur.gameObject.activeSelf)
+                cur.gameObject.SetActive(true);
+            cur = cur.parent;
         }
 
         if (Time.time < s_nextAllowedTime)
@@ -137,7 +177,11 @@ public class PortalGate : MonoBehaviour
         Physics.SyncTransforms();
 
         // Segera perbarui ChunkRenderDistance seketika agar pohon jungle langsung tampil tanpa culling
+#if UNITY_2023_1_OR_NEWER
         var crd = ChunkRenderDistance.Instance ?? Object.FindFirstObjectByType<ChunkRenderDistance>();
+#else
+        var crd = ChunkRenderDistance.Instance ?? Object.FindObjectOfType<ChunkRenderDistance>();
+#endif
         if (crd != null) crd.UpdateAll(true);
 
         _flash = flashDuration;

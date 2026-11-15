@@ -234,6 +234,21 @@ public class JungleTree : MonoBehaviour
         if (mf != null && mf.sharedMesh != null) AttachCollision(mf.sharedMesh);
     }
 
+    // Mesh prosedural yang dibuat di Editor hilang saat masuk Play Mode (domain reload).
+    // Start() mendeteksi mesh kosong lalu rebuild otomatis dengan seed yang tersimpan.
+    void Start()
+    {
+        var trunk = transform.Find("Trunk");
+        MeshFilter mf = trunk != null ? trunk.GetComponent<MeshFilter>() : null;
+        if (mf == null || mf.sharedMesh == null)
+        {
+            int seed = builtSeed != 0
+                ? builtSeed
+                : Mathf.Abs(Mathf.RoundToInt(transform.position.x * 131f + transform.position.z * 71f)) + 1;
+            Build(seed);
+        }
+    }
+
     /// <summary>Salinan mesh dengan segitiga dua arah: padat dari luar maupun dalam (untuk MeshCollider).</summary>
     static Mesh MakeSolidShell(Mesh src)
     {
@@ -258,6 +273,16 @@ public class JungleTree : MonoBehaviour
     {
         if (_lumpy != null) return _lumpy;
         Mesh src = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
+        if (src == null)
+        {
+            var temp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            var mf = temp.GetComponent<MeshFilter>();
+            if (mf != null && mf.sharedMesh != null) src = mf.sharedMesh;
+            if (Application.isPlaying) Destroy(temp);
+            else DestroyImmediate(temp);
+        }
+        if (src == null) return null;
+
         var verts = src.vertices;
         for (int i = 0; i < verts.Length; i++)
         {
