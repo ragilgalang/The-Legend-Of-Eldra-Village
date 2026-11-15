@@ -234,20 +234,25 @@ public static partial class SceneSetupTool
         light.range = 16f;
         light.shadows = LightShadows.None;
 
-        // Papan nama (terbaca dari depan & belakang)
+        // Papan nama portal — satu label di sisi depan (arah datang pemain), satu di belakang
         float labelY = fy + h0 + R + 1.5f;
-        for (int side = 0; side < 2; side++)
+        // Side 0 = depan (Z+), menghadap ke pemain yang berdiri di Z negatif → Euler(0, 180, 0)
+        // Side 1 = belakang (Z-), menghadap ke pemain yang berdiri di Z positif → Euler(0, 0, 0)
+        var labelData = new (float z, float yaw)[] { (1.2f, 180f), (-1.2f, 0f) };
+        foreach (var (lz, lyaw) in labelData)
         {
             var lg = new GameObject("Label");
             lg.transform.SetParent(t, false);
-            lg.transform.localPosition = new Vector3(0f, labelY, side == 0 ? 0.7f : -0.7f);
-            lg.transform.localRotation = Quaternion.Euler(0f, side == 0 ? 180f : 0f, 0f);
+            lg.transform.localPosition = new Vector3(0f, labelY, lz);
+            lg.transform.localRotation = Quaternion.Euler(0f, lyaw, 0f);
             var tmp = lg.AddComponent<TextMeshPro>();
-            tmp.text = label;
-            tmp.fontSize = 6f;
-            tmp.fontStyle = FontStyles.Bold;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = new Color(0.7f, 1f, 0.8f);
+            tmp.text            = label;
+            tmp.fontSize        = 6f;
+            tmp.fontStyle       = FontStyles.Bold;
+            tmp.alignment       = TextAlignmentOptions.Center;
+            tmp.color           = new Color(0.75f, 1f, 0.85f);
+            tmp.outlineWidth    = 0.25f;
+            tmp.outlineColor    = new Color32(10, 60, 30, 220);
             tmp.rectTransform.sizeDelta = new Vector2(14f, 2f);
         }
 
