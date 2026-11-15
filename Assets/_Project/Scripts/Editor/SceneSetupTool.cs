@@ -95,6 +95,9 @@ public static partial class SceneSetupTool
         // 5. Bangun Desa Skala Penuh (Kawasan Pemukiman, Pasar, Pertanian, Pertambangan)
         SetupExpansiveVillage(slavicMat);
 
+        // 5b. Bangun Kuil Kebangkitan (Spawn Utama & Respawn) di Luar Gerbang Selatan Desa
+        SetupSpawnPoints(playerCtrl);
+
         // 6. Tempatkan Penduduk Desa (NPCs di lokasi aktivitas masing-masing)
         SetupNPCs();
 
@@ -448,36 +451,34 @@ public static partial class SceneSetupTool
         soSave.FindProperty("playerHealth").objectReferenceValue = playerHealth;
         soSave.ApplyModifiedProperties();
 
-        // Setup SpawnManager & Titik Spawn (Awal & Respawn)
+        // Setup SpawnManager
         var spawnMgr = managers.GetComponent<SpawnManager>();
         if (!spawnMgr) spawnMgr = managers.AddComponent<SpawnManager>();
         spawnMgr.pemain = playerCtrl != null ? playerCtrl.transform : null;
-        SetupSpawnPoints(spawnMgr);
     }
 
-    static void SetupSpawnPoints(SpawnManager manager)
+    static void SetupSpawnPoints(PlayerController playerCtrl)
     {
         var scene = EditorSceneManager.GetActiveScene();
         foreach (var root in scene.GetRootGameObjects())
         {
-            if (root != null && root.name == "SpawnPoints")
+            if (root != null && (root.name == "SpawnPoints" || root.name == "SpawnUtama" || root.name == "SpawnAwal" || root.name == "SpawnRespawn"))
             {
                 Object.DestroyImmediate(root);
             }
         }
 
-        var induk = new GameObject("SpawnPoints");
+        // Bangun Kuil Kebangkitan di luar gerbang selatan desa menghadap ke desa (arah 180°, jarak 40 m)
+        SpawnSetupTool.Buat(40f, 180f, true);
 
-        // Titik spawn awal di pelataran alun-alun depan Balai Desa (0, 0.1, -5)
-        Vector3 posAwal = new Vector3(0f, 0.1f, -5f);
-        // Titik respawn di sisi timur alun-alun
-        Vector3 posRespawn = new Vector3(6f, 0.1f, -5f);
-
-        var awal = SpawnSetupTool.BuatMarker("SpawnAwal", posAwal, new Color(0.2f, 0.85f, 0.55f), JenisSpawn.Awal, induk.transform);
-        var respawn = SpawnSetupTool.BuatMarker("SpawnRespawn", posRespawn, new Color(1f, 0.5f, 0.3f), JenisSpawn.Respawn, induk.transform);
-
-        manager.spawnAwal = awal;
-        manager.spawnRespawn = respawn;
+        var manager = Object.FindObjectOfType<SpawnManager>(true);
+        if (manager != null && manager.spawnAwal != null && playerCtrl != null)
+        {
+            var cc = playerCtrl.GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
+            playerCtrl.transform.SetPositionAndRotation(manager.spawnAwal.PosisiSpawn, manager.spawnAwal.RotasiSpawn);
+            if (cc != null) cc.enabled = true;
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────

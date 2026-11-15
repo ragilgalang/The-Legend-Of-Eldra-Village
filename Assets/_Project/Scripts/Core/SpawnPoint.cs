@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Eldara
 {
-    public enum JenisSpawn { Awal, Respawn }
+    public enum JenisSpawn { Awal, Respawn, Gabungan }
 
     /// <summary>
     /// Penanda titik spawn. Pasang di GameObject kosong, atur jenisnya,
@@ -18,12 +18,15 @@ namespace Eldara
 
         public float radius = 2f;
 
-        public Vector3 PosisiSpawn => transform.position + Vector3.up * 0.3f;
+        [Tooltip("Tinggi titik muncul pemain di atas posisi objek (lantai bangunan + sedikit ruang).")]
+        public float offsetSpawnY = 0.3f;
+
+        public Vector3 PosisiSpawn => transform.position + Vector3.up * offsetSpawnY;
         public Quaternion RotasiSpawn => Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
 
         void OnTriggerEnter(Collider other)
         {
-            if (!jadiCheckpoint || jenis != JenisSpawn.Respawn) return;
+            if (!jadiCheckpoint || jenis == JenisSpawn.Awal) return;
             if (!other.CompareTag("Player")) return;
             if (SpawnManager.Instance != null) SpawnManager.Instance.SetCheckpoint(this);
         }
@@ -33,10 +36,12 @@ namespace Eldara
         {
             Color warna = jenis == JenisSpawn.Awal
                 ? new Color(0.2f, 0.85f, 0.55f)
-                : new Color(1f, 0.5f, 0.3f);
+                : jenis == JenisSpawn.Gabungan
+                    ? new Color(1f, 0.8f, 0.3f)
+                    : new Color(1f, 0.5f, 0.3f);
 
             Gizmos.color = warna;
-            Vector3 p = transform.position;
+            Vector3 p = PosisiSpawn - Vector3.up * 0.3f;
 
             UnityEditor.Handles.color = warna;
             UnityEditor.Handles.DrawWireDisc(p + Vector3.up * 0.05f, Vector3.up, radius);
@@ -51,7 +56,9 @@ namespace Eldara
             Gizmos.DrawLine(p + Vector3.up * 0.1f + depan,
                 p + Vector3.up * 0.1f + depan * 0.75f - transform.right * 0.3f);
 
-            string label = jenis == JenisSpawn.Awal ? "SPAWN AWAL" : (jadiCheckpoint ? "CHECKPOINT" : "RESPAWN");
+            string label = jenis == JenisSpawn.Gabungan ? "SPAWN AWAL & RESPAWN"
+                : jenis == JenisSpawn.Awal ? "SPAWN AWAL"
+                : (jadiCheckpoint ? "CHECKPOINT" : "RESPAWN");
             UnityEditor.Handles.Label(p + Vector3.up * 3.6f, label);
         }
 #endif

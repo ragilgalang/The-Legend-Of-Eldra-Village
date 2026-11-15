@@ -262,7 +262,7 @@ public class ChunkRenderDistance : MonoBehaviour
 
     void FindPlayerTarget()
     {
-        var pc = FindFirstObjectByType<PlayerController>();
+        var pc = FindObjectOfType<PlayerController>();
         if (pc != null) playerTarget = pc.transform;
         else
         {
@@ -311,11 +311,7 @@ public class ChunkRenderDistance : MonoBehaviour
 #if UNITY_EDITOR
     public static void ApplyToEntireWorldMenu()
     {
-#if UNITY_2023_1_OR_NEWER
-        var manager = Object.FindFirstObjectByType<ChunkRenderDistance>();
-#else
         var manager = Object.FindObjectOfType<ChunkRenderDistance>();
-#endif
         if (manager == null)
         {
             var go = new GameObject("--- CHUNK RENDER DISTANCE ---");
