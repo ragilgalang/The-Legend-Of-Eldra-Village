@@ -13,11 +13,7 @@ namespace Eldara.EditorTools
 
         public static void Buat()
         {
-#if UNITY_2023_1_OR_NEWER
-            var manager = Object.FindFirstObjectByType<SpawnManager>();
-#else
-            var manager = Object.FindObjectOfType<SpawnManager>();
-#endif
+            var manager = Object.FindObjectOfType<SpawnManager>(true);
             if (manager == null)
             {
                 var go = new GameObject("SpawnManager");

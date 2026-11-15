@@ -127,11 +127,7 @@ public static partial class SceneSetupTool
         villageRoot.SetActive(true);
 
         // Daftarkan zona Jungle ke ChunkRenderDistance agar tidak di-cull secara salah
-#if UNITY_2023_1_OR_NEWER
-        var crd = ChunkRenderDistance.Instance ?? Object.FindFirstObjectByType<ChunkRenderDistance>();
-#else
-        var crd = ChunkRenderDistance.Instance ?? Object.FindObjectOfType<ChunkRenderDistance>();
-#endif
+        var crd = ChunkRenderDistance.Instance ?? Object.FindObjectOfType<ChunkRenderDistance>(true);
         if (crd != null)
         {
             crd.RegisterZone("Hutan Rimba Belantara", jungleRoot, JungleCenter, 220f);

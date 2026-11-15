@@ -297,7 +297,7 @@ public static partial class SceneSetupTool
         if (go_sun) sunLight = go_sun.GetComponent<Light>();
         if (!sunLight)
         {
-            foreach (var l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
+            foreach (var l in Object.FindObjectsOfType<Light>(true))
                 if (l.type == LightType.Directional) { sunLight = l; break; }
         }
         if (!sunLight)

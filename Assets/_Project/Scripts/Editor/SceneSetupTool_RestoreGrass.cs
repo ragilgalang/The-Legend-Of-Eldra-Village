@@ -130,11 +130,7 @@ public static partial class SceneSetupTool
         }
 
         // 5. Daftarkan dan sinkronkan ke ChunkRenderDistance
-#if UNITY_2023_1_OR_NEWER
-        var crd = ChunkRenderDistance.Instance ?? Object.FindFirstObjectByType<ChunkRenderDistance>();
-#else
-        var crd = ChunkRenderDistance.Instance ?? Object.FindObjectOfType<ChunkRenderDistance>();
-#endif
+        var crd = ChunkRenderDistance.Instance ?? Object.FindObjectOfType<ChunkRenderDistance>(true);
         if (crd != null)
         {
             crd.AutoDiscoverChunks();
