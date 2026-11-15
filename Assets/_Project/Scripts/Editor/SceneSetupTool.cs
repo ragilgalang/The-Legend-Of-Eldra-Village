@@ -353,32 +353,46 @@ public static partial class SceneSetupTool
         player = GameObject.FindWithTag("Player") ?? GameObject.Find("Player");
         if (!player)
         {
-            player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            player.name = "Player";
+            player = new GameObject("Player");
             player.tag = "Player";
-            player.transform.position = new Vector3(0, 1.05f, -5f);
-
-            var visor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            visor.name = "FaceIndicator";
-            visor.transform.SetParent(player.transform);
-            visor.transform.localPosition = new Vector3(0, 0.4f, 0.38f);
-            visor.transform.localScale = new Vector3(0.5f, 0.15f, 0.25f);
-            Object.DestroyImmediate(visor.GetComponent<Collider>());
-            ApplyColor(visor, Color.black);
-            ApplyColor(player, new Color(0.2f, 0.55f, 0.85f));
+            player.transform.position = new Vector3(0, 0.1f, -5f);
+        }
+        else
+        {
+            // Bersihkan mesh dan renderer kapsul lama jika ada
+            var mf = player.GetComponent<MeshFilter>();
+            if (mf) Object.DestroyImmediate(mf);
+            var mr = player.GetComponent<MeshRenderer>();
+            if (mr) Object.DestroyImmediate(mr);
+            var visor = player.transform.Find("FaceIndicator");
+            if (visor) Object.DestroyImmediate(visor.gameObject);
         }
 
         var oldCol = player.GetComponent<CapsuleCollider>();
         if (oldCol) Object.DestroyImmediate(oldCol);
 
+        // Pasang CharacterController yang proporsional dengan Ki Wira (tinggi 1.85m, radius 0.38m, pivot di kaki)
         var cc = player.GetComponent<CharacterController>();
         if (!cc) cc = player.AddComponent<CharacterController>();
-        cc.height = 2f; cc.radius = 0.5f; cc.center = Vector3.zero;
+        cc.height = 1.85f;
+        cc.radius = 0.38f;
+        cc.center = new Vector3(0f, 0.925f, 0f);
+        cc.stepOffset = 0.35f;
 
-        // Reset posisi dan rotasi player secara mutlak di pelataran alun-alun depan Balai Desa (menghadap Balai Desa)
+        // Bangun model karakter 3D Ki Wira secara prosedural
+        KiWiraBuilder.BuildOn(player);
+
+        // Pasang animasi prosedural KiWiraIdle (napas & ayunan langkah)
+        var idle = player.GetComponent<KiWiraIdle>();
+        if (!idle) idle = player.AddComponent<KiWiraIdle>();
+        idle.napas = true;
+        idle.putarOtomatis = false;
+        idle.jalanDiTempat = false;
+
+        // Reset posisi dan rotasi awal player
         bool ccActive = cc.enabled;
         cc.enabled = false;
-        player.transform.position = new Vector3(0f, 1.05f, 10.5f);
+        player.transform.position = new Vector3(0f, 0.1f, 10.5f);
         player.transform.rotation = Quaternion.Euler(0, 180f, 0);
         cc.enabled = ccActive;
 
@@ -416,9 +430,15 @@ public static partial class SceneSetupTool
         if (!rig) rig = cam.gameObject.AddComponent<CameraRig>();
         var so = new SerializedObject(rig);
         so.FindProperty("target").objectReferenceValue = player.transform;
+
+        // Daftarkan semua renderer model Ki Wira agar otomatis disembunyikan saat mode first-person
+        var renderers = player.GetComponentsInChildren<Renderer>(true);
         var rProp = so.FindProperty("playerRenderers");
-        rProp.arraySize = 1;
-        rProp.GetArrayElementAtIndex(0).objectReferenceValue = player.GetComponent<Renderer>();
+        rProp.arraySize = renderers.Length;
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            rProp.GetArrayElementAtIndex(i).objectReferenceValue = renderers[i];
+        }
         so.ApplyModifiedProperties();
     }
 

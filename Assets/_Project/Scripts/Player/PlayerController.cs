@@ -17,9 +17,9 @@ public class PlayerController : MonoBehaviour
         if (cc == null)
         {
             cc = gameObject.AddComponent<CharacterController>();
-            cc.height = 2f;
-            cc.radius = 0.5f;
-            cc.center = Vector3.zero;
+            cc.height = 1.85f;
+            cc.radius = 0.38f;
+            cc.center = new Vector3(0f, 0.925f, 0f);
         }
     }
 
@@ -29,7 +29,7 @@ public class PlayerController : MonoBehaviour
         if (Mathf.Abs(transform.position.x) < 1.5f && Mathf.Abs(transform.position.z) < 1.5f)
         {
             if (cc != null) cc.enabled = false;
-            transform.position = new Vector3(0f, 1.05f, -6f);
+            transform.position = new Vector3(0f, 0.1f, -6f);
             transform.rotation = Quaternion.identity;
             if (cc != null) cc.enabled = true;
         }

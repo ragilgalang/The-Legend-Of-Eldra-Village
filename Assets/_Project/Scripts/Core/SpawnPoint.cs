@@ -18,8 +18,8 @@ namespace Eldara
 
         public float radius = 2f;
 
-        [Tooltip("Tinggi titik muncul pemain di atas posisi objek (lantai bangunan + ruang CharacterController).")]
-        public float offsetSpawnY = 1.55f;
+        [Tooltip("Tinggi titik muncul pemain di atas posisi objek (telapak kaki di atas lantai + ruang aman).")]
+        public float offsetSpawnY = 0.55f;
 
         [Tooltip("Offset maju/mundur titik muncul pemain (ke arah tangga/depan).")]
         public float offsetSpawnZ = 0.5f;

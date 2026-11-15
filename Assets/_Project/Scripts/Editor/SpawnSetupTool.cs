@@ -58,7 +58,7 @@ namespace Eldara.EditorTools
                 var spLama = utamaGo.GetComponent<SpawnPoint>();
                 if (spLama != null)
                 {
-                    spLama.offsetSpawnY = TinggiLantai + 1.05f;
+                    spLama.offsetSpawnY = TinggiLantai + 0.05f;
                     spLama.offsetSpawnZ = 0.5f;
                     EditorUtility.SetDirty(spLama);
                 }
@@ -225,7 +225,7 @@ namespace Eldara.EditorTools
             var sp = root.AddComponent<SpawnPoint>();
             sp.jenis = jenis;
             sp.radius = 3f;
-            sp.offsetSpawnY = TinggiLantai + 1.05f; // 0.5f + 1.05f = 1.55f (ketinggian tengah CharacterController)
+            sp.offsetSpawnY = TinggiLantai + 0.05f; // 0.5f + 0.05f = 0.55f (telapak kaki tepat di atas lantai kuil)
             sp.offsetSpawnZ = 0.5f;                 // 0.5m maju ke arah tangga/depan
 
             var trigger = root.AddComponent<BoxCollider>();
