@@ -2500,11 +2500,6 @@ public static partial class SceneSetupTool
         // Jago Gerbang Selatan (di pelataran gerbang benteng selatan)
         SpawnVillageRooster(new Vector3(4f, 0f, -44f), -120f, "Rooster_Jago_Gerbang", Eldara.RoosterClip.Crow);
 
-        // 0d. Hewan ternak di kawasan pertanian dan buaya di rawa selatan
-        AnimalAssetSetup.SpawnPig(new Vector3(-18f, 0f, 12f), faunaRoot.transform, "Babi Ladang");
-        AnimalAssetSetup.SpawnBuffalo(new Vector3(-27f, 0f, 13f), faunaRoot.transform, "Kerbau Penarik Bajak");
-        AnimalAssetSetup.SpawnCrocodile(new Vector3(15f, 0f, -190f), faunaRoot.transform, "Buaya Rawa");
-
         // 1. Kawanan Serigala Rimba (Di hutan lebat luar pagar desa)
         // Alpha Wolf: Hutan Utara dekat Altar Kuno
         AnimalAssetSetup.SpawnWolf(new Vector3(2f, 0f, 72f), Quaternion.Euler(0, 180f, 0), faunaRoot.transform, "Serigala Rimba Alpha");

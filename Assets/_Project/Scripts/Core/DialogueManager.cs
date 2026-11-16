@@ -26,14 +26,6 @@ public class DialogueManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
-        if (panel)
-        {
-            foreach (var text in panel.GetComponentsInChildren<TMP_Text>(true))
-            {
-                if (!speakerText && text.name == "SpeakerName") speakerText = text;
-                else if (!bodyText && text.name == "DialogueText") bodyText = text;
-            }
-        }
         if (panel) panel.SetActive(false);
         HideChoices();
     }

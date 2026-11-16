@@ -14,7 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DialogueData
   lines:
   - speaker: Dukun
-    text: Altar Segel Kuno di utara berdenyut dengan energi gelap. Aktifkan saat malam
-      tiba untuk memanggil Raja Goblin. Setelah ia kalah, bawa tiga pecahan yang
-      dijatuhkannya kembali ke altar dan tutup segelnya.
+    text: Altar segel itu... kunci untuk menghentikan kutukan malam. Jangan sentuh
+      sebelum saatnya.
   choices: []
