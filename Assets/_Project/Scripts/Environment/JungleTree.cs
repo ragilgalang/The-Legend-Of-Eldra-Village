@@ -38,11 +38,6 @@ public class JungleTree : MonoBehaviour
     static Material _bark, _leaf;
     static readonly Dictionary<int, Material> _leafCache = new Dictionary<int, Material>();
 
-    void Awake()
-    {
-        FixCanopyColor();
-    }
-
     public void FixCanopyColor()
     {
         var canopy = transform.Find("Canopy");
@@ -248,6 +243,8 @@ public class JungleTree : MonoBehaviour
     // Saat game mulai, collider itu diganti otomatis dengan collider padat sesuai bentuk batang.
     void Awake()
     {
+        FixCanopyColor();
+
         var trunk = transform.Find("Trunk");
         if (trunk == null || transform.Find("TrunkCollision") != null) return;
 
