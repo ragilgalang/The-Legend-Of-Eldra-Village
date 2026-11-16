@@ -20,7 +20,13 @@ namespace Eldara.EditorTools
 
         static Material batu, atapGelap, glowCoral;
 
-        [MenuItem("Eldara/Buat Bangunan Spawn")]
+        [MenuItem("Eldara/Bangun Kuil Spawn (Kuil Kebangkitan)", false, 3)]
+        public static void BangunKuilLangsung()
+        {
+            Buat(40f, 180f, true);
+        }
+
+        [MenuItem("Eldara/Buat Bangunan Spawn (Atur Jarak)")]
         public static void BukaJendela()
         {
             EditorWindow.GetWindow<SpawnSetupWindow>(true, "Bangunan Spawn");
@@ -63,6 +69,18 @@ namespace Eldara.EditorTools
                     EditorUtility.SetDirty(spLama);
                 }
 
+                // Pindahkan player ke kuil spawn agar di scene editor pun posisinya sudah tepat di bangunan spawn
+                var pGo = GameObject.FindWithTag("Player");
+                if (pGo != null && spLama != null)
+                {
+                    Undo.RecordObject(pGo.transform, "Pindahkan Player ke Spawn");
+                    var cc = pGo.GetComponent<CharacterController>();
+                    if (cc != null) cc.enabled = false;
+                    pGo.transform.SetPositionAndRotation(spLama.PosisiSpawn, spLama.RotasiSpawn);
+                    Physics.SyncTransforms();
+                    if (cc != null) cc.enabled = true;
+                }
+
                 EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
                 Debug.Log($"[Eldara] Kuil spawn dipindah ke {jarakDariDesa:0} m dari tepi desa.");
                 return;
@@ -90,6 +108,18 @@ namespace Eldara.EditorTools
             Undo.RecordObject(manager, "Atur SpawnManager");
             manager.spawnAwal = utama;
             manager.spawnRespawn = utama;
+
+            // Pindahkan player ke dalam kuil spawn
+            var playerGo = GameObject.FindWithTag("Player");
+            if (playerGo != null && utama != null)
+            {
+                Undo.RecordObject(playerGo.transform, "Pindahkan Player ke Spawn");
+                var cc = playerGo.GetComponent<CharacterController>();
+                if (cc != null) cc.enabled = false;
+                playerGo.transform.SetPositionAndRotation(utama.PosisiSpawn, utama.RotasiSpawn);
+                Physics.SyncTransforms();
+                if (cc != null) cc.enabled = true;
+            }
 
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             Selection.activeGameObject = utama.gameObject;

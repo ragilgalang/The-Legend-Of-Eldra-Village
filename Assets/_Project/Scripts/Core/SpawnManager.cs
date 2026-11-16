@@ -65,6 +65,14 @@ namespace Eldara
         public void SpawnAwalPemain()
         {
             if (!SiapkanPemain()) return;
+
+            if (spawnAwal == null)
+            {
+                var utama = GameObject.Find("SpawnUtama");
+                if (utama != null) spawnAwal = utama.GetComponent<SpawnPoint>();
+                if (spawnAwal == null) spawnAwal = FindAnyObjectByType<SpawnPoint>();
+            }
+
             if (spawnAwal == null) { Debug.LogWarning("[SpawnManager] Spawn awal belum diatur."); return; }
 
             Pindahkan(spawnAwal);
