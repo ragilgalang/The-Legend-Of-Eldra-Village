@@ -24,7 +24,7 @@ public static partial class ProceduralHouseBuilder
 {
     public enum HouseStyle
     {
-        Cabin, Modern, Panggung, AFrame, Joglo, Danau, Barn, Pohon, Gadang, Minka, Chalet
+        Cabin, Modern, Panggung, AFrame, Joglo, Danau, Barn, Pohon, Gadang, Minka, Chalet, BalaiDesa
     }
 
     private const string FolderHouses = "Assets/_Project/Art/ProceduralHouses";
@@ -841,6 +841,7 @@ public static partial class ProceduralHouseBuilder
             case HouseStyle.Gadang:   BuildGadang(root); break;
             case HouseStyle.Minka:    BuildMinka(root); break;
             case HouseStyle.Chalet:   BuildChalet(root); break;
+            case HouseStyle.BalaiDesa: BuildBalaiDesa(root); break;
         }
         return root;
     }
@@ -1022,46 +1023,76 @@ public static partial class ProceduralHouseBuilder
     {
         float angleZ = Mathf.Atan2(6.2f, 3.2f) * Mathf.Rad2Deg;
 
+        // Atap miring segitiga
         Box(root, 6.98f, 0.2f, 7.6f, matRoof, new Vector3(-1.6f, 3.1f, 0), new Vector3(0, 0, angleZ));
-        Box(root, 6.98f, 0.2f, 7.6f, matRoof, new Vector3(1.6f, 3.1f, 0), new Vector3(0, 0, -angleZ));
-        Box(root, 0.3f, 0.3f, 7.7f, matDark, new Vector3(0, 6.25f, 0), default, false);
+        Box(root, 6.98f, 0.2f, 7.6f, matRoof, new Vector3( 1.6f, 3.1f, 0), new Vector3(0, 0, -angleZ));
+        Box(root, 0.35f, 0.35f, 7.7f, matDark, new Vector3(0, 6.25f, 0), default, false);
 
-        Box(root, 6.4f, 0.3f, 7.4f, matDeck, new Vector3(0, 0, 0));          // lantai (atas 0.15)
-        Box(root, 6.4f, 0.3f, 3.6f, matDeck, new Vector3(0, 0, 5.5f));       // dek depan
+        // Lantai interior & dek teras depan
+        Box(root, 6.4f, 0.3f, 7.4f, matDeck, new Vector3(0, 0, 0));          // lantai dalam (y atas = 0.15)
+        Box(root, 6.4f, 0.3f, 3.6f, matDeck, new Vector3(0, 0, 5.5f));       // dek depan (z = 3.7 s/d 7.3)
 
-        // Fasad depan: kaca segitiga (tanpa collider) + dinding kayu bertingkat dengan celah pintu 1.8 m x 2.75 m
-        GableTriangle(root, 6.0f, 5.8f, 0.12f, matGlass, new Vector3(0, 0.15f, 3.7f), 0f, false);
+        // Pagar samping dek depan (kiri & kanan terpasang kokoh dengan tiang, bagian depan terbuka untuk jalan)
+        // Sisi Kiri
+        Cylinder(root, 0.08f, 1.1f, matDark, new Vector3(-3.1f, 0.65f, 3.8f));
+        Cylinder(root, 0.08f, 1.1f, matDark, new Vector3(-3.1f, 0.65f, 5.5f));
+        Cylinder(root, 0.08f, 1.1f, matDark, new Vector3(-3.1f, 0.65f, 7.2f));
+        Box(root, 0.1f, 0.1f, 3.5f, matDark, new Vector3(-3.1f, 1.1f, 5.5f), default, false);
+
+        // Sisi Kanan
+        Cylinder(root, 0.08f, 1.1f, matDark, new Vector3(3.1f, 0.65f, 3.8f));
+        Cylinder(root, 0.08f, 1.1f, matDark, new Vector3(3.1f, 0.65f, 5.5f));
+        Cylinder(root, 0.08f, 1.1f, matDark, new Vector3(3.1f, 0.65f, 7.2f));
+        Box(root, 0.1f, 0.1f, 3.5f, matDark, new Vector3(3.1f, 1.1f, 5.5f), default, false);
+
+        // Lentera sudut teras terpasang di atas tiang kayu (tidak melayang!)
+        Lantern(root, new Vector3(-3.1f, 1.35f, 7.2f));
+        Lantern(root, new Vector3( 3.1f, 1.35f, 7.2f));
+
+        // ── Fasad Depan (Bebas Glitch, Pintu Terbuka Lebar) ──
         float zf = 3.7f;
-        foreach (float s in new[] { -1f, 1f })
-        {
-            // tier A, B, C, D mengikuti sisi segitiga; semuanya berhenti di tepi pintu (|x| = 0.9)
-            WallPiece(root, true, zf, s < 0 ? -2.75f : 0.9f, s < 0 ? -0.9f : 2.75f, 0.15f, 0.65f, 0.12f, matSlat);
-            WallPiece(root, true, zf, s < 0 ? -2.45f : 0.9f, s < 0 ? -0.9f : 2.45f, 0.65f, 1.2f, 0.12f, matSlat);
-            WallPiece(root, true, zf, s < 0 ? -1.84f : 0.9f, s < 0 ? -0.9f : 1.84f, 1.2f, 2.4f, 0.12f, matSlat);
-            WallPiece(root, true, zf, s < 0 ? -1.42f : 0.9f, s < 0 ? -0.9f : 1.42f, 2.4f, 3.2f, 0.12f, matSlat);
-        }
-        WallPiece(root, true, zf, -0.9f, 0.9f, 2.9f, 3.2f, 0.12f, matSlat);   // ambang atas pintu
-        Box(root, 0.1f, 2.8f, 0.16f, matDark, new Vector3(-0.95f, 1.55f, zf), default, false);
-        Box(root, 0.1f, 2.8f, 0.16f, matDark, new Vector3(0.95f, 1.55f, zf), default, false);
-        foreach (float y in new[] { 3.6f, 4.6f })
-            Box(root, 6f * (1f - y / 5.8f), 0.1f, 0.1f, matDark, new Vector3(0, 0.15f + y, 3.72f), default, false);
+
+        // Kusen pintu kayu elegan (lebar bukaan 1.9m, tinggi 2.85m -> leluasa dimasuki)
+        Box(root, 0.15f, 2.85f, 0.22f, matDark, new Vector3(-0.95f, 1.55f, zf));
+        Box(root, 0.15f, 2.85f, 0.22f, matDark, new Vector3( 0.95f, 1.55f, zf));
+        Box(root, 2.05f, 0.15f, 0.22f, matDark, new Vector3(0f, 2.95f, zf));
+
+        // Dinding kaca & kisi samping kiri pintu (x = -2.8 s/d -0.95)
+        Box(root, 1.7f, 2.6f, 0.06f, matGlass, new Vector3(-1.85f, 1.45f, zf + 0.02f), default, false);
+        WallPiece(root, true, zf, -2.75f, -0.95f, 0.15f, 0.55f, 0.14f, matSlat);
+        Box(root, 0.08f, 2.4f, 0.14f, matDark, new Vector3(-1.85f, 1.45f, zf), default, false);
+        Box(root, 1.7f, 0.08f, 0.14f, matDark, new Vector3(-1.85f, 1.45f, zf), default, false);
+
+        // Dinding kaca & kisi samping kanan pintu (x = 0.95 s/d 2.8)
+        Box(root, 1.7f, 2.6f, 0.06f, matGlass, new Vector3(1.85f, 1.45f, zf + 0.02f), default, false);
+        WallPiece(root, true, zf, 0.95f, 2.75f, 0.15f, 0.55f, 0.14f, matSlat);
+        Box(root, 0.08f, 2.4f, 0.14f, matDark, new Vector3(1.85f, 1.45f, zf), default, false);
+        Box(root, 1.7f, 0.08f, 0.14f, matDark, new Vector3(1.85f, 1.45f, zf), default, false);
+
+        // Dinding penutup segitiga atas (y = 2.95 s/d 6.1)
+        GableTriangle(root, 3.8f, 3.0f, 0.16f, matSlat, new Vector3(0, 3.05f, zf), 0f);
+
+        // Jendela segitiga loteng atas dekoratif
+        Box(root, 0.9f, 0.9f, 0.06f, matGlass, new Vector3(0, 4.35f, zf + 0.02f), default, false);
+        Box(root, 0.96f, 0.08f, 0.10f, matDark, new Vector3(0, 4.35f, zf + 0.04f), default, false);
+        Box(root, 0.08f, 0.96f, 0.10f, matDark, new Vector3(0, 4.35f, zf + 0.04f), default, false);
+
+        // Lentera hangat di atas pintu depan
+        Lantern(root, new Vector3(0f, 3.3f, zf + 0.35f));
 
         // Dinding belakang kayu (solid, ber-collider)
-        GableTriangle(root, 6.0f, 5.8f, 0.15f, matSlat, new Vector3(0, 0.15f, -3.7f), 180f);
+        GableTriangle(root, 6.0f, 5.8f, 0.18f, matSlat, new Vector3(0, 0.15f, -3.7f), 180f);
 
-        Box(root, 6.4f, 0.08f, 0.08f, matDark, new Vector3(0, 1.0f, 7.2f), default, false);
-        Cylinder(root, 0.12f, 3.2f, matDark, new Vector3(1.8f, 4.2f, -1.0f));
+        // Cerobong asap
+        Cylinder(root, 0.14f, 3.2f, matDark, new Vector3(1.8f, 4.2f, -1.0f));
 
-        // Api unggun
+        // Api unggun halaman depan
         Cylinder(root, 0.85f, 0.25f, matConcrete, new Vector3(0, -0.05f, 9.5f));
         Cone(root, 0.35f, 0.8f, matOrange, new Vector3(0, 0.35f, 9.5f));
         Box(root, 0.7f, 0.45f, 0.6f, matWood, new Vector3(-1.7f, 0.15f, 9.5f));
-        Box(root, 0.7f, 0.45f, 0.6f, matWood, new Vector3(1.7f, 0.15f, 9.5f));
+        Box(root, 0.7f, 0.45f, 0.6f, matWood, new Vector3( 1.7f, 0.15f, 9.5f));
 
-        Lantern(root, new Vector3(-2.9f, 1.6f, 7.2f));
-        Lantern(root, new Vector3(2.9f, 1.6f, 7.2f));
-
-        // Ruang sempit: dipan, dapur, tikar
+        // Ruang interior yang nyaman dan rapi
         FurnishInterior(root, 0f, 0f, 2.0f, 3.3f, 0.15f, 0f, FBed | FKitchen | FMat, 2.9f);
         Dingklik(root, new Vector3(-1.0f, 0.15f, 1.7f));
         Dingklik(root, new Vector3(-1.5f, 0.15f, 2.2f));
@@ -1415,14 +1446,10 @@ public static partial class ProceduralHouseBuilder
         HipRoof(root, 6.3f, 4.9f, 2.4f, 3.5f, 5.9f, matRoofJapanese);
         Box(root, 4.8f, 0.22f, 0.3f, matDark, new Vector3(0, 5.95f, 0), default, false);
 
-        // Taman zen, torii, toro, kolam koi, sakura
+        // Taman zen, toro lentera batu, kolam koi, sakura
         Box(root, 13.0f, 0.05f, 9.0f, matConcrete, new Vector3(0, -0.2f, 8.5f), default, false);
         Sphere(root, 0.5f, matConcrete, new Vector3(-3f, -0.1f, 8f), new Vector3(1f, 0.6f, 1f));
         Sphere(root, 0.5f, matConcrete, new Vector3(2f, -0.1f, 11f), new Vector3(1f, 0.6f, 1f));
-        Cylinder(root, 0.18f, 3.6f, matRed, new Vector3(-2.6f, 1.5f, 14.0f));
-        Cylinder(root, 0.18f, 3.6f, matRed, new Vector3(2.6f, 1.5f, 14.0f));
-        Box(root, 7.0f, 0.25f, 0.3f, matRed, new Vector3(0, 3.4f, 14.0f), default, false);
-        Box(root, 6.0f, 0.20f, 0.25f, matRed, new Vector3(0, 2.8f, 14.0f), default, false);
         Cylinder(root, 0.25f, 0.5f, matConcrete, new Vector3(-4.0f, 0.1f, 6.5f));
         Cylinder(root, 0.12f, 0.9f, matConcrete, new Vector3(-4.0f, 0.6f, 6.5f));
         Lantern(root, new Vector3(-4.0f, 1.2f, 6.5f));
@@ -1548,6 +1575,120 @@ public static partial class ProceduralHouseBuilder
 
         // Furnitur tradisional (perapian berfungsi sebagai dapur)
         FurnishInterior(root, 0f, 0f, 3.9f, 2.9f, fy, 0f, FBed | FWardrobe | FDining | FChest | FMat, 3.4f);
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    //  12. BALAI DESA AGUNG ELDARA (Grand Civic Council Hall)
+    //  Gedung balairung adat megah pengganti model FBX administratif lama.
+    //  100% solid, anti-glitch, pintu lapang 2.8m, tangga landai, interior lengkap.
+    // ═════════════════════════════════════════════════════════════════════
+    private static void BuildBalaiDesa(GameObject root)
+    {
+        const float fy = 0.35f;
+
+        // 1. PONDASI BATU AGUNG & UNDAKAN TANGGA DEPAN
+        Box(root, 15.2f, 0.40f, 13.2f, matConcrete, new Vector3(0, 0.15f, 0));
+        Box(root, 14.6f, 0.12f, 12.6f, matDeck, new Vector3(0, 0.36f, 0));
+
+        // Tangga batu depan bertingkat 3 (landai, undakan hanya 0.11m -> sangat mulus didaki)
+        Box(root, 6.4f, 0.11f, 1.2f, matConcrete, new Vector3(0, 0.055f, 7.2f));
+        Box(root, 5.6f, 0.11f, 1.0f, matConcrete, new Vector3(0, 0.165f, 6.6f));
+        Box(root, 4.8f, 0.11f, 0.8f, matConcrete, new Vector3(0, 0.275f, 6.1f));
+
+        // Pipi tangga batu di sisi kiri dan kanan
+        Box(root, 0.45f, 0.55f, 1.8f, matDark, new Vector3(-3.4f, 0.25f, 6.7f));
+        Box(root, 0.45f, 0.55f, 1.8f, matDark, new Vector3( 3.4f, 0.25f, 6.7f));
+        Cone(root, 0.35f, 0.4f, matGold, new Vector3(-3.4f, 0.65f, 7.3f), default, 4);
+        Cone(root, 0.35f, 0.4f, matGold, new Vector3( 3.4f, 0.65f, 7.3f), default, 4);
+
+        // 2. SERAMBI KEHORMATAN (FRONT VERANDA / PORTICO)
+        float[] pillarXs = new float[] { -6.2f, -3.8f, -1.6f, 1.6f, 3.8f, 6.2f };
+        foreach (float px in pillarXs)
+        {
+            Box(root, 0.55f, 0.25f, 0.55f, matConcrete, new Vector3(px, 0.45f, 5.6f));
+            Cylinder(root, 0.18f, 3.6f, matLogs[1], new Vector3(px, 2.3f, 5.6f));
+            Cylinder(root, 0.21f, 0.12f, matGold, new Vector3(px, 3.9f, 5.6f), default, false);
+        }
+
+        Lantern(root, new Vector3(-3.8f, 3.2f, 5.85f));
+        Lantern(root, new Vector3(-1.6f, 3.2f, 5.85f));
+        Lantern(root, new Vector3( 1.6f, 3.2f, 5.85f));
+        Lantern(root, new Vector3( 3.8f, 3.2f, 5.85f));
+
+        Box(root, 14.8f, 0.30f, 0.40f, matDark, new Vector3(0, 4.15f, 5.6f));
+        Box(root, 15.2f, 0.15f, 2.8f, matRoof, new Vector3(0, 4.35f, 5.0f), new Vector3(10f, 0, 0));
+
+        // 3. DINDING BALAIRUNG & PINTU MASUK AGUNG
+        float zFront = 3.6f;
+        Box(root, 0.18f, 3.3f, 0.35f, matDark, new Vector3(-1.45f, 1.95f, zFront));
+        Box(root, 0.18f, 3.3f, 0.35f, matDark, new Vector3( 1.45f, 1.95f, zFront));
+        Box(root, 3.20f, 0.22f, 0.35f, matDark, new Vector3(0f, 3.55f, zFront));
+        Box(root, 3.10f, 0.08f, 0.38f, matGold, new Vector3(0f, 3.65f, zFront), default, false);
+
+        Box(root, 1.25f, 3.1f, 0.08f, matDark, new Vector3(-1.35f, 1.85f, zFront - 0.7f), new Vector3(0, 75f, 0), false);
+        Box(root, 1.25f, 3.1f, 0.08f, matDark, new Vector3( 1.35f, 1.85f, zFront - 0.7f), new Vector3(0, -75f, 0), false);
+
+        var frontOpenings = new[] { Door(0f, 2.8f, fy, 3.3f), Win(-4.0f, 1.8f, fy, 1.2f, 1.4f), Win(4.0f, 1.8f, fy, 1.2f, 1.4f) };
+        var backOpenings  = new[] { Win(-4.0f, 1.8f, fy, 1.2f, 1.4f), Win(4.0f, 1.8f, fy, 1.2f, 1.4f) };
+        var sideOpeningsL = new[] { Win(-2.5f, 1.8f, fy, 1.2f, 1.4f), Win(2.0f, 1.8f, fy, 1.2f, 1.4f) };
+        var sideOpeningsR = new[] { Win(-2.5f, 1.8f, fy, 1.2f, 1.4f), Win(2.0f, 1.8f, fy, 1.2f, 1.4f) };
+
+        LogWall(root, true,  zFront, -6.5f, 6.5f, fy, 12, 0.16f, frontOpenings);
+        LogWall(root, true, -5.6f,   -6.5f, 6.5f, fy, 12, 0.16f, backOpenings);
+        LogWall(root, false, -6.5f,  -5.6f, zFront, fy, 12, 0.16f, sideOpeningsL);
+        LogWall(root, false,  6.5f,  -5.6f, zFront, fy, 12, 0.16f, sideOpeningsR);
+
+        // 4. INTERIOR BALAIRUNG AGUNG (GREAT COUNCIL HALL)
+        Box(root, 2.6f, 0.02f, 8.8f, matRed, new Vector3(0, 0.44f, -1.0f), default, false);
+        Box(root, 0.1f, 0.03f, 8.8f, matGold, new Vector3(-1.32f, 0.44f, -1.0f), default, false);
+        Box(root, 0.1f, 0.03f, 8.8f, matGold, new Vector3( 1.32f, 0.44f, -1.0f), default, false);
+
+        // Meja musyawarah panjang di tengah
+        Box(root, 1.6f, 0.82f, 4.8f, matWood, new Vector3(0, 0.85f, -0.6f));
+        for (int i = 0; i < 4; i++)
+        {
+            float cz = -2.4f + i * 1.2f;
+            Box(root, 0.55f, 0.50f, 0.55f, matWood, new Vector3(-1.35f, 0.65f, cz));
+            Box(root, 0.08f, 0.65f, 0.55f, matDark, new Vector3(-1.60f, 1.15f, cz), default, false);
+            Box(root, 0.55f, 0.50f, 0.55f, matWood, new Vector3( 1.35f, 0.65f, cz));
+            Box(root, 0.08f, 0.65f, 0.55f, matDark, new Vector3( 1.60f, 1.15f, cz), default, false);
+        }
+
+        // Panggung kehormatan & Tahta Kepala Desa
+        Box(root, 3.8f, 0.22f, 2.2f, matWood, new Vector3(0, 0.54f, -4.2f));
+        Box(root, 1.1f, 0.60f, 0.9f, matDark, new Vector3(0, 0.88f, -4.4f));
+        Box(root, 1.1f, 1.10f, 0.12f, matDark, new Vector3(0, 1.65f, -4.8f), default, false);
+        Box(root, 1.15f, 0.10f, 0.16f, matGold, new Vector3(0, 2.22f, -4.8f), default, false);
+        Box(root, 2.8f, 2.2f, 0.04f, matBatik, new Vector3(0, 2.4f, -5.5f), default, false);
+        Box(root, 0.12f, 2.2f, 0.06f, matGold, new Vector3(-1.42f, 2.4f, -5.5f), default, false);
+        Box(root, 0.12f, 2.2f, 0.06f, matGold, new Vector3( 1.42f, 2.4f, -5.5f), default, false);
+
+        // Perapian batu besar di dinding barat
+        Box(root, 1.4f, 4.6f, 2.6f, matConcrete, new Vector3(-6.6f, 2.4f, -1.0f));
+        Box(root, 0.8f, 0.8f, 1.4f, matDark, new Vector3(-6.2f, 0.8f, -1.0f), default, false);
+        Box(root, 0.5f, 0.2f, 0.8f, matOrange, new Vector3(-6.1f, 0.55f, -1.0f), default, false);
+        Lantern(root, new Vector3(-5.7f, 1.5f, -1.0f));
+
+        // Lentera gantung aula
+        Lantern(root, new Vector3(0, 3.8f,  1.5f));
+        Lantern(root, new Vector3(0, 3.8f, -1.2f));
+        Lantern(root, new Vector3(0, 3.8f, -3.8f));
+
+        // 5. ATAP AGUNG DUA TINGKAT
+        float roofBaseY = fy + 3.84f;
+        HipRoof(root, 7.8f, 6.2f, 3.8f, roofBaseY, roofBaseY + 2.2f, matRoof);
+        Box(root, 15.8f, 0.25f, 0.35f, matDark, new Vector3(0, roofBaseY + 0.1f, -1.0f), default, false);
+
+        float crownBaseY = roofBaseY + 1.8f;
+        Box(root, 5.2f, 0.9f, 4.2f, matDark, new Vector3(0, crownBaseY + 0.45f, -1.0f));
+        Box(root, 4.4f, 0.45f, 0.08f, matGold, new Vector3(0, crownBaseY + 0.45f, 1.12f), default, false);
+        Box(root, 4.4f, 0.45f, 0.08f, matGold, new Vector3(0, crownBaseY + 0.45f, -3.12f), default, false);
+
+        HipRoof(root, 3.4f, 2.8f, 1.6f, crownBaseY + 0.9f, crownBaseY + 2.4f, matRoof);
+        Box(root, 2.2f, 0.20f, 0.30f, matDark, new Vector3(0, crownBaseY + 2.42f, -1.0f), default, false);
+        Cone(root, 0.35f, 0.70f, matGold, new Vector3(-1.1f, crownBaseY + 2.8f, -1.0f), default, 4);
+        Cone(root, 0.35f, 0.70f, matGold, new Vector3( 1.1f, crownBaseY + 2.8f, -1.0f), default, 4);
+        Cone(root, 0.40f, 0.90f, matGold, new Vector3( 0f,   crownBaseY + 2.9f, -1.0f), default, 4);
     }
 }
 #endif

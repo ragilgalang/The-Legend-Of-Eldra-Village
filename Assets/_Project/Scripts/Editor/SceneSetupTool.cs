@@ -612,31 +612,12 @@ public static partial class SceneSetupTool
         // ── DISTRIK 1: UTARA — BALAI DESA & PUSAT ADAT PEMERINTAHAN ─────────
         // Menghadap ke Selatan ke arah Promenade Civic & Alun-Alun
 
-        // 1. Balai Desa Eldara (Megah di ujung North Avenue, menghadap Selatan lurus ke Alun-Alun)
-        var hall = InstantiateArtModel("EA03_Town_Building_Administrative _01a",
+        // 1. Balai Desa Eldara (Balairung Agung Megah di ujung North Avenue, menghadap Selatan lurus ke Alun-Alun)
+        var hall = ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.BalaiDesa,
             new Vector3(0f, 0f, 38f), Quaternion.Euler(0, 180f, 0),
-            new Vector3(1.15f, 1.15f, 1.15f), village.transform, slavicMat);
+            village.transform, "Bld_TownHall");
         if (hall) {
-            hall.name = "Bld_TownHall";
-            AddPorchLantern(hall.transform, new Vector3(0, 3.2f, -4f), range: 12f);
-
-            // ── Ramp tangga TownHall ──────────────────────────────────────────
-            // Skala bangunan 1.15×, tangga eksternal ada di sisi kanan (timur) bangunan.
-            // Dimensi tangga asli model: lebar ~1.8m, naik ~2.5m dalam horizontal ~2.5m → pitch ~45°.
-            // Dua ramp: (1) ramp lantai ke lantai-2 sisi kanan, (2) ambang pintu utama (ground floor).
-
-            // Ramp sisi kanan (tangga eksternal ke lantai 2)
-            // localPos Y = ½ dari ketinggian ramp agar pivot di tengah
-            AddStairRamp(hall.transform,
-                new Vector3( 5.5f, 1.3f, 1.0f),   // posisi lokal: sisi kanan, tinggi tengah ramp
-                new Vector3( 1.8f, 0.12f, 3.2f),   // size: lebar 1.8m, tipis, panjang lereng 3.2m
-                new Vector3(-40f,  0f,   0f));      // pitch -40° ke atas
-
-            // Ramp ambang pintu utama (ground floor, sisi depan → Z negatif karena rot 180)
-            AddStairRamp(hall.transform,
-                new Vector3( 0f,  0.18f, -4.5f),   // di depan pintu utama
-                new Vector3( 2.4f, 0.12f,  1.0f),  // lebar pintu, tipis, pendek
-                new Vector3(-15f,  0f,    0f));     // pitch ringan untuk hilangkan sill
+            AddPorchLantern(hall.transform, new Vector3(0, 3.8f, -6.0f), range: 14f);
         }
 
         // 2. Rumah Gadang (Rumah Kepala Desa Adat - Sayap Barat Laut, menghadap Selatan ke promenade)
