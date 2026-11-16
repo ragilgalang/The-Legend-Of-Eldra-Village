@@ -128,31 +128,6 @@ public static partial class SceneSetupTool
         }
     }
 
-    public static void RemovePerimeterFences()
-    {
-        int count = 0;
-        var yardFences = GameObject.Find("Village_Yard_Fences");
-        if (yardFences) { count += yardFences.transform.childCount; Object.DestroyImmediate(yardFences); }
-
-        var towerRoot = GameObject.Find("--- TOWERS ---");
-        if (towerRoot)
-        {
-            var toRemove = new List<GameObject>();
-            for (int i = 0; i < towerRoot.transform.childCount; i++)
-            {
-                var child = towerRoot.transform.GetChild(i).gameObject;
-                if (child.name.StartsWith("EA03_Village_Fence_01a") || child.name == "Palisade_Wall")
-                {
-                    if (Mathf.Abs(child.transform.position.z - (-56f)) < 1f) continue;
-                    toRemove.Add(child);
-                }
-            }
-            count += toRemove.Count;
-            foreach (var go in toRemove) Object.DestroyImmediate(go);
-        }
-        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        Debug.Log($"[Eldara] {count} modul pagar dihapus.");
-    }
 
     // ─────────────────────────────────────────────────────────────────────
     //  1. ENVIRONMENT & ATMOSPHERE
