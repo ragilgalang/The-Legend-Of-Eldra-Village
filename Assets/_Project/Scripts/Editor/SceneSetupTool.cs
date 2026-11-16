@@ -468,11 +468,11 @@ public static partial class SceneSetupTool
             new Vector3(10.2f, 0f, 0f), new Vector3(62f, 0f, 0f), 4.2f, roadMat, 2.5f, true, curbMat);
 
         // Poros Barat: Alun-Alun -> Jembatan Sungai -> Gerbang Barat (X = -62)
-        // Berhenti di tepi timur jembatan (X = -32.5) dan lanjut dari tepi barat jembatan (X = -41.5)
-        CreateContinuousPavedRoad(roadsParent.transform, "Avenue_West_Inner",
-            new Vector3(-10.2f, 0f, 0f), new Vector3(-32.8f, 0f, 0f), 4.2f, roadMat, 2.5f, true, curbMat);
-        CreateContinuousPavedRoad(roadsParent.transform, "Avenue_West_Outer",
-            new Vector3(-41.2f, 0f, 0f), new Vector3(-62f, 0f, 0f), 4.2f, roadMat, 2.5f, true, curbMat);
+        // Terbagi dua di sisi timur & barat jembatan (-49 +- 8.6m)
+        CreateContinuousPavedRoad(roadsParent.transform, "Avenue_West_EastSide",
+            new Vector3(-9.2f, 0f, 0f), new Vector3(-40.6f, 0f, 0f), 4.0f, roadMat, 2.5f, true, curbMat);
+        CreateContinuousPavedRoad(roadsParent.transform, "Avenue_West_WestSide",
+            new Vector3(-57.4f, 0f, 0f), new Vector3(-62.0f, 0f, 0f), 4.0f, roadMat, 2.5f, true, curbMat);
 
         // 4. Jalan Setapak Penghubung ke Tiap Klaster Rumah
         // Ke Rumah Gadang (Barat Laut) & Pendopo Joglo (Timur Laut)
@@ -498,9 +498,15 @@ public static partial class SceneSetupTool
             new Vector3(-28f, 0f, 2.0f), new Vector3(-28f, 0f, 13f), 2.8f, roadMat, 2.5f, false);
 
         // ═════════════════════════════════════════════════════════════════
-        //  B. SUNGAI KECIL DESA (ELDARA BROOK) & JEMBATAN KAYU LENGKUNG
+        //  B. SUNGAI BESAR DESA (ELDARA GRAND RIVER) & JEMBATAN LENGKUNG
         // ═════════════════════════════════════════════════════════════════
-        BuildVillageBrookAndBridge(village.transform, waterMat, woodMat, curbMat);
+        EldaraRiverBuilder.BuildEldaraRiver(
+            village.transform,
+            new Vector3(-49f, 0f, 0f), // Posisi sungai di sisi barat desa
+            width: 14f,                // Lebar sungai 14 meter
+            length: 102f,              // Membentang dari selatan ke utara benteng
+            fishCount: 24              // 24 ekor ikan 3D berenang aktif
+        );
 
         // ═════════════════════════════════════════════════════════════════
         //  C. ALUN-ALUN PUSAT: SUMUR BATU, PASAR TERBUKA, & RAMBU ARAH

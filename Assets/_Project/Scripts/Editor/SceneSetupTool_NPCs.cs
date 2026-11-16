@@ -119,16 +119,16 @@ public static partial class SceneSetupTool
                  new Vector3( 6.5f, 0.05f, -18.5f)
              }),
 
-            // 9. Nelayan Sungai Eldara
+            // 9. Nelayan Sungai Eldara (berpatroli di atas Dermaga Kayu & Jembatan Sungai)
             ("NPC_NelayanDesa",
              ProceduralNpcBuilder.NpcStyle.Fisherman,
-             new Vector3(-28.0f, 0.05f, -12.0f), 70f,
-             "Air sungai di barat desa begitu jernih hari ini! Hasil tangkapan ikan cukup untuk menjamu seluruh warga desa malam nanti.",
+             new Vector3(-43.5f, 0.34f, -14.0f), 270f,
+             "Sungai Eldara sedang melimpah ikan mas dan patin hari ini! Ambil saja ikan segar di bakul dermaga kalau kamu butuh perbekalan.",
              new Vector3[] {
-                 new Vector3(-28.0f, 0.05f, -12.0f),
-                 new Vector3(-31.5f, 0.05f,  -4.0f),
-                 new Vector3(-26.0f, 0.05f,  -8.0f),
-                 new Vector3(-28.0f, 0.05f, -12.0f)
+                 new Vector3(-43.5f, 0.34f, -14.0f), // Ujung dermaga kayu
+                 new Vector3(-41.0f, 0.14f, -14.0f), // Pangkal dermaga
+                 new Vector3(-41.0f, 0.14f,  -2.5f), // Tepi sungai dekat jembatan
+                 new Vector3(-43.5f, 0.34f, -14.0f)  // Kembali ke dermaga
              }),
 
             // 10. Pemuda Pengantar Pesan

@@ -9,8 +9,13 @@ public static partial class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
     static void BuildVillageBrookAndBridge(Transform parent, Material waterMat, Material woodMat, Material stoneMat)
     {
-        // Panggil EldaraRiverBuilder untuk sungai megah + jembatan + dermaga nelayan + kawanan ikan 3D
-        Eldara.EldaraRiverBuilder.BuildEldaraRiver(parent, new Vector3(-37f, 0f, 0f), 14f, 108f, 24);
+        Eldara.EldaraRiverBuilder.BuildEldaraRiver(
+            parent,
+            new Vector3(-49f, 0f, 0f), // Posisi sungai di sisi barat desa
+            width: 14f,                // Lebar sungai 14 meter
+            length: 102f,              // Membentang dari selatan ke utara benteng
+            fishCount: 24              // 24 ekor ikan 3D berenang aktif
+        );
     }
 }
 #endif
