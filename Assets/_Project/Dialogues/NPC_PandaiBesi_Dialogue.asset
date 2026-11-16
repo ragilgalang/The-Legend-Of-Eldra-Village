@@ -14,5 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DialogueData
   lines:
   - speaker: PandaiBesi
-    text: Kalau kamu punya besi, aku bisa bikin senjata atau bangunan pelindung.
+    text: Kayu dan bijih besi ini cukup untuk memperkuat pertahanan desa. Dukun tahu
+      sumber serangan itu; temui dia sebelum malam tiba.
   choices: []

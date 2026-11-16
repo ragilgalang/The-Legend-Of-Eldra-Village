@@ -188,3 +188,4 @@ Shader "Eldara/RealisticWater"
     }
     FallBack "Hidden/Universal Render Pipeline/FallbackError"
 }
+

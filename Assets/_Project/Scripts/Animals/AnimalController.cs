@@ -16,7 +16,7 @@ using UnityEngine.AI;
 /// </summary>
 public class AnimalController : Interactable
 {
-    public enum AnimalType { Dog, Cat, Wolf, Fish }   
+    public enum AnimalType { Dog, Cat, Wolf, Fish, Pig, Crocodile, Buffalo }
 
     [Header("Identitas Hewan")]
     public AnimalType animalType = AnimalType.Dog;

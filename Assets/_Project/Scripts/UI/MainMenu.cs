@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 public class MainMenu : MonoBehaviour
 {
-    [SerializeField] string gameScene = "Village";
+    [SerializeField] string gameScene = "SampleScene";
     [SerializeField] GameObject settingsPanel;
 
     void Start()
@@ -16,12 +16,27 @@ public class MainMenu : MonoBehaviour
     public void NewGame()
     {
         PlayerPrefs.SetInt("LoadSave", 0);
-        SceneManager.LoadScene(gameScene);
+        LoadGameScene();
     }
 
     public void Continue()
     {
         PlayerPrefs.SetInt("LoadSave", 1);   // dibaca SaveSystem saat scene mulai
+        LoadGameScene();
+    }
+
+    void LoadGameScene()
+    {
+        if (string.IsNullOrEmpty(gameScene) || !Application.CanStreamedLevelBeLoaded(gameScene))
+        {
+            Debug.LogWarning("Scene '" + gameScene + "' tidak ditemukan. Memuat scene aktif/preset default.");
+            if (SceneManager.sceneCountInBuildSettings > 0)
+            {
+                SceneManager.LoadScene(0);
+                return;
+            }
+        }
+
         SceneManager.LoadScene(gameScene);
     }
 

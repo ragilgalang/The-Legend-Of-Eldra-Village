@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DialogueData
   lines:
   - speaker: KepalaDesa
-    text: Selamat datang, petualang! Desa Eldara dalam bahaya besar. Saat matahari
-      terbenam, pasukan goblin akan menyerbu dari kegelapan hutan. Persiapkan menara
-      dan senjatamu!
+    text: Selamat datang, petualang! Desa Eldara terancam. Kumpulkan tiga balok kayu
+      dan satu bijih besi, lalu bawa kabar itu kepada Pandai Besi. Setelah itu temui
+      Dukun untuk mengetahui sumber serangan.
   choices: []

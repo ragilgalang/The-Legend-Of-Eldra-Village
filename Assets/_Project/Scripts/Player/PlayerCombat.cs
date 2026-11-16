@@ -23,10 +23,21 @@ public class PlayerCombat : MonoBehaviour
         if (anim) anim.SetTrigger("Attack");
 
         var hit = new HashSet<Health>();
-        foreach (var c in Physics.OverlapSphere(transform.position + transform.forward * reach, radius, enemyMask))
+        var center = transform.position + transform.forward * reach;
+        var colliders = enemyMask.value == 0
+            ? Physics.OverlapSphere(center, radius)
+            : Physics.OverlapSphere(center, radius, enemyMask);
+        foreach (var c in colliders)
         {
             var h = c.GetComponentInParent<Health>();
-            if (h && hit.Add(h)) h.Damage(damage);
+            if (!h) continue;
+
+            bool layerMatches = (enemyMask.value & (1 << c.gameObject.layer)) != 0;
+            bool hasEnemyComponent = c.GetComponentInParent<EnemyAI>() ||
+                                     c.GetComponentInParent<RajaGoblinBoss>() ||
+                                     c.GetComponentInParent<LevelOneBossController>();
+            if ((layerMatches || hasEnemyComponent) && hit.Add(h))
+                h.Damage(damage);
         }
     }
 }

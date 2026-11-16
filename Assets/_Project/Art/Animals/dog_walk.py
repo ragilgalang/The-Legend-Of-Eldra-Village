@@ -229,3 +229,4 @@ elif "--still" in argv:
     bpy.ops.render.render(write_still=True)
 else:
     scene.frame_set(1)
+
