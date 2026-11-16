@@ -498,18 +498,7 @@ public static partial class SceneSetupTool
             new Vector3(-28f, 0f, 2.0f), new Vector3(-28f, 0f, 13f), 2.8f, roadMat, 2.5f, false);
 
         // ═════════════════════════════════════════════════════════════════
-        //  B. SUNGAI BESAR DESA (ELDARA GRAND RIVER) & JEMBATAN LENGKUNG
-        // ═════════════════════════════════════════════════════════════════
-        EldaraRiverBuilder.BuildEldaraRiver(
-            village.transform,
-            new Vector3(-49f, 0f, 0f), // Posisi sungai di sisi barat desa
-            width: 14f,                // Lebar sungai 14 meter
-            length: 102f,              // Membentang dari selatan ke utara benteng
-            fishCount: 24              // 24 ekor ikan 3D berenang aktif
-        );
-
-        // ═════════════════════════════════════════════════════════════════
-        //  C. ALUN-ALUN PUSAT: SUMUR BATU, PASAR TERBUKA, & RAMBU ARAH
+        //  B. ALUN-ALUN PUSAT: SUMUR BATU, PASAR TERBUKA, & RAMBU ARAH
         // ═════════════════════════════════════════════════════════════════
         BuildVillageWell(village.transform, new Vector3(0f, 0f, 0f));
 
@@ -639,6 +628,10 @@ public static partial class SceneSetupTool
         // ── 5. MENARA POHON PENGAWAS RIMBA ───────────────────────────────
         ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Pohon,
             new Vector3(74f, 0f, 40f), Quaternion.Euler(0, -135f, 0), village.transform, "Treehouse_Pengawas");
+
+        // ── 6. POS KERJA PROFESI & SUNGAI BESAR ELDARA ────────────────────
+        EldaraVillageStationsBuilder.BuildAllProfessionsStations(village.transform);
+        EldaraRiverBuilder.BuildEldaraRiver(village.transform, new Vector3(-49f, 0f, 0f), width: 14f, length: 102f, fishCount: 24);
     }
 
     // ─────────────────────────────────────────────────────────────────────
