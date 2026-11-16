@@ -251,8 +251,6 @@ public static partial class SceneSetupTool
             tmp.fontStyle       = FontStyles.Bold;
             tmp.alignment       = TextAlignmentOptions.Center;
             tmp.color           = new Color(0.75f, 1f, 0.85f);
-            tmp.outlineWidth    = 0.25f;
-            tmp.outlineColor    = new Color32(10, 60, 30, 220);
             tmp.rectTransform.sizeDelta = new Vector2(14f, 2f);
         }
 
