@@ -1,5 +1,7 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 /// <summary>
@@ -57,6 +59,42 @@ public static class WatchtowerBuilder
 
 public static partial class SceneSetupTool
 {
+    [MenuItem("Eldara/Hapus Pagar Jejer-Jejer")]
+    public static void RemovePerimeterFences()
+    {
+        int count = 0;
+        var toRemove = new List<GameObject>();
+
+        // Cari semua objek di scene (aktif maupun non-aktif)
+        foreach (var go in Object.FindObjectsOfType<GameObject>(true))
+        {
+            if (go == null) continue;
+            string n = go.name;
+
+            if (n.StartsWith("EA03_Village_Fence") ||
+                n == "Palisade_Wall" ||
+                n == "Yard_Fence" ||
+                n == "Village_Yard_Fences" ||
+                n.StartsWith("Yard_"))
+            {
+                toRemove.Add(go);
+            }
+        }
+
+        foreach (var go in toRemove)
+        {
+            if (go != null)
+            {
+                count++;
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        EditorSceneManager.SaveOpenScenes();
+        Debug.Log($"[Eldara] {count} objek pagar jejer-jejer berhasil dihapus dari scene.");
+    }
+
     // ─────────────────────────────────────────────────────────────────────
     //  7. BENTENG & PERTAHANAN (8 MENARA PENGAWAS KAYU + BALLISTA OTOMATIS)
     // ─────────────────────────────────────────────────────────────────────
@@ -125,14 +163,15 @@ public static partial class SceneSetupTool
             }
         }
 
-        BuildPalisadeLine(new Vector3(-62f, 0f, -54f), new Vector3(-7.8f, 0f, -54f));
-        BuildPalisadeLine(new Vector3(  7.8f, 0f, -54f), new Vector3(62f, 0f, -54f));
-        BuildPalisadeLine(new Vector3(-62f, 0f,  50f), new Vector3(-5.5f, 0f,  50f));
-        BuildPalisadeLine(new Vector3(  5.5f, 0f,  50f), new Vector3(62f, 0f,  50f));
-        BuildPalisadeLine(new Vector3(-62f, 0f, -54f), new Vector3(-62f, 0f, -4.5f));
-        BuildPalisadeLine(new Vector3(-62f, 0f,   4.5f), new Vector3(-62f, 0f,  50f));
-        BuildPalisadeLine(new Vector3( 62f, 0f, -54f), new Vector3( 62f, 0f, -4.5f));
-        BuildPalisadeLine(new Vector3( 62f, 0f,   4.5f), new Vector3( 62f, 0f,  50f));
+        // Hapus / nonaktifkan baris berikut di SetupFortifications():
+        // BuildPalisadeLine(new Vector3(-62f, 0f, -54f), new Vector3(-7.8f, 0f, -54f));
+        // BuildPalisadeLine(new Vector3(  7.8f, 0f, -54f), new Vector3(62f, 0f, -54f));
+        // BuildPalisadeLine(new Vector3(-62f, 0f,  50f), new Vector3(-5.5f, 0f,  50f));
+        // BuildPalisadeLine(new Vector3(  5.5f, 0f,  50f), new Vector3(62f, 0f,  50f));
+        // BuildPalisadeLine(new Vector3(-62f, 0f, -54f), new Vector3(-62f, 0f, -4.5f));
+        // BuildPalisadeLine(new Vector3(-62f, 0f,   4.5f), new Vector3(-62f, 0f,  50f));
+        // BuildPalisadeLine(new Vector3( 62f, 0f, -54f), new Vector3( 62f, 0f, -4.5f));
+        // BuildPalisadeLine(new Vector3( 62f, 0f,   4.5f), new Vector3( 62f, 0f,  50f));
 
         // Spike Traps di luar gerbang selatan
         var trapPositions = new Vector3[]
