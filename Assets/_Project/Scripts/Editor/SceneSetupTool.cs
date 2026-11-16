@@ -1672,99 +1672,9 @@ public static partial class SceneSetupTool
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  7. BENTENG & PERTAHANAN (8 MENARA + PALISADE KELILING + GERBANG)
+    //  7. BENTENG & PERTAHANAN
+    //  (Dipindahkan ke file terpisah: SceneSetupTool_Fortifications.cs)
     // ─────────────────────────────────────────────────────────────────────
-    static void SetupFortifications(Material slavicMat)
-    {
-        GameObject towerRoot = GameObject.Find("--- TOWERS ---");
-        if (towerRoot) Object.DestroyImmediate(towerRoot);
-
-        towerRoot = new GameObject("--- TOWERS ---");
-
-        var towerSlots = new (Vector3 pos, string name)[]
-        {
-            (new Vector3(-6.8f, 0f, -56f), "Tower_Gate_West"),
-            (new Vector3( 6.8f, 0f, -56f), "Tower_Gate_East"),
-            (new Vector3(-62f,  0f,  52f), "Tower_NorthWest"),
-            (new Vector3( 62f,  0f,  52f), "Tower_NorthEast"),
-            (new Vector3(-62f,  0f, -56f), "Tower_SouthWest"),
-            (new Vector3( 62f,  0f, -56f), "Tower_SouthEast"),
-            (new Vector3(-62f,  0f,   7.5f), "Tower_WestFlank"),
-            (new Vector3( 62f,  0f,   7.5f), "Tower_EastFlank"),
-        };
-
-        foreach (var (pos, tName) in towerSlots)
-        {
-            var towerObj = InstantiateArtModel("EA03_Village_Tover_01a", pos, Quaternion.identity, new Vector3(1.15f, 1.15f, 1.15f), towerRoot.transform, slavicMat);
-            if (!towerObj)
-            {
-                towerObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                towerObj.transform.position = pos + new Vector3(0, 2f, 0);
-                towerObj.transform.localScale = new Vector3(2f, 4f, 2f);
-                ApplyColor(towerObj, new Color(0.5f, 0.4f, 0.3f));
-            }
-            towerObj.name = tName;
-            if (!towerObj.GetComponent<Tower>()) towerObj.AddComponent<Tower>();
-
-            AddStairRamp(towerObj.transform, new Vector3(0f, 1.75f, -2.0f), new Vector3(1.2f, 0.12f, 3.0f), new Vector3(-55f, 0f, 0f));
-            AddStairRamp(towerObj.transform, new Vector3(0f, 3.4f, -1.0f), new Vector3(1.2f, 0.12f, 0.8f), new Vector3(-10f, 0f, 0f));
-            AddPorchLantern(towerObj.transform, new Vector3(0, 4.5f, 0), new Color(1f, 0.65f, 0.2f), 12f);
-        }
-
-        // Gerbang Masuk Selatan Megah
-        var gateArch = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        gateArch.name = "SouthGate_Crossbeam";
-        gateArch.transform.SetParent(towerRoot.transform);
-        gateArch.transform.position = new Vector3(0f, 5.2f, -56f);
-        gateArch.transform.localScale = new Vector3(14.5f, 0.55f, 0.7f);
-        ApplyColor(gateArch, new Color(0.28f, 0.17f, 0.09f));
-
-        AddPorchLantern(towerRoot.transform, new Vector3(-3.2f, 4.7f, -56f), new Color(1f, 0.75f, 0.35f), 14f);
-        AddPorchLantern(towerRoot.transform, new Vector3( 3.2f, 4.7f, -56f), new Color(1f, 0.75f, 0.35f), 14f);
-
-        void BuildPalisadeLine(Vector3 start, Vector3 end)
-        {
-            Vector3 diff = end - start;
-            float dist = diff.magnitude;
-            int count = Mathf.FloorToInt(dist / 2.2f);
-            Quaternion rot = Quaternion.LookRotation(diff.normalized) * Quaternion.Euler(0, 90f, 0);
-            for (int i = 1; i < count; i++)
-            {
-                Vector3 p = Vector3.Lerp(start, end, i / (float)count);
-                var wall = InstantiateArtModel("EA03_Village_Fence_01a", p, rot, new Vector3(1.1f, 1.4f, 1.1f), towerRoot.transform, slavicMat);
-                if (!wall)
-                {
-                    wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    wall.name = "Palisade_Wall";
-                    wall.transform.SetParent(towerRoot.transform);
-                    wall.transform.position = p + Vector3.up * 1.4f;
-                    wall.transform.rotation = rot;
-                    wall.transform.localScale = new Vector3(2.2f, 2.8f, 0.35f);
-                    ApplyColor(wall, new Color(0.32f, 0.20f, 0.11f));
-                }
-            }
-        }
-
-        // Pagar keliling perimeter kayu ditiadakan agar alam desa terbuka plong dan jalan bebas hambatan
-        // (BuildPalisadeLine ditiadakan sesuai permintaan penghapusan pagar)
-
-        var trapPositions = new Vector3[]
-        {
-            new Vector3(-4.5f, 0.05f, -64f),
-            new Vector3( 4.5f, 0.05f, -64f),
-        };
-
-        for (int i = 0; i < trapPositions.Length; i++)
-        {
-            var trap = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            trap.name = $"SpikeTrap_{i + 1}";
-            trap.transform.SetParent(towerRoot.transform);
-            trap.transform.position = trapPositions[i];
-            trap.transform.localScale = new Vector3(2.5f, 0.12f, 2.5f);
-            ApplyColor(trap, new Color(0.25f, 0.25f, 0.35f));
-            trap.AddComponent<SpikeTrap>();
-        }
-    }
 
     // ─────────────────────────────────────────────────────────────────────
     //  8. HUTAN RIMBA & TAMAN PENEDUH DALAM DESA
@@ -3341,7 +3251,7 @@ public static partial class SceneSetupTool
         }
     }
 
-    static void AddPorchLantern(Transform parent, Vector3 localOffset, Color? lightColor = null, float range = 8f)
+    internal static void AddPorchLantern(Transform parent, Vector3 localOffset, Color? lightColor = null, float range = 8f)
     {
         var lanternGo = new GameObject("LanternLight");
         lanternGo.transform.SetParent(parent);
@@ -3355,7 +3265,7 @@ public static partial class SceneSetupTool
         l.shadows = LightShadows.None;
     }
 
-    static GameObject InstantiateArtModel(string fbxName, Vector3 position, Quaternion rotation, Vector3 scale, Transform parent, Material customMat = null)
+    internal static GameObject InstantiateArtModel(string fbxName, Vector3 position, Quaternion rotation, Vector3 scale, Transform parent, Material customMat = null)
     {
         string path = $"Assets/_Project/Art/SlavicWorld/Models/{fbxName}.fbx";
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
@@ -3415,7 +3325,7 @@ public static partial class SceneSetupTool
         return null;
     }
 
-    static void AddStairRamp(Transform parent, Vector3 localPos, Vector3 size, Vector3 eulerAngles)
+    internal static void AddStairRamp(Transform parent, Vector3 localPos, Vector3 size, Vector3 eulerAngles)
     {
         var rampGo = new GameObject("_StairRamp");
         rampGo.transform.SetParent(parent, false);
@@ -3434,7 +3344,7 @@ public static partial class SceneSetupTool
         return go;
     }
 
-    static void ApplyColor(GameObject go, Color col)
+    internal static void ApplyColor(GameObject go, Color col)
     {
         var r = go.GetComponent<Renderer>();
         if (!r) return;
