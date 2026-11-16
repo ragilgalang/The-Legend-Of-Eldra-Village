@@ -106,8 +106,8 @@ public static partial class SceneSetupTool
         SetupHUD(playerInteractor, playerHealth);
         ChunkRenderDistance.ApplyToEntireWorldMenu();
 
-        // Pastikan MainMenu dan SampleScene terdaftar di Build Settings
-        MainMenuSceneTool.EnsureBuildSettingsConfigured();
+        // Pastikan MainMenu dan SampleScene terdaftar di Build Settings & Play Mode selalu mulai dari MainMenu
+        MainMenuSceneTool.EnsurePlayModeStartsAtMainMenu();
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         EditorSceneManager.SaveOpenScenes();

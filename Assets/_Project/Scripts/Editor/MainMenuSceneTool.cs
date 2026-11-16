@@ -6,10 +6,27 @@ using System.IO;
 
 namespace Eldara.EditorTools
 {
+    [InitializeOnLoad]
     public static class MainMenuSceneTool
     {
         public const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity";
         public const string GameScenePath     = "Assets/Scenes/SampleScene.unity";
+
+        static MainMenuSceneTool()
+        {
+            EditorApplication.delayCall += EnsurePlayModeStartsAtMainMenu;
+        }
+
+        public static void EnsurePlayModeStartsAtMainMenu()
+        {
+            EnsureBuildSettingsConfigured();
+
+            var mainMenuAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(MainMenuScenePath);
+            if (mainMenuAsset != null)
+            {
+                EditorSceneManager.playModeStartScene = mainMenuAsset;
+            }
+        }
 
         public static void OpenMainMenuScene()
         {
