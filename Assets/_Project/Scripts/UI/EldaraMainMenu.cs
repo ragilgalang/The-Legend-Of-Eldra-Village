@@ -2,6 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem.UI;
+#endif
 
 /// <summary>
 /// Main Menu "Legenda Desa Eldara".
@@ -49,12 +52,32 @@ public class EldaraMainMenu : MonoBehaviour
         font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         if (!font) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-        if (!EventSystem.current)
+        var existingES = Object.FindFirstObjectByType<EventSystem>();
+        if (!existingES)
         {
             var es = new GameObject("EventSystem");
-            es.AddComponent<EventSystem>();
-            es.AddComponent<StandaloneInputModule>();
+            existingES = es.AddComponent<EventSystem>();
         }
+
+        // Hapus StandaloneInputModule lawas agar tidak memicu InvalidOperationException pada New Input System
+        var oldModules = existingES.GetComponents<StandaloneInputModule>();
+        foreach (var m in oldModules)
+        {
+            if (Application.isPlaying) Destroy(m);
+            else DestroyImmediate(m);
+        }
+
+#if ENABLE_INPUT_SYSTEM
+        if (!existingES.GetComponent<InputSystemUIInputModule>())
+        {
+            existingES.gameObject.AddComponent<InputSystemUIInputModule>();
+        }
+#else
+        if (!existingES.GetComponent<StandaloneInputModule>())
+        {
+            existingES.gameObject.AddComponent<StandaloneInputModule>();
+        }
+#endif
 
         BuildUI();
     }
