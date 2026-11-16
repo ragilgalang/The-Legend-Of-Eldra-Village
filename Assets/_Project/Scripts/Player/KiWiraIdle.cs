@@ -19,6 +19,9 @@ public class KiWiraIdle : MonoBehaviour
     public float kecepatanJalan = 7f;
     public float sudutAyun = 26f;
 
+    [Header("Lainnya")]
+    public float waktuAwal = 0f;
+
     Transform torso, kepala, kakiKiri, kakiKanan, lenganKiri, lenganKanan;
     Quaternion rKakiKiri, rKakiKanan, rLenganKiri, rLenganKanan, rKepala;
     float waktu;
@@ -26,6 +29,7 @@ public class KiWiraIdle : MonoBehaviour
 
     void Start()
     {
+        waktu = waktuAwal;
         Cari();
         cc = GetComponent<CharacterController>();
     }
