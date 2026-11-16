@@ -54,8 +54,21 @@ public class ChunkRenderDistance : MonoBehaviour
     void OnEnable()
     {
         Instance = this;
+        if (Application.isPlaying && PlayerPrefs.HasKey("eldara_chunk_distance"))
+        {
+            renderDistance = Mathf.Clamp(PlayerPrefs.GetInt("eldara_chunk_distance", renderDistance), 2, 12);
+        }
         FindPlayerTarget();
         AutoDiscoverChunks();
+        UpdateAll(true);
+    }
+
+    /// <summary>Ubah jarak render chunk saat runtime dan simpan ke PlayerPrefs</summary>
+    public void SetRenderDistance(int chunks)
+    {
+        renderDistance = Mathf.Clamp(chunks, 2, 12);
+        PlayerPrefs.SetInt("eldara_chunk_distance", renderDistance);
+        PlayerPrefs.Save();
         UpdateAll(true);
     }
 

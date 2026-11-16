@@ -49,6 +49,11 @@ public class CameraRig : MonoBehaviour
 
     void Start()
     {
+        if (PlayerPrefs.HasKey("eldara_cam_sensitivity"))
+            sensitivity = PlayerPrefs.GetFloat("eldara_cam_sensitivity", sensitivity);
+        if (PlayerPrefs.HasKey("eldara_cam_mode"))
+            startMode = (CameraMode)PlayerPrefs.GetInt("eldara_cam_mode", (int)startMode);
+
         if (!target)
         {
             var p = GameObject.FindWithTag("Player") ?? GameObject.Find("Player");

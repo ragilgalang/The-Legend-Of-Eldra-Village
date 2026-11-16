@@ -25,6 +25,8 @@ public class EldaraMainMenu : MonoBehaviour
     Font         font;
     GameObject   mainPanel, settingsPanel;
     Text         volumeLabel;
+    Text         sensLabel;
+    Text         chunkLabel;
     Texture2D    bgTex;
 
     // ───────────────────────────────────────────────────────────────────────
@@ -125,41 +127,94 @@ public class EldaraMainMenu : MonoBehaviour
     {
         settingsPanel = MakePanel("SettingsPanel", parent);
 
-        var dim = MakeImage("Dim", settingsPanel.transform, new Color(0, 0, 0, 0.72f));
+        var dim = MakeImage("Dim", settingsPanel.transform, new Color(0, 0, 0, 0.75f));
         Stretch(dim.rectTransform);
 
-        var box = MakeImage("Box", settingsPanel.transform, new Color(0.07f, 0.08f, 0.14f, 0.97f));
-        Center(box.rectTransform, new Vector2(820, 660), Vector2.zero);
+        // Kotak dialog pengaturan dengan proporsi pas dan lega
+        var box = MakeImage("Box", settingsPanel.transform, new Color(0.07f, 0.08f, 0.14f, 0.98f));
+        Center(box.rectTransform, new Vector2(880, 800), Vector2.zero);
         var outl = box.gameObject.AddComponent<Outline>();
         outl.effectColor    = goldColor;
         outl.effectDistance = new Vector2(3, -3);
 
-        var head = MakeText("Header", box.transform, "PENGATURAN", 56, goldColor, FontStyle.Bold);
-        Center(head.rectTransform, new Vector2(700, 80), new Vector2(0, 260));
+        var head = MakeText("Header", box.transform, "PENGATURAN", 52, goldColor, FontStyle.Bold);
+        Center(head.rectTransform, new Vector2(700, 60), new Vector2(0, 340));
 
-        // Volume
+        // ── 1. VOLUME SUARA ──
         float vol = PlayerPrefs.GetFloat("eldara_volume", 1f);
         volumeLabel = MakeText("VolumeLabel", box.transform,
-            "Volume Suara: " + Mathf.RoundToInt(vol * 100) + "%", 32, Color.white, FontStyle.Normal);
-        Center(volumeLabel.rectTransform, new Vector2(640, 50), new Vector2(0, 145));
+            "Volume Suara: " + Mathf.RoundToInt(vol * 100) + "%", 28, Color.white, FontStyle.Normal);
+        Center(volumeLabel.rectTransform, new Vector2(640, 36), new Vector2(0, 275));
 
-        var slider = MakeSlider(box.transform, new Vector2(0, 80), vol);
-        slider.onValueChanged.AddListener(v =>
+        var volSlider = MakeSlider(box.transform, new Vector2(0, 235), vol);
+        volSlider.onValueChanged.AddListener(v =>
         {
             AudioListener.volume = v;
             PlayerPrefs.SetFloat("eldara_volume", v);
             volumeLabel.text = "Volume Suara: " + Mathf.RoundToInt(v * 100) + "%";
         });
 
-        // Layar penuh
-        var toggle = MakeToggle(box.transform, "Layar Penuh", new Vector2(0, -30), Screen.fullScreen);
-        toggle.onValueChanged.AddListener(on => Screen.fullScreen = on);
+        // ── 2. PENGATURAN KAMERA (SENSITIVITAS MOUSE) ──
+        float sens = PlayerPrefs.GetFloat("eldara_cam_sensitivity", 0.12f);
+        sensLabel = MakeText("SensLabel", box.transform,
+            $"Sensitivitas Kamera: {Mathf.RoundToInt((sens / 0.12f) * 100)}%", 28, Color.white, FontStyle.Normal);
+        Center(sensLabel.rectTransform, new Vector2(640, 36), new Vector2(0, 175));
 
-        // Kualitas grafis
-        var qLabel = MakeText("QualityLabel", box.transform, "Kualitas Grafis", 32, Color.white, FontStyle.Normal);
-        Center(qLabel.rectTransform, new Vector2(300, 50), new Vector2(-170, -120));
+        float normSens = Mathf.InverseLerp(0.03f, 0.30f, sens);
+        var sensSlider = MakeSlider(box.transform, new Vector2(0, 135), normSens);
+        sensSlider.onValueChanged.AddListener(v =>
+        {
+            float actualSens = Mathf.Lerp(0.03f, 0.30f, v);
+            PlayerPrefs.SetFloat("eldara_cam_sensitivity", actualSens);
+            sensLabel.text = $"Sensitivitas Kamera: {Mathf.RoundToInt((actualSens / 0.12f) * 100)}%";
+            if (CameraRig.Instance != null)
+                CameraRig.Instance.Sensitivity = actualSens;
+        });
+
+        // ── 3. JARAK RENDER CHUNK (DUNIA / POHON & RUMPUT) ──
+        int chunkDist = PlayerPrefs.GetInt("eldara_chunk_distance", 4);
+        chunkLabel = MakeText("ChunkLabel", box.transform,
+            FormatChunkLabel(chunkDist), 28, Color.white, FontStyle.Normal);
+        Center(chunkLabel.rectTransform, new Vector2(700, 36), new Vector2(0, 75));
+
+        float normChunk = Mathf.InverseLerp(2f, 10f, chunkDist);
+        var chunkSlider = MakeSlider(box.transform, new Vector2(0, 35), normChunk);
+        chunkSlider.onValueChanged.AddListener(v =>
+        {
+            int actualChunks = Mathf.RoundToInt(Mathf.Lerp(2f, 10f, v));
+            if (actualChunks % 2 != 0) actualChunks += 1;
+            actualChunks = Mathf.Clamp(actualChunks, 2, 10);
+            PlayerPrefs.SetInt("eldara_chunk_distance", actualChunks);
+            chunkLabel.text = FormatChunkLabel(actualChunks);
+
+            if (ChunkRenderDistance.Instance != null)
+                ChunkRenderDistance.Instance.SetRenderDistance(actualChunks);
+        });
+
+        // ── 4. BARIS PILIHAN: MODE KAMERA & KUALITAS GRAFIS ──
+        // Mode Kamera
+        int camMode = PlayerPrefs.GetInt("eldara_cam_mode", 1);
+        var camTitle = MakeText("CamTitle", box.transform, "Mode Kamera", 26, Color.white, FontStyle.Normal);
+        Center(camTitle.rectTransform, new Vector2(280, 32), new Vector2(-170, -35));
+
+        var camBtn = MakeButton("CamModeButton", box.transform, FormatCameraModeName(camMode),
+                                new Vector2(-170, -80), new Vector2(280, 52), 22);
+        camBtn.onClick.AddListener(() =>
+        {
+            int cur = PlayerPrefs.GetInt("eldara_cam_mode", 1);
+            cur = (cur + 1) % 3;
+            PlayerPrefs.SetInt("eldara_cam_mode", cur);
+            camBtn.GetComponentInChildren<Text>().text = FormatCameraModeName(cur);
+            if (CameraRig.Instance != null)
+                CameraRig.Instance.SetMode((CameraMode)cur);
+        });
+
+        // Kualitas Grafis
+        var qLabel = MakeText("QualityLabel", box.transform, "Kualitas Grafis", 26, Color.white, FontStyle.Normal);
+        Center(qLabel.rectTransform, new Vector2(280, 32), new Vector2(170, -35));
+
         var qBtn = MakeButton("QualityButton", box.transform, QualityName(),
-                              new Vector2(170, -120), new Vector2(300, 60), 28);
+                              new Vector2(170, -80), new Vector2(280, 52), 24);
         qBtn.onClick.AddListener(() =>
         {
             int next = (QualitySettings.GetQualityLevel() + 1) % QualitySettings.names.Length;
@@ -167,9 +222,43 @@ public class EldaraMainMenu : MonoBehaviour
             qBtn.GetComponentInChildren<Text>().text = QualityName();
         });
 
+        // ── 5. TOGGLE LAYAR PENUH ──
+        var toggle = MakeToggle(box.transform, "Layar Penuh", new Vector2(0, -155), Screen.fullScreen);
+        toggle.onValueChanged.AddListener(on => Screen.fullScreen = on);
+
+        // ── 6. TOMBOL KEMBALI ──
         var back = MakeButton("BackButton", box.transform, "← KEMBALI",
-                              new Vector2(0, -260), new Vector2(340, 70), 34);
-        back.onClick.AddListener(() => ShowSettings(false));
+                              new Vector2(0, -280), new Vector2(340, 68), 32);
+        back.onClick.AddListener(() =>
+        {
+            PlayerPrefs.Save();
+            ShowSettings(false);
+        });
+    }
+
+    static string FormatChunkLabel(int chunks)
+    {
+        int meter = chunks * 25;
+        string desc = chunks switch
+        {
+            <= 2 => "Sangat Ringan",
+            <= 4 => "Standar (Seimbang)",
+            <= 6 => "Jauh",
+            <= 8 => "Sangat Jauh",
+            _    => "Ultra"
+        };
+        return $"Jarak Render Chunk: {chunks} Chunk ({meter} m) • {desc}";
+    }
+
+    static string FormatCameraModeName(int mode)
+    {
+        return mode switch
+        {
+            0 => "Orang Pertama",
+            1 => "Orang Ketiga (Belakang)",
+            2 => "Orang Ketiga (Depan)",
+            _ => "Orang Ketiga"
+        };
     }
 
     string QualityName() => QualitySettings.names[QualitySettings.GetQualityLevel()];
