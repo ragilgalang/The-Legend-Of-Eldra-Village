@@ -24,7 +24,12 @@ public static class ProceduralNpcBuilder
         Farmer,
         Merchant,
         Wizard,
-        Woman
+        Woman,
+        Woodcutter,
+        Hunter,
+        Herbalist,
+        Fisherman,
+        VillageYouth
     }
 
     private static readonly Dictionary<string, Mesh> meshCache = new Dictionary<string, Mesh>();
@@ -82,10 +87,35 @@ public static class ProceduralNpcBuilder
                 clothCol = HexColor(0x2c3a9c); pantsCol = HexColor(0x2c3a9c); bootCol = HexColor(0x3a2a1e);
                 break;
             case NpcStyle.Woman:
-            default:
                 scaleH = 0.92f; bodyFat = 0.9f; gender = 1;
                 skinCol = HexColor(0xd9a07a); hairCol = HexColor(0x2a1810); eyeCol = HexColor(0x5a3a1a);
                 clothCol = HexColor(0x2f8a5a); pantsCol = HexColor(0x2f8a5a); bootCol = HexColor(0x5a3a24);
+                break;
+            case NpcStyle.Woodcutter:
+                scaleH = 1.02f; bodyFat = 1.15f; gender = 0;
+                skinCol = HexColor(0xd69a6b); hairCol = HexColor(0x2a1a10); eyeCol = HexColor(0x4a3018);
+                clothCol = HexColor(0x8a3a20); pantsCol = HexColor(0x3a2c20); bootCol = HexColor(0x201810);
+                break;
+            case NpcStyle.Hunter:
+                scaleH = 1.0f; bodyFat = 0.98f; gender = 0;
+                skinCol = HexColor(0xdfa075); hairCol = HexColor(0x4a321e); eyeCol = HexColor(0x2a5030);
+                clothCol = HexColor(0x2d5a27); pantsCol = HexColor(0x4a3e2a); bootCol = HexColor(0x302214);
+                break;
+            case NpcStyle.Herbalist:
+                scaleH = 0.88f; bodyFat = 0.95f; gender = 1;
+                skinCol = HexColor(0xd9a07a); hairCol = HexColor(0xd0d0d8); eyeCol = HexColor(0x4a3a28);
+                clothCol = HexColor(0x4f7a52); pantsCol = HexColor(0x4f7a52); bootCol = HexColor(0x3a2418);
+                break;
+            case NpcStyle.Fisherman:
+                scaleH = 0.96f; bodyFat = 1.05f; gender = 0;
+                skinCol = HexColor(0xd89565); hairCol = HexColor(0x3a2414); eyeCol = HexColor(0x2b4f6e);
+                clothCol = HexColor(0x286088); pantsCol = HexColor(0x605040); bootCol = HexColor(0x202a35);
+                break;
+            case NpcStyle.VillageYouth:
+            default:
+                scaleH = 0.94f; bodyFat = 0.95f; gender = 0;
+                skinCol = HexColor(0xf0b896); hairCol = HexColor(0x6a3818); eyeCol = HexColor(0x386040);
+                clothCol = HexColor(0xd07028); pantsCol = HexColor(0x384050); bootCol = HexColor(0x3a2a1e);
                 break;
         }
 
