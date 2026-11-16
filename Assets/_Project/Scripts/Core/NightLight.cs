@@ -66,8 +66,12 @@ public class NightLight : MonoBehaviour
         if (lightSource) { lightSource.intensity = v; lightSource.enabled = v > 0.01f; }
         if (emissiveRenderer)
         {
-            emissiveRenderer.material.EnableKeyword("_EMISSION");
-            emissiveRenderer.material.SetColor("_EmissionColor", emissionColor * v);
+            var mat = Application.isPlaying ? emissiveRenderer.material : emissiveRenderer.sharedMaterial;
+            if (mat != null)
+            {
+                mat.EnableKeyword("_EMISSION");
+                mat.SetColor("_EmissionColor", emissionColor * v);
+            }
         }
     }
 }

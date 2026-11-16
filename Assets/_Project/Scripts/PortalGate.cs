@@ -51,8 +51,9 @@ public class PortalGate : MonoBehaviour
         for (int i = 0; i < n; i++)
         {
             if (!energyRenderers[i]) continue;
-            _mats[i] = energyRenderers[i].material; // instance per portal
-            _texProp[i] = _mats[i].HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
+            _mats[i] = Application.isPlaying ? energyRenderers[i].material : energyRenderers[i].sharedMaterial;
+            if (_mats[i] != null)
+                _texProp[i] = _mats[i].HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
         }
 
         // Jika destination null, cari Arrival_Jungle / Arrival_Village berdasarkan nama portal
