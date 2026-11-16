@@ -32,12 +32,19 @@ public class EldaraMainMenu : MonoBehaviour
     // ───────────────────────────────────────────────────────────────────────
     //  INISIALISASI
     // ───────────────────────────────────────────────────────────────────────
+    void Awake()
+    {
+        SuppressGameplayHUD();
+    }
+
     void Start()
     {
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible   = true;
         AudioListener.volume = PlayerPrefs.GetFloat("eldara_volume", 1f);
+
+        SuppressGameplayHUD();
 
         font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         if (!font) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -50,6 +57,26 @@ public class EldaraMainMenu : MonoBehaviour
         }
 
         BuildUI();
+    }
+
+    void Update()
+    {
+        SuppressGameplayHUD();
+    }
+
+    void SuppressGameplayHUD()
+    {
+        // Pastikan tidak ada canvas/HUD gameplay yang bocor ke dalam Main Menu
+        var canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            var c = canvases[i];
+            if (c != null && c.gameObject != null && c.gameObject.name != "MainMenuCanvas")
+            {
+                if (c.gameObject.activeSelf)
+                    c.gameObject.SetActive(false);
+            }
+        }
     }
 
     // ───────────────────────────────────────────────────────────────────────
@@ -73,47 +100,53 @@ public class EldaraMainMenu : MonoBehaviour
         Stretch(bgRaw.rectTransform);
         bgRaw.raycastTarget = false;
 
-        // Overlay gelap tipis di bawah (agar teks terbaca)
-        var vignette = MakeImage("Vignette", root, new Color(0f, 0f, 0f, 0f));
+        // Overlay vignette lembut (lingkaran tepi gelap agar menu fokus)
+        var vignette = MakeImage("Vignette", root, new Color(0f, 0f, 0.05f, 0.15f));
         Stretch(vignette.rectTransform);
         vignette.raycastTarget = false;
-
-        // Pendaran keemasan di bawah judul (efek cahaya obor desa)
-        var warmGlow = MakeImage("WarmGlow", root, new Color(0.80f, 0.50f, 0.10f, 0.13f));
-        Center(warmGlow.rectTransform, new Vector2(1300, 600), new Vector2(0, 90));
-        warmGlow.raycastTarget = false;
-
-        // Garis dekorasi horizontal emas di bawah judul
-        var line = MakeImage("TitleLine", root, goldColor);
-        Center(line.rectTransform, new Vector2(640, 3), new Vector2(0, 175));
-        line.raycastTarget = false;
 
         // ── 2. PANEL UTAMA ──
         mainPanel = MakePanel("MainPanel", root);
 
-        var t = MakeText("Title", mainPanel.transform, title, 92, goldColor, FontStyle.Bold);
-        Center(t.rectTransform, new Vector2(1600, 140), new Vector2(0, 275));
+        // Card kaca gelap elegan di belakang tombol (transparan & modern)
+        var menuCard = MakeImage("MenuCard", mainPanel.transform, new Color(0.04f, 0.06f, 0.12f, 0.60f));
+        Center(menuCard.rectTransform, new Vector2(560, 360), new Vector2(0, -145));
+        var cardOutl = menuCard.gameObject.AddComponent<Outline>();
+        cardOutl.effectColor = new Color(0.85f, 0.70f, 0.35f, 0.35f);
+        cardOutl.effectDistance = new Vector2(1, -1);
+        menuCard.raycastTarget = false;
+
+        // Judul Game
+        var t = MakeText("Title", mainPanel.transform, title, 86, new Color(1f, 0.88f, 0.45f, 1f), FontStyle.Bold);
+        Center(t.rectTransform, new Vector2(1600, 120), new Vector2(0, 275));
         var sh = t.gameObject.AddComponent<Shadow>();
-        sh.effectColor    = new Color(0.1f, 0.0f, 0.0f, 0.9f);
-        sh.effectDistance = new Vector2(5, -5);
-        // Outline emas tipis supaya kontras di langit cerah
+        sh.effectColor    = new Color(0.02f, 0.02f, 0.06f, 0.95f);
+        sh.effectDistance = new Vector2(4, -4);
         var ol = t.gameObject.AddComponent<Outline>();
-        ol.effectColor    = new Color(0.60f, 0.40f, 0.05f, 0.8f);
+        ol.effectColor    = new Color(0.38f, 0.22f, 0.05f, 0.85f);
         ol.effectDistance = new Vector2(2, -2);
 
-        var s = MakeText("Subtitle", mainPanel.transform, subtitle, 32,
-                         new Color(0.95f, 0.90f, 0.75f, 0.95f), FontStyle.Italic);
-        Center(s.rectTransform, new Vector2(1200, 50), new Vector2(0, 128));
+        // Ornamen hiasan tradisional di bawah judul
+        var ornament = MakeText("TitleOrnament", mainPanel.transform, "✦   ───────────   ❖   ───────────   ✦", 20, goldColor, FontStyle.Normal);
+        Center(ornament.rectTransform, new Vector2(800, 30), new Vector2(0, 195));
+        ornament.gameObject.AddComponent<Shadow>().effectColor = new Color(0, 0, 0, 0.8f);
+
+        // Subtitle
+        var s = MakeText("Subtitle", mainPanel.transform, subtitle, 28,
+                         new Color(0.95f, 0.92f, 0.82f, 0.95f), FontStyle.Italic);
+        Center(s.rectTransform, new Vector2(1200, 40), new Vector2(0, 150));
         s.gameObject.AddComponent<Shadow>().effectColor = new Color(0, 0, 0, 0.8f);
 
-        MakeButton("PlayButton",     mainPanel.transform, "▶  MULAI PETUALANGAN",  new Vector2(0, -30 )).onClick.AddListener(OnPlay);
-        MakeButton("SettingsButton", mainPanel.transform, "⚙  PENGATURAN",         new Vector2(0, -155)).onClick.AddListener(() => ShowSettings(true));
-        MakeButton("QuitButton",     mainPanel.transform, "✕  KELUAR",             new Vector2(0, -280)).onClick.AddListener(() => Application.Quit());
+        // Tombol-Tombol Navigasi
+        MakeButton("PlayButton",     mainPanel.transform, "▶  MULAI PETUALANGAN",  new Vector2(0, -50 ), new Vector2(480, 72), 30).onClick.AddListener(OnPlay);
+        MakeButton("SettingsButton", mainPanel.transform, "⚙  PENGATURAN",         new Vector2(0, -145), new Vector2(480, 72), 30).onClick.AddListener(() => ShowSettings(true));
+        MakeButton("QuitButton",     mainPanel.transform, "✕  KELUAR",             new Vector2(0, -240), new Vector2(480, 72), 30).onClick.AddListener(() => Application.Quit());
 
         var footer = MakeText("Footer", mainPanel.transform,
             "Kelompok 4  •  Multimedia Permainan  •  Politeknik Negeri Jember  •  2026",
-            20, new Color(1, 1, 1, 0.45f), FontStyle.Normal);
+            20, new Color(0.92f, 0.88f, 0.78f, 0.65f), FontStyle.Normal);
         Center(footer.rectTransform, new Vector2(1400, 36), new Vector2(0, -470));
+        footer.gameObject.AddComponent<Shadow>().effectColor = new Color(0, 0, 0, 0.7f);
 
         // ── 3. PANEL PENGATURAN ──
         BuildSettingsPanel(root);
@@ -344,9 +377,9 @@ public class EldaraMainMenu : MonoBehaviour
         // ─────────────────────────────────────
         //  2. BULAN PURNAMA
         // ─────────────────────────────────────
-        int moonX = (int)(W * 0.78f);
-        int moonY = (int)(H * 0.80f);
-        int moonR = (int)(H * 0.085f);
+        int moonX = (int)(W * 0.84f);
+        int moonY = (int)(H * 0.82f);
+        int moonR = (int)(H * 0.082f);
 
         for (int dy = -moonR - 40; dy <= moonR + 40; dy++)
         for (int dx = -moonR - 40; dx <= moonR + 40; dx++)
@@ -821,25 +854,30 @@ public class EldaraMainMenu : MonoBehaviour
     Button MakeButton(string name, Transform parent, string label,
                       Vector2 pos, Vector2? size = null, int fontSize = 38)
     {
-        var img = MakeImage(name, parent, buttonColor);
-        Center(img.rectTransform, size ?? new Vector2(480, 90), pos);
+        var img = MakeImage(name, parent, new Color(0.08f, 0.11f, 0.19f, 0.92f));
+        Center(img.rectTransform, size ?? new Vector2(480, 75), pos);
+
+        var sh = img.gameObject.AddComponent<Shadow>();
+        sh.effectColor = new Color(0f, 0f, 0.05f, 0.75f);
+        sh.effectDistance = new Vector2(3, -3);
 
         var outl = img.gameObject.AddComponent<Outline>();
-        outl.effectColor    = goldColor;
-        outl.effectDistance = new Vector2(2, -2);
+        outl.effectColor    = new Color(0.88f, 0.74f, 0.38f, 0.85f);
+        outl.effectDistance = new Vector2(1.5f, -1.5f);
 
         var btn = img.gameObject.AddComponent<Button>();
         btn.targetGraphic = img;
 
         var cb = btn.colors;
         cb.normalColor      = new Color(1f, 1f, 1f, 1f);
-        cb.highlightedColor = new Color(1f, 0.80f, 0.30f, 1f); // hover → emas
-        cb.pressedColor     = new Color(0.70f, 0.50f, 0.10f, 1f);
+        cb.highlightedColor = new Color(1.2f, 1.05f, 0.60f, 1f); // hover glowing gold
+        cb.pressedColor     = new Color(0.65f, 0.45f, 0.15f, 1f);
         cb.selectedColor    = Color.white;
         cb.fadeDuration     = 0.10f;
         btn.colors = cb;
 
-        var t = MakeText("Label", img.transform, label, fontSize, goldColor, FontStyle.Bold);
+        var t = MakeText("Label", img.transform, label, fontSize, new Color(1f, 0.92f, 0.65f, 1f), FontStyle.Bold);
+        t.gameObject.AddComponent<Shadow>().effectColor = new Color(0, 0, 0, 0.85f);
         Stretch(t.rectTransform);
         return btn;
     }

@@ -9,7 +9,7 @@ public static class LevelOneBootstrapper
     static void EnsurePlayableLevel()
     {
         var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-        if (activeScene.name == "MainMenu" || activeScene.name.Contains("Menu"))
+        if (activeScene.name == "MainMenu" || activeScene.name.Contains("Menu") || Object.FindAnyObjectByType<EldaraMainMenu>() != null)
             return;
 
         var questManager = Object.FindAnyObjectByType<QuestManager>();
