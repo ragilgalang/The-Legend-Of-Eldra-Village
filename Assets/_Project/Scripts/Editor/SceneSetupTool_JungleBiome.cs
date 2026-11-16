@@ -332,14 +332,63 @@ public static partial class SceneSetupTool
         Vector2 temple2 = new Vector2(templeCenter.x, templeCenter.z);
         Vector2 portal2 = new Vector2(jPortalPos.x, jPortalPos.z);
 
-        // Tanah gelap rimba tropis (persis seperti di JungleBiomeGenerator)
+        // ── 1. DASAR TANAH HUTAN RIMBA & POLA TANAH ORGANIK (HIJAU LUMUT & COKLAT SUBUR) ──
+        var groundContainer = new GameObject("Jungle_Ground_Terrain");
+        groundContainer.transform.SetParent(root);
+
+        // A. Dasar Utama: Tanah Hutan Tropis Coklat Hangat (Warm Forest Loam)
+        var loamBaseMat = JungleMat("M_Jungle_Earth_Loam", new Color(0.24f, 0.17f, 0.11f), 0.05f);
         var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        ground.name = "Jungle_Ground";
-        ground.transform.SetParent(root);
-        ground.transform.position = C + Vector3.up * 0.02f;
+        ground.name = "Jungle_Ground_LoamBase";
+        ground.transform.SetParent(groundContainer.transform);
+        ground.transform.position = C + Vector3.up * 0.015f;
         ground.transform.localScale = new Vector3(26f, 1f, 26f);
-        ground.GetComponent<Renderer>().sharedMaterial = JungleTree.MakeMaterial(new Color(0.16f, 0.12f, 0.07f), 0.05f);
+        ground.GetComponent<Renderer>().sharedMaterial = loamBaseMat;
         Object.DestroyImmediate(ground.GetComponent<Collider>());
+
+        // B. Material Hamparan Tanah Hijau Lumut Tropis & Tanah Coklat Lumpur Lembap
+        var mossGreenMat  = JungleMat("M_Jungle_Moss_Green",   new Color(0.14f, 0.36f, 0.11f), 0.04f);
+        var lushGreenMat  = JungleMat("M_Jungle_Lush_Green",   new Color(0.19f, 0.44f, 0.13f), 0.04f);
+        var deepMossMat   = JungleMat("M_Jungle_Deep_Moss",    new Color(0.10f, 0.28f, 0.08f), 0.04f);
+        var moistMudMat   = JungleMat("M_Jungle_Moist_Mud",    new Color(0.15f, 0.10f, 0.06f), 0.08f);
+        var richEarthMat  = JungleMat("M_Jungle_Rich_Earth",   new Color(0.20f, 0.14f, 0.09f), 0.06f);
+
+        // C. Hamparan Tanah Hijau Lumut Tropis di Sepanjang Sisi Jalan Batu Kuno
+        for (float zPath = jPortalPos.z + 5f; zPath <= templeCenter.z - 16f; zPath += 12f)
+        {
+            CreateGroundPatch(groundContainer.transform, "Jungle_Flank_West_Green",
+                new Vector3(C.x - 7.5f, 0f, zPath), Random.Range(6.5f, 9.5f), Random.Range(8f, 13f),
+                (Mathf.RoundToInt(zPath) % 2 == 0) ? mossGreenMat : lushGreenMat, 0.022f);
+
+            CreateGroundPatch(groundContainer.transform, "Jungle_Flank_East_Green",
+                new Vector3(C.x + 7.5f, 0f, zPath), Random.Range(6.5f, 9.5f), Random.Range(8f, 13f),
+                (Mathf.RoundToInt(zPath) % 2 == 0) ? lushGreenMat : mossGreenMat, 0.022f);
+        }
+
+        // D. Hamparan Hijau Lumut & Lumpur Lembap Membingkai Kolam Rimba
+        CreateGroundPatch(groundContainer.transform, "Pond_Moss_Outer",
+            new Vector3(pondXZ.x, 0f, pondXZ.y), 24f, 24f, deepMossMat, 0.021f);
+        CreateGroundPatch(groundContainer.transform, "Pond_Mud_Inner",
+            new Vector3(pondXZ.x, 0f, pondXZ.y), 15f, 15f, moistMudMat, 0.023f);
+
+        // E. 45 Petak Tanah Hijau Lumut & 25 Petak Tanah Coklat Basah Tersebar Alami
+        for (int i = 0; i < 45; i++)
+        {
+            Vector3 p = JungleRandomOffPath(C, jPortalPos, templeCenter, 115f);
+            float rx = Random.Range(12f, 25f);
+            float rz = Random.Range(10f, 22f);
+            var m = (i % 3 == 0) ? deepMossMat : ((i % 3 == 1) ? mossGreenMat : lushGreenMat);
+            CreateGroundPatch(groundContainer.transform, $"Jungle_MossPatch_{i}", p, rx, rz, m, 0.024f);
+        }
+
+        for (int i = 0; i < 25; i++)
+        {
+            Vector3 p = JungleRandomOffPath(C, jPortalPos, templeCenter, 110f);
+            float rx = Random.Range(7f, 15f);
+            float rz = Random.Range(6f, 13f);
+            var m = (i % 2 == 0) ? richEarthMat : moistMudMat;
+            CreateGroundPatch(groundContainer.transform, $"Jungle_EarthPatch_{i}", p, rx, rz, m, 0.026f);
+        }
 
         // Portal kembali ke desa
         returnGate = BuildJunglePortalGate(root, "Portal_Return_To_Village", jPortalPos, 0f,
@@ -466,11 +515,67 @@ public static partial class SceneSetupTool
         }
         if (grassMat != null)
         {
-            for (int i = 0; i < 80; i++)
+            var flowerColors = new RealisticFlowerBuilder.FlowerColor[]
             {
-                Vector3 p = JungleRandomOffPath(C, jPortalPos, templeCenter, 120f);
-                RealisticGrassBuilder.BuildGrassClump(p, 12, 5f, root, grassMat);
-                if (i % 2 == 0) RealisticFlowerBuilder.BuildFlowerClump(p, 5, 4f, root);
+                RealisticFlowerBuilder.FlowerColor.MysticPurple,
+                RealisticFlowerBuilder.FlowerColor.SkyBluebell,
+                RealisticFlowerBuilder.FlowerColor.GoldenDandelion,
+                RealisticFlowerBuilder.FlowerColor.RedPoppy,
+                RealisticFlowerBuilder.FlowerColor.WhiteDaisy
+            };
+
+            var grassRoot = new GameObject("--- JUNGLE GRASS & FLOWERS ---");
+            grassRoot.transform.SetParent(root);
+
+            // 1) Bordir Rumput Lebat & Bunga di Sepanjang Sisi Jalan Batu Kuno
+            for (float z = jPortalPos.z + 5.5f; z <= templeCenter.z - 16f; z += 2.8f)
+            {
+                // Sisi barat jalan
+                Vector3 pWest = new Vector3(C.x - 2.5f + Random.Range(-0.3f, 0.3f), 0f, z);
+                RealisticGrassBuilder.BuildGrassClump(pWest, 14, 1.8f, grassRoot.transform, grassMat);
+                var colW = flowerColors[Mathf.Abs(Mathf.RoundToInt(z * 4)) % flowerColors.Length];
+                RealisticFlowerBuilder.BuildFlowerClump(pWest, 6, 1.4f, grassRoot.transform, colW);
+
+                // Sisi timur jalan
+                Vector3 pEast = new Vector3(C.x + 2.5f + Random.Range(-0.3f, 0.3f), 0f, z);
+                RealisticGrassBuilder.BuildGrassClump(pEast, 14, 1.8f, grassRoot.transform, grassMat);
+                var colE = flowerColors[Mathf.Abs(Mathf.RoundToInt(z * 7)) % flowerColors.Length];
+                RealisticFlowerBuilder.BuildFlowerClump(pEast, 6, 1.4f, grassRoot.transform, colE);
+            }
+
+            // 2) Bordir Rumput Lebat & Bunga di Tepian Kolam Rimba
+            for (int i = 0; i < 20; i++)
+            {
+                float ang = i / 20f * Mathf.PI * 2f;
+                float r = 13.8f + Random.Range(-0.5f, 1.2f);
+                Vector3 rp = new Vector3(pondXZ.x + Mathf.Cos(ang) * r, 0f, pondXZ.y + Mathf.Sin(ang) * r);
+                RealisticGrassBuilder.BuildGrassClump(rp, 15, 2.2f, grassRoot.transform, grassMat);
+                var col = flowerColors[i % flowerColors.Length];
+                RealisticFlowerBuilder.BuildFlowerClump(rp, 7, 1.8f, grassRoot.transform, col);
+            }
+
+            // 3) Rumput & Bunga Mengelilingi Pelataran Kuil Rimba Kuno
+            for (int i = 0; i < 18; i++)
+            {
+                float ang = i / 18f * Mathf.PI * 2f;
+                float r = 24.5f + Random.Range(-1f, 1.5f);
+                Vector3 tp = new Vector3(templeCenter.x + Mathf.Cos(ang) * r, 0f, templeCenter.z + Mathf.Sin(ang) * r);
+                RealisticGrassBuilder.BuildGrassClump(tp, 16, 2.5f, grassRoot.transform, grassMat);
+                var col = flowerColors[(i + 2) % flowerColors.Length];
+                RealisticFlowerBuilder.BuildFlowerClump(tp, 8, 2.0f, grassRoot.transform, col);
+            }
+
+            // 4) Hamparan Rumput Lebat & Bunga Liar Rimba Tersebar Luas (220 Titik)
+            for (int i = 0; i < 220; i++)
+            {
+                Vector3 p = JungleRandomOffPath(C, jPortalPos, templeCenter, 118f);
+                RealisticGrassBuilder.BuildGrassClump(p, Random.Range(12, 18), Random.Range(3.5f, 6.0f), grassRoot.transform, grassMat);
+                if (i % 2 == 0)
+                {
+                    var col = flowerColors[i % flowerColors.Length];
+                    RealisticFlowerBuilder.BuildFlowerClump(p + new Vector3(Random.Range(-0.6f, 0.6f), 0f, Random.Range(-0.6f, 0.6f)),
+                        Random.Range(5, 10), Random.Range(2.5f, 4.5f), grassRoot.transform, col);
+                }
             }
         }
 
@@ -850,6 +955,54 @@ public static partial class SceneSetupTool
         bush.seed = seed;
 
         Random.state = old;
+    }
+
+    /// <summary>
+    /// Membuat petak tanah organik (hijau lumut / coklat lembap) berlapis di atas tanah rimba.
+    /// Ringan (hanya 25 vertices), berbayang lembut, dan tanpa z-fighting.
+    /// </summary>
+    static GameObject CreateGroundPatch(Transform parent, string name, Vector3 pos, float rx, float rz, Material mat, float yOffset = 0.025f)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.position = new Vector3(pos.x, yOffset, pos.z);
+
+        const int segs = 24;
+        var verts = new Vector3[segs + 1];
+        var uvs   = new Vector2[segs + 1];
+        var tris  = new int[segs * 3];
+
+        verts[0] = Vector3.zero;
+        uvs[0]   = new Vector2(0.5f, 0.5f);
+
+        for (int i = 0; i < segs; i++)
+        {
+            float ang = i / (float)segs * Mathf.PI * 2f;
+            float x = Mathf.Cos(ang) * rx;
+            float z = Mathf.Sin(ang) * rz;
+            verts[i + 1] = new Vector3(x, 0f, z);
+            uvs[i + 1]   = new Vector2(0.5f + Mathf.Cos(ang) * 0.5f, 0.5f + Mathf.Sin(ang) * 0.5f);
+
+            int next = (i + 1) % segs;
+            tris[i * 3]     = 0;
+            tris[i * 3 + 1] = i + 1;
+            tris[i * 3 + 2] = next + 1;
+        }
+
+        var m = new Mesh { name = name + "_Mesh" };
+        m.vertices = verts;
+        m.uv = uvs;
+        m.triangles = tris;
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+
+        go.AddComponent<MeshFilter>().sharedMesh = m;
+        var mr = go.AddComponent<MeshRenderer>();
+        mr.sharedMaterial = mat;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        mr.receiveShadows = true;
+
+        return go;
     }
 }
 #endif
