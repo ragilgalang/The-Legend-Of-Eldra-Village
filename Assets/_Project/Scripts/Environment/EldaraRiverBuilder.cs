@@ -168,16 +168,46 @@ namespace Eldara
             var bridge = new GameObject("Eldara_River_Bridge");
             bridge.transform.SetParent(parent, false);
 
-            // Dek tengah datar + 2 ramp naik/turun mulus (kemiringan landai ~6 derajat)
-            float midLen = spanX * 0.42f;
-            float rampLen = spanX * 0.32f;
-            float rampOffset = midLen * 0.5f + rampLen * 0.45f;
+            // Perhitungan geometri presisi agar ramp bridge menyentuh tanah/jalan (Y = 0) dengan sempurna
+            float midLen = 6.0f;
+            float rampLenX = (spanX - midLen) * 0.5f + 0.08f; // ~5.68m
+            float deckY = 0.40f; // Dek tengah datar
+            float topY = deckY + 0.07f; // 0.47m
+            float slopeAngle = 4.75f;
+            float rampLenSlope = rampLenX / Mathf.Cos(slopeAngle * Mathf.Deg2Rad);
+            float rampCenterX = midLen * 0.5f + rampLenX * 0.5f;
+            float rampCenterY = topY * 0.5f - 0.07f; // 0.165m
 
-            Part(PrimitiveType.Cube, "Deck_Center", bridge.transform, matDeck, new Vector3(0f, 0.42f, 0f), new Vector3(midLen, 0.18f, widthZ), true);
-            Part(PrimitiveType.Cube, "Ramp_East", bridge.transform, matDeck, new Vector3( rampOffset, 0.21f, 0f), new Vector3(rampLen, 0.18f, widthZ), true, new Vector3(0f, 0f, 6.5f));
-            Part(PrimitiveType.Cube, "Ramp_West", bridge.transform, matDeck, new Vector3(-rampOffset, 0.21f, 0f), new Vector3(rampLen, 0.18f, widthZ), true, new Vector3(0f, 0f, -6.5f));
+            // 1. Dek tengah datar
+            Part(PrimitiveType.Cube, "Deck_Center", bridge.transform, matDeck,
+                new Vector3(0f, deckY, 0f), new Vector3(midLen + 0.1f, 0.14f, widthZ), true);
 
-            // Tiang pancang jembatan ke dasar sungai
+            // 2. Ramp Timur (sloping DOWN ke arah +X menuju jalan poros timur)
+            Part(PrimitiveType.Cube, "Ramp_East", bridge.transform, matDeck,
+                new Vector3(rampCenterX, rampCenterY, 0f), new Vector3(rampLenSlope, 0.14f, widthZ), true,
+                new Vector3(0f, 0f, -slopeAngle));
+
+            // 3. Ramp Barat (sloping DOWN ke arah -X menuju jalan poros barat)
+            Part(PrimitiveType.Cube, "Ramp_West", bridge.transform, matDeck,
+                new Vector3(-rampCenterX, rampCenterY, 0f), new Vector3(rampLenSlope, 0.14f, widthZ), true,
+                new Vector3(0f, 0f, slopeAngle));
+
+            // 4. Smooth Incline Transition Colliders di ujung jalan untuk memastikan CharacterController berjalan 100% mulus
+            var transE = new GameObject("SmoothRamp_East");
+            transE.transform.SetParent(bridge.transform, false);
+            transE.transform.localPosition = new Vector3(rampCenterX + 2.0f, 0.04f, 0f);
+            transE.transform.localRotation = Quaternion.Euler(0f, 0f, -slopeAngle);
+            var boxE = transE.AddComponent<BoxCollider>();
+            boxE.size = new Vector3(1.8f, 0.10f, widthZ);
+
+            var transW = new GameObject("SmoothRamp_West");
+            transW.transform.SetParent(bridge.transform, false);
+            transW.transform.localPosition = new Vector3(-rampCenterX - 2.0f, 0.04f, 0f);
+            transW.transform.localRotation = Quaternion.Euler(0f, 0f, slopeAngle);
+            var boxW = transW.AddComponent<BoxCollider>();
+            boxW.size = new Vector3(1.8f, 0.10f, widthZ);
+
+            // 5. Tiang pancang jembatan ke dasar sungai
             foreach (float px in new[] { -midLen * 0.45f, midLen * 0.45f })
             {
                 foreach (float pz in new[] { -widthZ * 0.44f, widthZ * 0.44f })
@@ -187,15 +217,44 @@ namespace Eldara
                 }
             }
 
-            // Pagar jembatan kiri & kanan
+            // 6. Pagar pembatas & railing yang mengikuti kontur jembatan secara natural
             foreach (float sz in new[] { -1f, 1f })
             {
                 float pz = sz * (widthZ * 0.5f - 0.12f);
-                Part(PrimitiveType.Cube, "Handrail_Top", bridge.transform, matTimber, new Vector3(0f, 1.25f, pz), new Vector3(spanX - 0.6f, 0.10f, 0.10f), false);
-                for (float px = -spanX * 0.46f; px <= spanX * 0.46f + 0.01f; px += 2.2f)
+
+                // Railing tengah datar
+                Part(PrimitiveType.Cube, "Handrail_Mid", bridge.transform, matTimber,
+                    new Vector3(0f, deckY + 0.88f, pz), new Vector3(midLen, 0.10f, 0.12f), false);
+
+                // Railing ramp timur melandai
+                Part(PrimitiveType.Cube, "Handrail_East", bridge.transform, matTimber,
+                    new Vector3(rampCenterX, rampCenterY + 0.88f, pz), new Vector3(rampLenSlope, 0.10f, 0.12f), false,
+                    new Vector3(0f, 0f, -slopeAngle));
+
+                // Railing ramp barat melandai
+                Part(PrimitiveType.Cube, "Handrail_West", bridge.transform, matTimber,
+                    new Vector3(-rampCenterX, rampCenterY + 0.88f, pz), new Vector3(rampLenSlope, 0.10f, 0.12f), false,
+                    new Vector3(0f, 0f, slopeAngle));
+
+                // Tiang-tiang pagar penyangga
+                float[] postX = { -spanX * 0.48f, -spanX * 0.32f, -midLen * 0.5f, 0f, midLen * 0.5f, spanX * 0.32f, spanX * 0.48f };
+                foreach (float px in postX)
                 {
-                    Part(PrimitiveType.Cube, "RailPost", bridge.transform, matTimber, new Vector3(px, 0.72f, pz), new Vector3(0.16f, 1.20f, 0.16f), true);
+                    float py = (Mathf.Abs(px) <= midLen * 0.5f) ? (deckY + 0.44f) : (deckY + 0.44f - Mathf.Abs(px - Mathf.Sign(px) * midLen * 0.5f) * Mathf.Tan(slopeAngle * Mathf.Deg2Rad));
+                    Part(PrimitiveType.Cube, "RailPost", bridge.transform, matTimber,
+                        new Vector3(px, py, pz), new Vector3(0.16f, 0.95f, 0.16f), false);
                 }
+
+                // Barrier collider di sisi samping jembatan agar pemain tidak terpeleset jatuh ke sungai
+                var barrier = new GameObject("SideBarrier");
+                barrier.transform.SetParent(bridge.transform, false);
+                barrier.transform.localPosition = new Vector3(0f, 0.75f, sz * (widthZ * 0.5f));
+                var barCol = barrier.AddComponent<BoxCollider>();
+                barCol.size = new Vector3(spanX + 0.2f, 1.2f, 0.15f);
+
+                // Lentera gantung di 4 sudut tiang masuk jembatan
+                AddBridgeLantern(bridge.transform, new Vector3( spanX * 0.48f, 1.05f, pz), new Color(1f, 0.78f, 0.35f));
+                AddBridgeLantern(bridge.transform, new Vector3(-spanX * 0.48f, 1.05f, pz), new Color(1f, 0.78f, 0.35f));
             }
         }
 
@@ -276,13 +335,39 @@ namespace Eldara
             return mat;
         }
 
-        private static Material MakeMat(string name, Shader shader, Color col, float smoothness, float metallic = 0f)
+        private static void AddBridgeLantern(Transform parent, Vector3 localPos, Color color, float range = 8f)
+        {
+            var lantern = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            lantern.name = "BridgeLantern";
+            lantern.transform.SetParent(parent, false);
+            lantern.transform.localPosition = localPos;
+            lantern.transform.localScale = new Vector3(0.18f, 0.28f, 0.18f);
+            var col = lantern.GetComponent<Collider>();
+            if (col) Object.DestroyImmediate(col);
+
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var mat = MakeMat("BridgeLanternGlow", shader, color, 0.9f, 0f, color * 2.5f);
+            lantern.GetComponent<Renderer>().sharedMaterial = mat;
+
+            var light = lantern.AddComponent<Light>();
+            light.color = color;
+            light.range = range;
+            light.intensity = 1.6f;
+            light.shadows = LightShadows.None;
+        }
+
+        private static Material MakeMat(string name, Shader shader, Color col, float smoothness, float metallic = 0f, Color? emission = null)
         {
             var m = new Material(shader) { name = $"M_River_{name}" };
             if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", col);
             if (m.HasProperty("_Color")) m.SetColor("_Color", col);
             if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", smoothness);
             if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", metallic);
+            if (emission.HasValue && m.HasProperty("_EmissionColor"))
+            {
+                m.EnableKeyword("_EMISSION");
+                m.SetColor("_EmissionColor", emission.Value);
+            }
             return m;
         }
 
