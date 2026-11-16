@@ -36,6 +36,33 @@ public class JungleTree : MonoBehaviour
 
     static Mesh _lumpy;
     static Material _bark, _leaf;
+    static readonly Dictionary<int, Material> _leafCache = new Dictionary<int, Material>();
+
+    void Awake()
+    {
+        FixCanopyColor();
+    }
+
+    public void FixCanopyColor()
+    {
+        var canopy = transform.Find("Canopy");
+        if (canopy != null)
+        {
+            var mr = canopy.GetComponent<MeshRenderer>();
+            if (mr != null)
+            {
+                var mat = mr.sharedMaterial;
+                bool isWhite = mat == null || (mat.color.r > 0.85f && mat.color.g > 0.85f && mat.color.b > 0.85f) || (mat.name != null && mat.name.ToLower().Contains("white"));
+                if (isWhite)
+                {
+                    Color c = (leafTint != default && leafTint != Color.clear && (leafTint.g > leafTint.r || leafTint.g > 0.2f))
+                        ? leafTint
+                        : new Color(0.12f, 0.44f, 0.14f);
+                    mr.sharedMaterial = GetLeafMaterial(c);
+                }
+            }
+        }
+    }
 
     // ---------------------------------------------------------------- BUILD
     public void Build(int seed)
@@ -109,13 +136,9 @@ public class JungleTree : MonoBehaviour
         leafGO.transform.SetParent(transform, false);
         leafGO.AddComponent<MeshFilter>().sharedMesh = Combine(leafParts);
         var lr = leafGO.AddComponent<MeshRenderer>();
-        lr.sharedMaterial = leafMaterial != null ? leafMaterial : DefaultLeaf();
-        var mpb = new MaterialPropertyBlock();
         Color tint = Color.Lerp(leafTint, leafTint * Random.Range(0.7f, 1.25f), 0.8f);
         tint.a = 1f;
-        mpb.SetColor("_BaseColor", tint); // URP
-        mpb.SetColor("_Color", tint);     // Built-in
-        lr.SetPropertyBlock(mpb);
+        lr.sharedMaterial = leafMaterial != null ? leafMaterial : GetLeafMaterial(tint);
         lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
 
         Random.state = old;
@@ -322,6 +345,18 @@ public class JungleTree : MonoBehaviour
         return m;
     }
 
+    public static Material GetLeafMaterial(Color c)
+    {
+        int key = (Mathf.RoundToInt(c.r * 255f) << 16) | (Mathf.RoundToInt(c.g * 255f) << 8) | Mathf.RoundToInt(c.b * 255f);
+        if (_leafCache.TryGetValue(key, out var mat) && mat != null)
+            return mat;
+
+        mat = MakeMaterial(c, 0.12f);
+        mat.name = $"M_Jungle_Leaf_{ColorUtility.ToHtmlStringRGB(c)}";
+        _leafCache[key] = mat;
+        return mat;
+    }
+
     static Material DefaultBark() { return _bark != null ? _bark : (_bark = MakeMaterial(new Color(0.28f, 0.19f, 0.12f), 0.05f)); }
-    static Material DefaultLeaf() { return _leaf != null ? _leaf : (_leaf = MakeMaterial(Color.white, 0.15f)); }
+    static Material DefaultLeaf() { return _leaf != null ? _leaf : (_leaf = GetLeafMaterial(new Color(0.12f, 0.44f, 0.14f))); }
 }

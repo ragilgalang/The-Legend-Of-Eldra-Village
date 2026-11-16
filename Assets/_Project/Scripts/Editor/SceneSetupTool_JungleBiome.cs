@@ -812,6 +812,7 @@ public static partial class SceneSetupTool
         t.clusterSize = new Vector2(4.5f, 8f) * (height / 38f);
         t.leafTint = leafColor;
         t.Build(seed);
+        t.FixCanopyColor();
 
         if (go.GetComponent<JungleTreeSway>() == null)
             go.AddComponent<JungleTreeSway>();

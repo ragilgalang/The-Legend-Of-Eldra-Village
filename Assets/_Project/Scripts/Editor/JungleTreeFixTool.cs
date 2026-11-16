@@ -26,6 +26,7 @@ public static class JungleTreeFixTool
                 ? t.builtSeed
                 : Mathf.Abs(Mathf.RoundToInt(t.transform.position.x * 131f + t.transform.position.z * 71f)) + 1;
             t.Build(seed);
+            t.FixCanopyColor();
         }
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
