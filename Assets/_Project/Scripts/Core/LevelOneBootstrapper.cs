@@ -8,6 +8,10 @@ public static class LevelOneBootstrapper
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void EnsurePlayableLevel()
     {
+        var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if (activeScene.name == "MainMenu" || activeScene.name.Contains("Menu"))
+            return;
+
         var questManager = Object.FindAnyObjectByType<QuestManager>();
         var existingPlayer = Object.FindAnyObjectByType<PlayerController>();
         if (questManager != null && existingPlayer != null)
