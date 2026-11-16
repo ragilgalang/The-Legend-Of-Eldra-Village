@@ -20,13 +20,11 @@ namespace Eldara.EditorTools
 
         static Material batu, atapGelap, glowCoral;
 
-        [MenuItem("Eldara/Bangun Kuil Spawn (Kuil Kebangkitan)", false, 3)]
         public static void BangunKuilLangsung()
         {
             Buat(40f, 180f, true);
         }
 
-        [MenuItem("Eldara/Buat Bangunan Spawn (Atur Jarak)")]
         public static void BukaJendela()
         {
             EditorWindow.GetWindow<SpawnSetupWindow>(true, "Bangunan Spawn");

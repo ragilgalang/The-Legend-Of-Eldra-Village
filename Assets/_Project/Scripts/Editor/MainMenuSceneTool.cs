@@ -11,7 +11,6 @@ namespace Eldara.EditorTools
         public const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity";
         public const string GameScenePath     = "Assets/Scenes/SampleScene.unity";
 
-        [MenuItem("Eldara/Buka Main Menu", false, 0)]
         public static void OpenMainMenuScene()
         {
             if (EditorApplication.isPlaying)
@@ -35,7 +34,6 @@ namespace Eldara.EditorTools
             }
         }
 
-        [MenuItem("Eldara/Buka Game (SampleScene)", false, 1)]
         public static void OpenGameScene()
         {
             if (EditorApplication.isPlaying)
@@ -58,7 +56,6 @@ namespace Eldara.EditorTools
             }
         }
 
-        [MenuItem("Eldara/Buat Ulang Scene Main Menu", false, 2)]
         public static void RebuildMainMenuScene()
         {
             if (EditorApplication.isPlaying)
