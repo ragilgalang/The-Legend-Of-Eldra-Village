@@ -189,6 +189,7 @@ public static partial class SceneSetupTool
         }
     }
 
+    [MenuItem("Eldara/Hapus Semua Pagar Di Scene", false, 4)]
     public static void RemovePerimeterFences()
     {
         int count = 0;
@@ -196,25 +197,49 @@ public static partial class SceneSetupTool
         if (yardFences)
         {
             count += yardFences.transform.childCount;
-            Object.DestroyImmediate(yardFences);
+            Undo.DestroyObjectImmediate(yardFences);
         }
 
-        var towerRoot = GameObject.Find("--- TOWERS ---");
-        if (towerRoot)
+        // Hapus semua pagar di seluruh hierarchy scene
+        var allTransforms = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var toDestroy = new HashSet<GameObject>();
+
+        foreach (var t in allTransforms)
         {
-            var toRemove = new List<GameObject>();
-            for (int i = 0; i < towerRoot.transform.childCount; i++)
+            if (t == null) continue;
+            GameObject go = t.gameObject;
+            string n = go.name.ToLower();
+
+            // Kecualikan pagar balkon/railing milik rumah prosedural
+            if (go.GetComponentInParent<ProceduralHouseBuilder>() != null) continue;
+            if (t.parent != null && (t.parent.name.Contains("House") || t.parent.name.Contains("Rumah"))) continue;
+
+            bool isFence = n.Contains("fence") || n.Contains("pagar") || n.Contains("ea03_village_fence") || n.Contains("prop_woodenfence");
+
+            if (!isFence)
             {
-                var child = towerRoot.transform.GetChild(i).gameObject;
-                if (child.name.StartsWith("EA03_Village_Fence_01a"))
+                var mf = go.GetComponent<MeshFilter>();
+                if (mf != null && mf.sharedMesh != null)
                 {
-                    // Pertahankan dua sayap gerbang masuk selatan (z ≈ -48)
-                    if (Mathf.Abs(child.transform.position.z - (-48f)) < 1f) continue;
-                    toRemove.Add(child);
+                    string mn = mf.sharedMesh.name.ToLower();
+                    if (mn.Contains("fence") || mn.Contains("pagar")) isFence = true;
                 }
             }
-            count += toRemove.Count;
-            foreach (var go in toRemove) Object.DestroyImmediate(go);
+
+            if (isFence)
+            {
+                var root = PrefabUtility.GetOutermostPrefabInstanceRoot(go);
+                toDestroy.Add(root != null ? root : go);
+            }
+        }
+
+        foreach (var go in toDestroy)
+        {
+            if (go != null)
+            {
+                count++;
+                Undo.DestroyObjectImmediate(go);
+            }
         }
 
         // Hapus rumah nelayan jika masih ada di scene
@@ -222,14 +247,14 @@ public static partial class SceneSetupTool
         foreach (var fh in fishHouses)
         {
             var fhGo = GameObject.Find(fh);
-            if (fhGo) { count++; Object.DestroyImmediate(fhGo); }
+            if (fhGo) { count++; Undo.DestroyObjectImmediate(fhGo); }
         }
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        Debug.Log($"[Eldara] {count} modul pagar pekarangan & benteng liar berhasil dihapus.");
+        Debug.Log($"<color=green>[Eldara] {count} modul pagar pekarangan & benteng liar berhasil dihapus dari scene.</color>");
         if (!Application.isBatchMode)
         {
-            EditorUtility.DisplayDialog("Pagar Dibersihkan!", $"{count} modul pagar yang menghalangi pekarangan dan jalan berhasil dibersihkan dari scene.", "OK");
+            EditorUtility.DisplayDialog("Pagar Dibersihkan!", $"{count} modul pagar yang menghalangi pekarangan dan padang rumput berhasil dibersihkan dari scene.", "OK");
         }
     }
 
