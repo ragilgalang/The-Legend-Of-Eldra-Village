@@ -38,12 +38,12 @@ namespace Eldara
             float halfW = width * 0.5f;
             float halfL = length * 0.5f;
 
-            // 1. Dasar Sungai & Permukaan Air Jernih (Kedalaman visual ~0.85m agar ikan terlihat jelas berenang)
+            // 1. Dasar Sungai & Permukaan Air Jernih (Y dinaikkan sedikit di atas Ground Y=0 agar terlihat jelas dan tidak tertutup tanah)
             var bed = Part(PrimitiveType.Cube, "River_Bed", riverRoot.transform, matRiverBed,
-                new Vector3(0f, -0.75f, 0f), new Vector3(width + 2.0f, 0.20f, length), false);
+                new Vector3(0f, 0.015f, 0f), new Vector3(width, 0.03f, length), false);
 
             var waterSurface = Part(PrimitiveType.Cube, "River_WaterSurface", riverRoot.transform, matWater,
-                new Vector3(0f, -0.05f, 0f), new Vector3(width, 0.04f, length), false);
+                new Vector3(0f, 0.08f, 0f), new Vector3(width, 0.12f, length), false);
 
             // Batu-batu kerikil & karang sungai di dasar air
             var rng = new System.Random(2026);
@@ -53,33 +53,39 @@ namespace Eldara
                 float rz = (float)(rng.NextDouble() * 2.0 - 1.0) * (halfL - 2.0f);
                 float rs = 0.35f + (float)rng.NextDouble() * 0.65f;
                 Part(PrimitiveType.Sphere, "RiverBoulder", riverRoot.transform, matStone,
-                    new Vector3(rx, -0.58f, rz), new Vector3(rs * 1.4f, rs * 0.65f, rs * 1.1f), false);
+                    new Vector3(rx, 0.04f, rz), new Vector3(rs * 1.2f, rs * 0.45f, rs * 1.0f), false);
             }
 
-            // 2. Tanggul Batu Tepi Sungai (Kiri & Kanan, menyisakan bukaan jembatan di Z = -2.8..+2.8)
+            // 2. Tanggul Batu Tepi Sungai (Kiri, Kanan, serta Ujung Utara & Selatan)
             foreach (float side in new[] { -1f, 1f })
             {
                 float bankX = side * (halfW + 0.45f);
                 // Segmen Utara (Z = 2.8 .. halfL)
                 float lenN = halfL - 2.8f;
                 Part(PrimitiveType.Cube, "RiverBank_N", riverRoot.transform, matStone,
-                    new Vector3(bankX, 0.05f, 2.8f + lenN * 0.5f), new Vector3(0.95f, 0.55f, lenN), true);
+                    new Vector3(bankX, 0.16f, 2.8f + lenN * 0.5f), new Vector3(0.95f, 0.32f, lenN), true);
 
                 // Segmen Selatan (Z = -halfL .. -2.8)
                 float lenS = halfL - 2.8f;
                 Part(PrimitiveType.Cube, "RiverBank_S", riverRoot.transform, matStone,
-                    new Vector3(bankX, 0.05f, -2.8f - lenS * 0.5f), new Vector3(0.95f, 0.55f, lenS), true);
+                    new Vector3(bankX, 0.16f, -2.8f - lenS * 0.5f), new Vector3(0.95f, 0.32f, lenS), true);
             }
 
-            // 3. Jembatan Kayu Lengkung Utama di Z = 0 (Melintasi Sungai Selebar 14m)
+            // Tanggul Penutup Ujung Utara & Selatan
+            Part(PrimitiveType.Cube, "RiverBank_Cap_N", riverRoot.transform, matStone,
+                new Vector3(0f, 0.16f, halfL + 0.45f), new Vector3(width + 1.8f, 0.32f, 0.90f), true);
+            Part(PrimitiveType.Cube, "RiverBank_Cap_S", riverRoot.transform, matStone,
+                new Vector3(0f, 0.16f, -halfL - 0.45f), new Vector3(width + 1.8f, 0.32f, 0.90f), true);
+
+            // 3. Jembatan Kayu Lengkung Utama di Z = 0
             BuildArchedRiverBridge(riverRoot.transform, width + 3.2f, 4.6f, matTimber, matDeck);
 
             // 4. Dermaga Kayu Nelayan (Fishing Pier) di Tepi Timur Sungai (Z = -14m, menghadap barat ke sungai)
             BuildFishingDock(riverRoot.transform, new Vector3(halfW - 0.5f, 0f, -14f), matTimber, matDeck);
 
             // 5. Perahu Sampan Kayu Tertambat di Samping Dermaga
-            BuildWoodenRowboat(riverRoot.transform, new Vector3(halfW - 3.6f, -0.02f, -17.5f), 22f, matTimber, matDeck);
-            BuildWoodenRowboat(riverRoot.transform, new Vector3(-halfW + 3.8f, -0.02f, 16.0f), -145f, matTimber, matDeck);
+            BuildWoodenRowboat(riverRoot.transform, new Vector3(halfW - 3.6f, 0.08f, -17.5f), 22f, matTimber, matDeck);
+            BuildWoodenRowboat(riverRoot.transform, new Vector3(-halfW + 3.8f, 0.08f, 16.0f), -145f, matTimber, matDeck);
 
             // 6. Tanaman Air: Teratai & Alang-alang Tepi Sungai
             for (int p = 0; p < 18; p++)
@@ -91,12 +97,12 @@ namespace Eldara
 
                 // Daun teratai
                 Part(PrimitiveType.Cylinder, "LotusPad", riverRoot.transform, matReed,
-                    new Vector3(px, -0.01f, pz), new Vector3(0.65f, 0.015f, 0.65f), false);
+                    new Vector3(px, 0.142f, pz), new Vector3(0.65f, 0.015f, 0.65f), false);
 
                 if (p % 3 == 0)
                 {
                     Part(PrimitiveType.Sphere, "LotusBloom", riverRoot.transform, matLotus,
-                        new Vector3(px, 0.04f, pz), new Vector3(0.22f, 0.16f, 0.22f), false);
+                        new Vector3(px, 0.185f, pz), new Vector3(0.22f, 0.16f, 0.22f), false);
                 }
             }
 
@@ -117,7 +123,7 @@ namespace Eldara
 
                 float fx = Random.Range(-halfW + 1.6f, halfW - 1.6f);
                 float fz = Random.Range(-halfL + 4.0f, halfL - 4.0f);
-                float fy = Random.Range(-0.48f, -0.18f);
+                float fy = Random.Range(0.05f, 0.09f);
 
                 var fishGo = Build3DFish($"RiverFish_{f + 1}", fishGroup.transform, bodyMat, matFin, fishScale);
                 fishGo.transform.localPosition = new Vector3(fx, fy, fz);
@@ -312,14 +318,14 @@ namespace Eldara
             var mat = new Material(shader) { name = "M_River_WaterSurface" };
             if (shader.name == "Eldara/RealisticWater")
             {
-                mat.SetColor("_DeepColor", new Color(0.04f, 0.24f, 0.38f, 0.82f));
-                mat.SetColor("_ShallowColor", new Color(0.18f, 0.65f, 0.78f, 0.55f));
+                mat.SetColor("_DeepColor", new Color(0.04f, 0.36f, 0.58f, 0.92f));
+                mat.SetColor("_ShallowColor", new Color(0.18f, 0.72f, 0.88f, 0.75f));
                 mat.SetColor("_FresnelColor", new Color(0.85f, 0.95f, 1.0f, 1.0f));
-                mat.SetFloat("_Smoothness", 0.95f);
+                mat.SetFloat("_Smoothness", 0.96f);
             }
             else
             {
-                Color waterCol = new Color(0.12f, 0.52f, 0.72f, 0.62f);
+                Color waterCol = new Color(0.15f, 0.62f, 0.88f, 0.82f);
                 if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", waterCol);
                 if (mat.HasProperty("_Color")) mat.SetColor("_Color", waterCol);
                 if (mat.HasProperty("_Surface"))
@@ -441,7 +447,7 @@ namespace Eldara
             Vector3 cur = transform.localPosition;
             float nx = Random.Range(-boundHalfX, boundHalfX);
             float nz = Mathf.Clamp(cur.z + Random.Range(-18f, 18f), -boundHalfZ, boundHalfZ);
-            float ny = Mathf.Clamp(baseDepthY + Random.Range(-0.12f, 0.10f), -0.58f, -0.14f);
+            float ny = Mathf.Clamp(baseDepthY + Random.Range(-0.02f, 0.02f), 0.04f, 0.10f);
             targetLocalPos = new Vector3(nx, ny, nz);
             retargetTimer = Random.Range(3.5f, 7.5f);
         }

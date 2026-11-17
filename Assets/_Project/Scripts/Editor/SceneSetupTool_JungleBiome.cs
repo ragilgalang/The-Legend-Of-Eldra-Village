@@ -22,8 +22,8 @@ public static partial class SceneSetupTool
     //  KONFIGURASI
     // ─────────────────────────────────────────────────────────────────────
     static readonly Vector3 JungleCenter      = new Vector3(350f, 0f, 350f);
-    static readonly Vector3 VillagePortalPos  = new Vector3(-9f, 0f, 21f);
-    const float VillagePortalYaw = 90f;        // menghadap timur (ke North Avenue)
+    static readonly Vector3 VillagePortalPos  = new Vector3(-9.5f, 0f, 26.5f); // Dipindahkan ke tepi taman rumput di pinggir jalan
+    const float VillagePortalYaw = 115f;       // Menghadap serong ke jalan (tenggara) agar jalan utama tetap bersih & lega
 
     // Bukaan portal: lebar 2.8 m, tinggi lurus 3.0 m + lengkung di atas (jauh di atas tinggi player 2 m)
     const float PortalOpeningHalfWidth = 1.4f;

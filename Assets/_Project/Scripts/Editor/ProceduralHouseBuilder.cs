@@ -1199,20 +1199,19 @@ public static partial class ProceduralHouseBuilder
 
         Box(root, 0.7f, 5.6f, 0.7f, matConcrete, new Vector3(-2.2f, 2.8f, -2.35f));   // cerobong (di luar)
 
-        // Teras & dermaga (atap teras dinaikkan)
+        // Teras & dermaga kayu kompak tepi sungai
         Box(root, 6.4f, 0.2f, 2.4f, matDeck, new Vector3(0, 0.05f, 3.2f));
         Box(root, 6.8f, 0.1f, 2.6f, matRoof, new Vector3(0, 3.5f, 3.3f), new Vector3(6f, 0, 0));
         Cylinder(root, 0.1f, 3.4f, matWood, new Vector3(-3.0f, 1.85f, 4.2f));
         Cylinder(root, 0.1f, 3.4f, matWood, new Vector3(3.0f, 1.85f, 4.2f));
-        Box(root, 1.8f, 0.14f, 9.0f, matDeck, new Vector3(0, -0.05f, 9.2f));
-        for (int i = 0; i < 4; i++)
+        Box(root, 1.8f, 0.14f, 4.2f, matDeck, new Vector3(0, -0.05f, 4.8f));
+        for (int i = 0; i < 2; i++)
         {
-            float z = 6.0f + i * 2.4f;
+            float z = 3.6f + i * 2.0f;
             Cylinder(root, 0.1f, 1.4f, matWood, new Vector3(-0.85f, -0.5f, z));
             Cylinder(root, 0.1f, 1.4f, matWood, new Vector3(0.85f, -0.5f, z));
         }
-        Box(root, 24f, 0.05f, 20f, matWater, new Vector3(0, -0.2f, 12f), default, false);
-        var boat = Sphere(root, 1.0f, matWood, new Vector3(2.5f, -0.15f, 10.5f), new Vector3(0.6f, 0.35f, 1.8f));
+        var boat = Sphere(root, 1.0f, matWood, new Vector3(2.2f, 0.15f, 4.5f), new Vector3(0.6f, 0.35f, 1.8f));
         boat.name = "SampanKayu";
         Lantern(root, new Vector3(1.2f, 3.0f, 2.9f));
 

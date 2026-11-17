@@ -33,6 +33,7 @@ namespace Eldara.EditorTools
         public static void Buat(float jarakDariDesa = 40f, float arahDeg = 180f, bool paksaBuatUlang = false)
         {
             CariDesa(out Vector3 pusatDesa, out float radiusDesa);
+            pusatDesa.x = 0f; // Sejajarkan dengan poros jalan selatan (X = 0) agar pemain lurus masuk gerbang
 
             float a = arahDeg * Mathf.Deg2Rad;
             Vector3 arah = new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a));

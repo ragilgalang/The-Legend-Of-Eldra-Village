@@ -22,8 +22,8 @@ public class PlayerController : MonoBehaviour
             cc.center = new Vector3(0f, 0.925f, 0f);
         }
         // Pastikan stepOffset & slopeLimit pas untuk mendaki tangga & ambang pintu
-        cc.stepOffset = 0.45f;
-        cc.slopeLimit = 55f;
+        cc.stepOffset = 0.5f;
+        cc.slopeLimit = 60f;
     }
 
     void Start()
@@ -44,6 +44,7 @@ public class PlayerController : MonoBehaviour
         bool run = false;
         var kb = Keyboard.current;
 
+        bool jump = false;
         if (!inputLocked && kb != null)
         {
             if (kb.wKey.isPressed) move.y += 1;
@@ -51,6 +52,7 @@ public class PlayerController : MonoBehaviour
             if (kb.dKey.isPressed) move.x += 1;
             if (kb.aKey.isPressed) move.x -= 1;
             run = kb.leftShiftKey.isPressed;
+            jump = kb.spaceKey.wasPressedThisFrame;
         }
 
         // Arah gerak berdasarkan yaw pandangan, bukan transform kamera
@@ -74,7 +76,22 @@ public class PlayerController : MonoBehaviour
 
         if (cc != null && cc.enabled)
         {
-            vy = cc.isGrounded ? -1f : vy + gravity * Time.deltaTime;
+            if (cc.isGrounded)
+            {
+                if (jump)
+                {
+                    vy = 6.2f; // Lompat untuk melompati rintangan kecil / tangga
+                }
+                else
+                {
+                    vy = -1.5f; // Rekat lembut ke tanah tanpa menekan berlebihan
+                }
+            }
+            else
+            {
+                vy = Mathf.Max(vy + gravity * Time.deltaTime, -14f); // Cegah gravitasi ekstrem yang mengunci pergerakan
+            }
+
             Vector3 vel = dir * (run ? runSpeed : walkSpeed);
             vel.y = vy;
             cc.Move(vel * Time.deltaTime);

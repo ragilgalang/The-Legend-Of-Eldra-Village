@@ -97,8 +97,9 @@ public static partial class SceneSetupTool
 
         SetupWorldObjects(slavicMat);
         SetupFaunaAndAnimals();
-        SetupExpandedWorld(slavicMat, grassTuftMat);
-        SetupMegaExpansion(slavicMat, grassTuftMat);
+        // Zona ekspansi luar lama (kuil semen utara & dermaga kotak barat) dinonaktifkan agar dunia terpusat dan rapi di Desa Eldara
+        // SetupExpandedWorld(slavicMat, grassTuftMat);
+        // SetupMegaExpansion(slavicMat, grassTuftMat);
         SetupJungleBiome(slavicMat, grassTuftMat);
         SetupZoneTriggers();
         ApplyVillageDesignPass();
@@ -434,25 +435,25 @@ public static partial class SceneSetupTool
         CreateContinuousPavedRoad(roadsParent.transform, "Civic_Forecourt",
             new Vector3(-18f, 0f, 36f), new Vector3(18f, 0f, 36f), 5.0f, roadMat, 2.5f, true, curbMat);
 
-        // Poros Selatan: Alun-Alun -> Gerbang Benteng Selatan (Z = -56)
+        // Poros Selatan: Alun-Alun -> Gerbang Benteng Selatan -> Menembus ke Arah Kuil Spawn (Z = -88)
         CreateContinuousPavedRoad(roadsParent.transform, "Avenue_South",
-            new Vector3(0f, 0f, -10.2f), new Vector3(0f, 0f, -56f), 4.4f, roadMat, 2.5f, true, curbMat);
+            new Vector3(0f, 0f, -10.2f), new Vector3(0f, 0f, -88f), 4.4f, roadMat, 2.5f, true, curbMat);
 
         // Poros Timur: Alun-Alun -> Gerbang Timur (X = 62)
         CreateContinuousPavedRoad(roadsParent.transform, "Avenue_East",
             new Vector3(10.2f, 0f, 0f), new Vector3(62f, 0f, 0f), 4.2f, roadMat, 2.5f, true, curbMat);
 
-        // Poros Barat: Alun-Alun -> Jembatan Sungai -> Gerbang Barat (X = -62)
-        // Terbagi dua di sisi timur & barat jembatan (-49 +- 8.6m)
+        // Poros Barat: Alun-Alun -> Jembatan Sungai -> Gerbang Barat (X = -80)
+        // Terbagi dua di sisi timur & barat jembatan sungai (-55 +- 6.6m)
         CreateContinuousPavedRoad(roadsParent.transform, "Avenue_West_EastSide",
-            new Vector3(-9.2f, 0f, 0f), new Vector3(-40.6f, 0f, 0f), 4.0f, roadMat, 2.5f, true, curbMat);
+            new Vector3(-9.2f, 0f, 0f), new Vector3(-48.4f, 0f, 0f), 4.0f, roadMat, 2.5f, true, curbMat);
         CreateContinuousPavedRoad(roadsParent.transform, "Avenue_West_WestSide",
-            new Vector3(-57.4f, 0f, 0f), new Vector3(-62.0f, 0f, 0f), 4.0f, roadMat, 2.5f, true, curbMat);
+            new Vector3(-61.6f, 0f, 0f), new Vector3(-80.0f, 0f, 0f), 4.0f, roadMat, 2.5f, true, curbMat);
 
         // 4. Jalan Setapak Penghubung ke Tiap Klaster Rumah
         // Ke Rumah Gadang (Barat Laut) & Pendopo Joglo (Timur Laut)
         CreateContinuousPavedRoad(roadsParent.transform, "Path_To_Gadang",
-            new Vector3(-16.2f, 0f, 16.2f), new Vector3(-24f, 0f, 25f), 2.8f, roadMat, 2.5f, false);
+            new Vector3(-16.2f, 0f, 16.2f), new Vector3(-34f, 0f, 26f), 2.8f, roadMat, 2.5f, false);
         CreateContinuousPavedRoad(roadsParent.transform, "Path_To_Joglo",
             new Vector3(16.2f, 0f, 16.2f), new Vector3(24f, 0f, 25f), 2.8f, roadMat, 2.5f, false);
 
@@ -470,7 +471,7 @@ public static partial class SceneSetupTool
 
         // Ke Area Pertanian Barat Laut (Utara Jalan Barat)
         CreateContinuousPavedRoad(roadsParent.transform, "Path_West_Farm",
-            new Vector3(-28f, 0f, 2.0f), new Vector3(-28f, 0f, 13f), 2.8f, roadMat, 2.5f, false);
+            new Vector3(-38f, 0f, 2.0f), new Vector3(-38f, 0f, 13f), 2.8f, roadMat, 2.5f, false);
 
         // ═════════════════════════════════════════════════════════════════
         //  B. ALUN-ALUN PUSAT: SUMUR BATU, PASAR TERBUKA, & RAMBU ARAH
@@ -509,8 +510,8 @@ public static partial class SceneSetupTool
         AddTraditionalVillageLamp(village.transform, new Vector3( 3.0f, 0, -44f), -90f);
         AddTraditionalVillageLamp(village.transform, new Vector3( 28f,  0,  2.8f), 180f);
         AddTraditionalVillageLamp(village.transform, new Vector3( 46f,  0, -2.8f),   0f);
-        AddTraditionalVillageLamp(village.transform, new Vector3(-28f,  0,  2.8f), 180f);
-        AddTraditionalVillageLamp(village.transform, new Vector3(-46f,  0, -2.8f),   0f);
+        AddTraditionalVillageLamp(village.transform, new Vector3(-38f,  0,  2.8f), 180f);
+        AddTraditionalVillageLamp(village.transform, new Vector3(-64f,  0, -2.8f),   0f);
 
         // ═════════════════════════════════════════════════════════════════
         //  D. TATA LETAK 16 BANGUNAN DESA (BERORIENTASI ORGANIK KE JALAN)
@@ -524,8 +525,8 @@ public static partial class SceneSetupTool
 
         // Rumah Gadang Kepala Desa (Barat Laut Jalan Lingkar, serong 135° menghadap pusat desa)
         ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Gadang,
-            new Vector3(-26f, 0f, 27f), Quaternion.Euler(0, 135f, 0), village.transform, "House_KepalaDesa_Gadang");
-        CreateHouseYard(village.transform, "Yard_Gadang", new Vector3(-26f, 0f, 27f), 13f, 9f, 135f, roadMat);
+            new Vector3(-38f, 0f, 28f), Quaternion.Euler(0, 135f, 0), village.transform, "House_KepalaDesa_Gadang");
+        CreateHouseYard(village.transform, "Yard_Gadang", new Vector3(-38f, 0f, 28f), 13f, 9f, 135f, roadMat);
 
         // Pendopo Pertemuan Joglo (Timur Laut Jalan Lingkar, serong -135° menghadap pusat desa)
         ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Joglo,
@@ -535,28 +536,28 @@ public static partial class SceneSetupTool
         // ── 2. KAWASAN PERTANIAN & TEPI SUNGAI (BARAT) ───────────────────
         // Rumah Petani Panggung (Utara Jalan Barat, menghadap Selatan ke jalan)
         var farmHouse = ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Panggung,
-            new Vector3(-26f, 0f, 16f), Quaternion.Euler(0, 180f, 0), village.transform, "House_Petani_Panggung");
-        CreateHouseYard(village.transform, "Yard_Petani", new Vector3(-26f, 0f, 16.5f), 11.5f, 10.5f, 180f, roadMat);
+            new Vector3(-40f, 0f, 16f), Quaternion.Euler(0, 180f, 0), village.transform, "House_Petani_Panggung");
+        CreateHouseYard(village.transform, "Yard_Petani", new Vector3(-40f, 0f, 16.5f), 11.5f, 10.5f, 180f, roadMat);
         if (farmHouse)
         {
-            InstantiateArtModel("EA03_Prop_Container_Bale_01a",   new Vector3(-21f, 0f, 9.5f), Quaternion.identity,          Vector3.one, village.transform, slavicMat);
-            InstantiateArtModel("EA03_Prop_Container_Bale_01a",   new Vector3(-21f, 0.9f, 9.7f), Quaternion.Euler(0,40f,0), Vector3.one, village.transform, slavicMat);
-            InstantiateArtModel("EA03_Prop_Vegetable_Basket_02",  new Vector3(-20f, 0f, 11.0f), Quaternion.identity,         Vector3.one, village.transform, slavicMat);
+            InstantiateArtModel("EA03_Prop_Container_Bale_01a",   new Vector3(-35f, 0f, 9.5f), Quaternion.identity,          Vector3.one, village.transform, slavicMat);
+            InstantiateArtModel("EA03_Prop_Container_Bale_01a",   new Vector3(-35f, 0.9f, 9.7f), Quaternion.Euler(0,40f,0), Vector3.one, village.transform, slavicMat);
+            InstantiateArtModel("EA03_Prop_Vegetable_Basket_02",  new Vector3(-34f, 0f, 11.0f), Quaternion.identity,         Vector3.one, village.transform, slavicMat);
         }
 
         // Lumbung Padi / Barn Besar (Sebelah barat sungai di sisi utara, menghadap Selatan)
         ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Barn,
-            new Vector3(-49f, 0f, 15f), Quaternion.Euler(0, 180f, 0), village.transform, "Barn_Gandum");
-        CreateHouseYard(village.transform, "Yard_Barn", new Vector3(-49f, 0f, 15.5f), 13f, 11.5f, 180f, roadMat);
+            new Vector3(-68f, 0f, 15f), Quaternion.Euler(0, 180f, 0), village.transform, "Barn_Gandum");
+        CreateHouseYard(village.transform, "Yard_Barn", new Vector3(-68f, 0f, 15.5f), 13f, 11.5f, 180f, roadMat);
 
-        // Chalet Warga Lembah (Barat Daya Jalan Lingkar, serong 45° menghadap pusat)
+        // Chalet Warga Lembah (Digeser mundur agar lahan rumput luas untuk portal biome)
         ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Chalet,
-            new Vector3(-24f, 0f, -21f), Quaternion.Euler(0, 45f, 0), village.transform, "House_WargaBarat_Chalet");
-        CreateHouseYard(village.transform, "Yard_ChaletBarat", new Vector3(-24f, 0f, -21f), 11f, 9.5f, 45f, roadMat);
+            new Vector3(-38f, 0f, -29f), Quaternion.Euler(0, 45f, 0), village.transform, "House_WargaBarat_Chalet");
+        CreateHouseYard(village.transform, "Yard_ChaletBarat", new Vector3(-38f, 0f, -29f), 11f, 9.5f, 45f, roadMat);
 
-        // Pondok Tepi Sungai / Danau (Menghadap Timur ke aliran sungai desa di X = -37)
+        // Pondok Tepi Sungai / Danau (Sebelah barat sungai sisi selatan)
         ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Danau,
-            new Vector3(-47f, 0f, -15f), Quaternion.Euler(0, 90f, 0), village.transform, "House_PondokDanau");
+            new Vector3(-68f, 0f, -24f), Quaternion.Euler(0, 90f, 0), village.transform, "House_PondokDanau");
 
         // ── 3. KAWASAN PANDAI BESI & PENGRAJIN (TIMUR) ───────────────────
         // Bengkel Pandai Besi (Utara Jalan Timur, menghadap Selatan ke jalan)
@@ -606,7 +607,7 @@ public static partial class SceneSetupTool
 
         // ── 6. POS KERJA PROFESI & SUNGAI BESAR ELDARA ────────────────────
         EldaraVillageStationsBuilder.BuildAllProfessionsStations(village.transform);
-        EldaraRiverBuilder.BuildEldaraRiver(village.transform, new Vector3(-49f, 0f, 0f), width: 14f, length: 102f, fishCount: 24);
+        EldaraRiverBuilder.BuildEldaraRiver(village.transform, new Vector3(-55f, 0f, 0f), width: 10f, length: 96f, fishCount: 24);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -1482,11 +1483,11 @@ public static partial class SceneSetupTool
             (new Vector3(-11.5f, 0f,  11.5f), 0), (new Vector3( 11.5f, 0f,  11.5f), 1),
             (new Vector3(-11.5f, 0f, -11.5f), 1), (new Vector3( 11.5f, 0f, -11.5f), 2),
 
-            // 2. Bantaran Sungai Eldara Barat (X = -31 s/d -45, peneduh tepi air yang asri)
-            (new Vector3(-32f, 0f,  12f), 1), (new Vector3(-32f, 0f,  24f), 0), (new Vector3(-32f, 0f,  36f), 2),
-            (new Vector3(-32f, 0f, -12f), 0), (new Vector3(-32f, 0f, -24f), 1), (new Vector3(-32f, 0f, -36f), 2),
-            (new Vector3(-42f, 0f,   8f), 2), (new Vector3(-42f, 0f,  26f), 1), (new Vector3(-42f, 0f,  38f), 0),
-            (new Vector3(-42f, 0f,  -8f), 1), (new Vector3(-42f, 0f, -26f), 0), (new Vector3(-42f, 0f, -38f), 2),
+            // 2. Bantaran Sungai Eldara (air X = -50 s/d -60): pohon di daratan kering, di luar tanggul
+            (new Vector3(-47f, 0f,  12f), 1), (new Vector3(-47f, 0f,  24f), 0), (new Vector3(-47f, 0f,  36f), 2),
+            (new Vector3(-47f, 0f, -12f), 0), (new Vector3(-47f, 0f, -24f), 1), (new Vector3(-47f, 0f, -36f), 2),
+            (new Vector3(-63.5f, 0f,   8f), 2), (new Vector3(-63.5f, 0f,  26f), 1), (new Vector3(-63.5f, 0f,  38f), 0),
+            (new Vector3(-63.5f, 0f,  -8f), 1), (new Vector3(-63.5f, 0f, -34f), 0), (new Vector3(-63.5f, 0f, -42f), 2),
 
             // 3. Kawasan Balai Desa & Hutan Lindung Utara (Belakang & Samping Balairung Agung)
             (new Vector3(  0f, 0f,  51f), 3), (new Vector3(-12f, 0f,  49f), 0), (new Vector3( 12f, 0f,  49f), 2),
@@ -1570,19 +1571,19 @@ public static partial class SceneSetupTool
             RealisticFlowerBuilder.FlowerColor.WhiteDaisy
         };
 
-        // 1. BORDIR RUMPUT TEBAL & BUNGA DI KEDUA TEPI SUNGAI DESA (X = -37)
+        // 1. BORDIR RUMPUT TEBAL & BUNGA DI KEDUA TEPI SUNGAI DESA (X = -55)
         for (float z = -52f; z <= 48f; z += 2.2f)
         {
-            if (Mathf.Abs(z) < 4.5f) continue; // celah jembatan
-            // Tepi timur sungai
-            RealisticGrassBuilder.BuildGrassClump(new Vector3(-33.0f, 0, z), 14, 1.8f, grassRoot.transform, grassMat);
+            if (Mathf.Abs(z) < 5.5f) continue; // celah jembatan
+            // Tepi timur sungai (daratan di luar tanggul, X = -47.4)
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(-47.4f, 0, z), 14, 1.4f, grassRoot.transform, grassMat);
             var colE = flowerColors[Mathf.Abs(Mathf.RoundToInt(z * 3)) % flowerColors.Length];
-            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(-33.0f, 0, z), 6, 1.4f, flowerRoot.transform, colE);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(-47.4f, 0, z), 6, 1.1f, flowerRoot.transform, colE);
 
-            // Tepi barat sungai
-            RealisticGrassBuilder.BuildGrassClump(new Vector3(-41.0f, 0, z), 14, 1.8f, grassRoot.transform, grassMat);
+            // Tepi barat sungai (daratan di luar tanggul, X = -62.6)
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(-62.6f, 0, z), 14, 1.4f, grassRoot.transform, grassMat);
             var colW = flowerColors[Mathf.Abs(Mathf.RoundToInt(z * 5)) % flowerColors.Length];
-            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(-41.0f, 0, z), 6, 1.4f, flowerRoot.transform, colW);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(-62.6f, 0, z), 6, 1.1f, flowerRoot.transform, colW);
         }
 
         // 2. TAMAN BUNGA & RUMPUT DI SEKITAR ALUN-ALUN PUSAT (R = 10.5m, membingkai plaza melingkar)
@@ -1627,11 +1628,11 @@ public static partial class SceneSetupTool
             (new Vector3( 26f, 0f, 32f), RealisticFlowerBuilder.FlowerColor.MysticPurple),
 
             // Petani & Lumbung
-            (new Vector3(-20f, 0f, 16f), RealisticFlowerBuilder.FlowerColor.GoldenDandelion),
-            (new Vector3(-48f, 0f, 22f), RealisticFlowerBuilder.FlowerColor.WhiteDaisy),
+            (new Vector3(-35f, 0f, 16f), RealisticFlowerBuilder.FlowerColor.GoldenDandelion),
+            (new Vector3(-67f, 0f, 23.5f), RealisticFlowerBuilder.FlowerColor.WhiteDaisy),
 
             // Pondok Tepi Danau
-            (new Vector3(-48f, 0f, -18f), RealisticFlowerBuilder.FlowerColor.SkyBluebell),
+            (new Vector3(-68f, 0f, -31f), RealisticFlowerBuilder.FlowerColor.SkyBluebell),
 
             // Pandai Besi & Storage
             (new Vector3( 20f, 0f, 16f), RealisticFlowerBuilder.FlowerColor.RedPoppy),
@@ -1659,7 +1660,7 @@ public static partial class SceneSetupTool
         // 4. SEPANJANG DINDING PERIMETER DESA (Border Bunga & Rumput Tinggi)
         for (float x = -58f; x <= 58f; x += 5.5f)
         {
-            if (Mathf.Abs(x) < 7f || Mathf.Abs(x - (-37f)) < 5f) continue;
+            if (Mathf.Abs(x) < 7f || Mathf.Abs(x - (-55f)) < 5f) continue;
             RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0,  51f), 14, 3.2f, grassRoot.transform, grassMat);
             RealisticGrassBuilder.BuildGrassClump(new Vector3(x, 0, -54f), 14, 3.2f, grassRoot.transform, grassMat);
             RealisticFlowerBuilder.BuildFlowerClump(new Vector3(x, 0,  51f), 7, 2.6f, flowerRoot.transform);
@@ -1669,9 +1670,9 @@ public static partial class SceneSetupTool
         {
             if (Mathf.Abs(z) < 6f) continue;
             RealisticGrassBuilder.BuildGrassClump(new Vector3( 60f, 0, z), 14, 3.2f, grassRoot.transform, grassMat);
-            RealisticGrassBuilder.BuildGrassClump(new Vector3(-60f, 0, z), 14, 3.2f, grassRoot.transform, grassMat);
+            RealisticGrassBuilder.BuildGrassClump(new Vector3(-72f, 0, z), 14, 3.2f, grassRoot.transform, grassMat);
             RealisticFlowerBuilder.BuildFlowerClump(new Vector3( 60f, 0, z), 7, 2.6f, flowerRoot.transform);
-            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(-60f, 0, z), 7, 2.6f, flowerRoot.transform);
+            RealisticFlowerBuilder.BuildFlowerClump(new Vector3(-72f, 0, z), 7, 2.6f, flowerRoot.transform);
         }
 
         // 5. HAMPARAN KARPET PADANG RUMPUT 3D & BUNGA LIAR LEBAT DI SELURUH DESA (650 Percobaan)
@@ -1688,8 +1689,8 @@ public static partial class SceneSetupTool
             if (distCenter > 20.0f && distCenter < 24.8f) continue;
             // Bebas dari 4 Poros Utama Jalan
             if (Mathf.Abs(x) < 2.6f || Mathf.Abs(z) < 2.6f) continue;
-            // Bebas dari Aliran Air Sungai Desa (X = -37)
-            if (Mathf.Abs(x - (-37f)) < 3.8f) continue;
+            // Bebas dari Aliran Air Sungai Desa (X = -55)
+            if (Mathf.Abs(x - (-55f)) < 7.0f) continue;
             // Bebas dari Tapak Bangunan
             if (RealisticGrassBuilder.IsPositionOnStoneOrRoad(pos)) continue;
 
@@ -1904,39 +1905,7 @@ public static partial class SceneSetupTool
             pillarR.transform.localScale = new Vector3(1.2f, 6f, 1.2f);
             ApplyColor(pillarR, new Color(0.5f, 0.47f, 0.44f));
 
-            var temple = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            temple.name = "TempleBase_North";
-            temple.transform.SetParent(northRoot.transform);
-            temple.transform.position = new Vector3(0f, 0.4f, 200f);
-            temple.transform.localScale = new Vector3(16f, 0.8f, 12f);
-            ApplyColor(temple, new Color(0.58f, 0.52f, 0.46f));
 
-            for (int p = 0; p < 6; p++)
-            {
-                float px = Mathf.Lerp(-6f, 6f, p / 5f);
-                var kp = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                kp.name = $"TemplePillar_N_{p}_front";
-                kp.transform.SetParent(northRoot.transform);
-                kp.transform.position = new Vector3(px, 2.5f, 194f);
-                kp.transform.localScale = new Vector3(0.9f, 5f, 0.9f);
-                ApplyColor(kp, new Color(0.62f, 0.56f, 0.5f));
-                Object.DestroyImmediate(kp.GetComponent<Collider>());
-                var kp2 = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                kp2.name = $"TemplePillar_N_{p}_back";
-                kp2.transform.SetParent(northRoot.transform);
-                kp2.transform.position = new Vector3(px, 2.5f, 206f);
-                kp2.transform.localScale = new Vector3(0.9f, 5f, 0.9f);
-                ApplyColor(kp2, new Color(0.62f, 0.56f, 0.5f));
-                Object.DestroyImmediate(kp2.GetComponent<Collider>());
-            }
-
-            var roof = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            roof.name = "TempleRoof_North";
-            roof.transform.SetParent(northRoot.transform);
-            roof.transform.position = new Vector3(0f, 5.5f, 200f);
-            roof.transform.localScale = new Vector3(17f, 0.6f, 13f);
-            ApplyColor(roof, new Color(0.35f, 0.28f, 0.22f));
-            AddPorchLantern(northRoot.transform, new Vector3(0, 7f, 200f), new Color(0.5f, 0.8f, 1f), 20f);
 
             ProceduralHouseBuilder.BuildHouse(ProceduralHouseBuilder.HouseStyle.Cabin,
                 new Vector3(-18f, 0f, 165f), Quaternion.Euler(0, 90f, 0), northRoot.transform, "MtnHouse_West_1");

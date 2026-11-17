@@ -23,9 +23,7 @@ public static class WatchtowerBuilder
         towerObj.name = name;
         var towerComp = towerObj.GetComponent<Tower>() ?? towerObj.AddComponent<Tower>();
 
-        // Tangga akses ke dek menara
-        SceneSetupTool.AddStairRamp(towerObj.transform, new Vector3(0f, 1.75f, -2.0f), new Vector3(1.2f, 0.12f, 3.0f), new Vector3(-55f, 0f, 0f));
-        SceneSetupTool.AddStairRamp(towerObj.transform, new Vector3(0f, 3.4f, -1.0f), new Vector3(1.2f, 0.12f, 0.8f), new Vector3(-10f, 0f, 0f));
+        // Tangga akses ke dek menara: model EA03 sudah memiliki MeshCollider asli pada anak tangga
         SceneSetupTool.AddPorchLantern(towerObj.transform, new Vector3(0, 4.5f, 0), new Color(1f, 0.65f, 0.2f), 12f);
 
         // Kepala Ballista otomatis di dek atas menara
@@ -59,7 +57,6 @@ public static class WatchtowerBuilder
 
 public static partial class SceneSetupTool
 {
-    [MenuItem("Eldara/Hapus Pagar Jejer-Jejer")]
     public static void RemovePerimeterFences()
     {
         int count = 0;
@@ -100,6 +97,8 @@ public static partial class SceneSetupTool
     // ─────────────────────────────────────────────────────────────────────
     static void SetupFortifications(Material slavicMat)
     {
+        RemovePerimeterFences();
+
         GameObject towerRoot = GameObject.Find("--- TOWERS ---");
         if (towerRoot) Object.DestroyImmediate(towerRoot);
 
@@ -108,18 +107,19 @@ public static partial class SceneSetupTool
         // 8 Titik Strategis Menara Pengawas Kayu (pos + rotasi Y menghadap arah pertahanan luar)
         var towerSlots = new (Vector3 pos, float yawDeg, string name)[]
         {
-            // 2 Menara Kembar Gerbang Selatan (menghadap Selatan = 180°)
-            (new Vector3(-6.8f, 0f, -54f), 180f, "Tower_Gate_West"),
-            (new Vector3( 6.8f, 0f, -54f), 180f, "Tower_Gate_East"),
+            // 2 Menara Kembar Gerbang Selatan (digeser lebih renggang ke X = +-8.0m agar lorong gerbang lapang & anti-stuck)
+            (new Vector3(-8.0f, 0f, -54f), 180f, "Tower_Gate_West"),
+            (new Vector3( 8.0f, 0f, -54f), 180f, "Tower_Gate_East"),
 
             // 4 Menara Sudut Benteng Utama (menghadap diagonal keluar benteng)
-            (new Vector3(-62f,  0f,  50f), -45f, "Tower_NorthWest"),
+            (new Vector3(-64f,  0f,  55f), -45f, "Tower_NorthWest"),
             (new Vector3( 62f,  0f,  50f),  45f, "Tower_NorthEast"),
             (new Vector3(-62f,  0f, -54f),-135f, "Tower_SouthWest"),
             (new Vector3( 62f,  0f, -54f), 135f, "Tower_SouthEast"),
 
             // 2 Menara Sayap Barat & Timur (menghadap Barat = -90° & Timur = 90°)
-            (new Vector3(-62f,  0f,   7.5f), -90f, "Tower_WestFlank"),
+            // Tower_WestFlank ditempatkan aman di daratan barat (X = -74m) agar tidak masuk ke alur sungai (X = -55m, lebar 10m)
+            (new Vector3(-74f,  0f,   7.5f), -90f, "Tower_WestFlank"),
             (new Vector3( 62f,  0f,   7.5f),  90f, "Tower_EastFlank"),
         };
 
@@ -128,16 +128,17 @@ public static partial class SceneSetupTool
             WatchtowerBuilder.BuildWatchtower(pos, Quaternion.Euler(0f, yawDeg, 0f), towerRoot.transform, tName);
         }
 
-        // Gerbang Masuk Selatan Megah
+        // Gerbang Masuk Selatan Megah (Lega 16m)
         var gateArch = GameObject.CreatePrimitive(PrimitiveType.Cube);
         gateArch.name = "SouthGate_Crossbeam";
         gateArch.transform.SetParent(towerRoot.transform);
         gateArch.transform.position = new Vector3(0f, 5.2f, -54f);
-        gateArch.transform.localScale = new Vector3(14.5f, 0.55f, 0.7f);
+        gateArch.transform.localScale = new Vector3(17.0f, 0.55f, 0.7f);
         ApplyColor(gateArch, new Color(0.28f, 0.17f, 0.09f));
+        Object.DestroyImmediate(gateArch.GetComponent<Collider>()); // Balok udara tidak perlu collider
 
-        AddPorchLantern(towerRoot.transform, new Vector3(-3.2f, 4.7f, -54f), new Color(1f, 0.75f, 0.35f), 14f);
-        AddPorchLantern(towerRoot.transform, new Vector3( 3.2f, 4.7f, -54f), new Color(1f, 0.75f, 0.35f), 14f);
+        AddPorchLantern(towerRoot.transform, new Vector3(-3.8f, 4.7f, -54f), new Color(1f, 0.75f, 0.35f), 14f);
+        AddPorchLantern(towerRoot.transform, new Vector3( 3.8f, 4.7f, -54f), new Color(1f, 0.75f, 0.35f), 14f);
 
         // Dinding Palisade Kayu Penghubung Menara
         void BuildPalisadeLine(Vector3 start, Vector3 end)
@@ -173,11 +174,11 @@ public static partial class SceneSetupTool
         // BuildPalisadeLine(new Vector3( 62f, 0f, -54f), new Vector3( 62f, 0f, -4.5f));
         // BuildPalisadeLine(new Vector3( 62f, 0f,   4.5f), new Vector3( 62f, 0f,  50f));
 
-        // Spike Traps di luar gerbang selatan
+        // Spike Traps di luar gerbang selatan (dipasang trigger murni agar tidak menghalangi pergerakan fisik)
         var trapPositions = new Vector3[]
         {
-            new Vector3(-4.5f, 0.05f, -62f),
-            new Vector3( 4.5f, 0.05f, -62f),
+            new Vector3(-6.5f, 0.05f, -64f),
+            new Vector3( 6.5f, 0.05f, -64f),
         };
 
         for (int i = 0; i < trapPositions.Length; i++)
@@ -188,6 +189,8 @@ public static partial class SceneSetupTool
             trap.transform.position = trapPositions[i];
             trap.transform.localScale = new Vector3(2.5f, 0.12f, 2.5f);
             ApplyColor(trap, new Color(0.25f, 0.25f, 0.35f));
+            var col = trap.GetComponent<BoxCollider>();
+            if (col) col.isTrigger = true; // Trigger aktif untuk damage musuh tanpa memblokir tabrakan player
             trap.AddComponent<SpikeTrap>();
         }
     }

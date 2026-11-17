@@ -24,6 +24,12 @@ public static class RealisticGrassBuilder
         // 1. Alun-Alun Pusat (Central Plaza): lingkaran radius 9.5 meter (bersih mutlak tanpa rumput liar)
         if (pos.x * pos.x + pos.z * pos.z < 9.5f * 9.5f) return true;
 
+        // 1b. Sungai Eldara (pusat X = -55, lebar 10m, panjang 96m) + tanggul batu + margin 0.6m
+        //     Mencegah rumput/bunga mengambang di atas permukaan air atau menembus tanggul.
+        if (Mathf.Abs(pos.x + 55f) < 6.6f && Mathf.Abs(pos.z) < 50f) return true;
+        // Dek jembatan kayu sungai (Z = 0, lebar ~4.6m + ram)
+        if (Mathf.Abs(pos.x + 55f) < 7.5f && Mathf.Abs(pos.z) < 3.4f) return true;
+
         // 2. Jalur Utama (Boulevard):
         // North Avenue: X = 0, Z = 8.5 s/d 42
         if (Mathf.Abs(pos.x) < 2.3f && pos.z >= 8.5f && pos.z <= 42f) return true;

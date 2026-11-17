@@ -49,8 +49,8 @@ namespace Eldara
             // 1. MERCHANT (Kepala Desa / Tetua): Papan Pengumuman & Meja Upeti di Depan Balai Desa (-3.8, 0, 19.5)
             BuildMerchantNoticeBoard(root.transform, new Vector3(-3.8f, 0f, 19.5f), 155f, matTimber, matDeck, matGold, matCloth);
 
-            // 2. FARMER (Petani): Ladang Gandum & Kebun Sayur Berpagar di Sisi Barat (-27.5, 0, 8.5)
-            BuildFarmerCropField(root.transform, new Vector3(-27.5f, 0f, 8.5f), matTimber, matSoil, matWheat, matCrop, matHay);
+            // 2. FARMER (Petani): Ladang Gandum & Kebun Sayur Berpagar di Sisi Barat (-43.5, 0, 8.5)
+            BuildFarmerCropField(root.transform, new Vector3(-43.5f, 0f, 8.5f), matTimber, matSoil, matWheat, matCrop, matHay);
 
             // 3. GUARD (Pandai Besi & Penjaga): Bengkel Tempa Terbuka di Sisi Timur (20.5, 0, -5.5)
             BuildBlacksmithForge(root.transform, new Vector3(20.5f, 0f, -5.5f), -90f, matStone, matTimber, matIron, matSteel, matFire);
@@ -58,8 +58,8 @@ namespace Eldara
             // 4. WIZARD (Dukun Hutan): Lingkaran Totem & Kuali Ramuan di Tenggara (12.5, 0, -12.5)
             BuildWizardShrine(root.transform, new Vector3(12.5f, 0f, -12.5f), matTimber, matStone, matIron, matMagic);
 
-            // 5. WOODCUTTER (Penebang Kayu): Area Penebangan & Tunggul Gergaji di Barat Laut (-24.5, 0, 23.5)
-            BuildWoodcutterYard(root.transform, new Vector3(-24.5f, 0f, 23.5f), 135f, matTimber, matDeck, matSteel);
+            // 5. WOODCUTTER (Penebang Kayu): Area Penebangan & Tunggul Gergaji di Barat Laut (-36.5, 0, 23.5)
+            BuildWoodcutterYard(root.transform, new Vector3(-36.5f, 0f, 23.5f), 135f, matTimber, matDeck, matSteel);
 
             // 6. HUNTER (Pemburu Rimba): Pos Latihan Panahan & Kemah Pemburu di Selatan (-8.5, 0, -42.0)
             BuildHunterCamp(root.transform, new Vector3(-8.5f, 0f, -42.0f), 45f, matTimber, matHay, matCloth, matFire);
